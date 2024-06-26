@@ -1,0 +1,54 @@
+{
+  "name": "@telefrek/sql",
+  "displayName": "Telefrek SQL Parsing",
+  "description": "This is a utility library that helps to manage SQL resources, queries and type safety",
+  "version": "1.0.0",
+  "keywords": [
+    "TypeScript",
+    "SQL"
+  ],
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.json"
+  ],
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js",
+    "./*.js": "./dist/*.js"
+  },
+  "repository": {
+    "url": "https://github.com/telefrek/sql",
+    "type": "github"
+  },
+  "author": {
+    "name": "Nathan Northcutt",
+    "email": "nathan@telefrek.com"
+  },
+  "scripts": {
+    "clean": "rm -rf ./dist",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
+    "format": "pnpx prettier --write .",
+    "build": "tsc --build tsconfig.json",
+    "package": "tsc --build tsconfig.publish.json",
+    "lint": "pnpx eslint . --fix --ignore-pattern \"dist\""
+  },
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^7.14.1",
+    "ts-jest": "^29.1.5",
+    "eslint": "^9.5.0",
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.2",
+    "@types/jest": "^29.5.12",
+    "@eslint/js": "^9.5.0"
+  },
+  "packageManager": "pnpm@9.3.0+sha256.e1f9e8d1a16607a46dd3c158b5f7a7dc7945501d1c6222d454d63d033d1d918f",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  }
+}

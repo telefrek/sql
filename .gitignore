@@ -1,0 +1,9 @@
+# Don't store any build specific assets
+**/node_modules
+**/dist
+**/coverage
+**/traces
+**/.npmrc
+
+# Don't store local build cache results
+**/*.tsbuildinfo
