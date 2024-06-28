@@ -13,11 +13,14 @@ type Identity<T> = T
 export type Flatten<T> = Identity<{ [K in keyof T]: T[K] }>
 
 /**
- * Type for passing invalid typings since there is no way to do it currently
- *
- * @template S The value to carry through for messaging
+ * Utility type to carry some invalid type information
  */
-export type Invalid<S> = S | void | never
+export type Invalid<Error> = Error | void | never
+
+/**
+ * Utility type to define an object or array
+ */
+export type OneOrMore<T> = T | T[]
 
 /**
  * Type to ensure spread operators have at least one element
