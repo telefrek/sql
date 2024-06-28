@@ -1,10 +1,11 @@
+import type { OneOrMore } from "../type-utils/common.js"
 import type { QueryClause } from "./queries.js"
 
 /**
  * Structure for a with clause
  */
 export type WithClause<
-  With extends NamedQuery | NamedQuery[] = NamedQuery | NamedQuery[]
+  With extends OneOrMore<NamedQuery> = OneOrMore<NamedQuery>
 > = {
   with: With
 }
