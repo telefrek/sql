@@ -1,6 +1,7 @@
 import type { OneOrMore } from "../type-utils/common.js"
 import type { ColumnReference, TableColumnReference } from "./columns.js"
-import type { CombinedSelectClause, SelectClause } from "./select.js"
+import type { CombinedSelectClause } from "./combined.js"
+import type { SelectClause } from "./select.js"
 import type { TableReference } from "./tables.js"
 import type { UpdateClause } from "./update.js"
 import type { ValueTypes } from "./values.js"

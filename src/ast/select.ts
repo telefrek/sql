@@ -18,11 +18,6 @@ type AnyNamedQuery = NamedQuery<any>
 export type JoinType = "LEFT" | "RIGHT" | "INNER" | "OUTER" | "LATERAL" | "FULL"
 
 /**
- * Ways to combine two select queries
- */
-export type CombinedSelectOperation = "UNION" | "INTERSECT" | "MINUS" | "EXCEPT"
-
-/**
  * Allowed column orderings
  */
 export type SortOrder = "ASCENDING" | "DESCENDING"
@@ -31,18 +26,6 @@ export type SortOrder = "ASCENDING" | "DESCENDING"
  * Supported aggregation operations
  */
 export type ColumnAggretator = "SUM" | "COUNT" | "AVG" | "MAX" | "MIN"
-
-/**
- * An operation and additional select clause to apply
- */
-export type CombinedSelect<
-  Operation extends string = CombinedSelectOperation,
-  Next extends SelectClause = SelectClause
-> = {
-  type: "CombinedSelect"
-  op: Operation
-  next: Next
-}
 
 /**
  * A join expression
@@ -107,18 +90,6 @@ export type SelectClause<
   columns: Columns
   from: From
   distinct?: true
-}
-
-/**
- * A chain of select clauses
- */
-export type CombinedSelectClause<
-  Original extends SelectClause = SelectClause,
-  Additions extends OneOrMore<CombinedSelect> = OneOrMore<CombinedSelect>
-> = {
-  type: "CombinedSelectClause"
-  original: Original
-  additions: Additions
 }
 
 /**
