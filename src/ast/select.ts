@@ -31,7 +31,7 @@ export type ColumnAggretator = "SUM" | "COUNT" | "AVG" | "MAX" | "MIN"
  * A join expression
  */
 export type JoinExpression<
-  Type extends JoinType = JoinType,
+  Type extends string = JoinType,
   From extends TableReference | NamedQuery = TableReference | NamedQuery,
   On extends LogicalExpression = LogicalExpression
 > = {
