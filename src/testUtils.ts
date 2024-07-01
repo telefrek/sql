@@ -41,4 +41,5 @@ export const TEST_DATABASE = createDatabaseSchema()
       .addColumn("name", SQLBuiltinTypes.TEXT)
       .addColumn("description", SQLBuiltinTypes.TEXT)
       .withKey("id")
-  ).schema
+  )
+  .addForeignKey("orders_product_fk", "products", "orders", "product_id").schema

@@ -25,9 +25,7 @@ export type ValidForeignKeyTargets<
 > = {
   [K in StringKeys<Destination>]: Destination[K]["nullable"] extends true
     ? never
-    : TSSQLType<Destination[K]["type"]> extends TSSQLType<
-        Source[SourceColumn]["type"]
-      >
+    : Destination[K]["type"] extends Source[SourceColumn]["type"]
     ? K
     : never
 }[StringKeys<Destination>]

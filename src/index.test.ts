@@ -33,7 +33,7 @@ describe("Schema building should create valid schemas", () => {
     const defaultProvider = TEST_DATABASE.tables.orders.columns.order_timestamp
       .default as () => number
     expect(defaultProvider).not.toBeUndefined()
-    expect(defaultProvider()).toEqual(Date.now())
+    expect(defaultProvider()).toBeLessThanOrEqual(Date.now())
 
     // Just check tables and keys
     expect(TEST_DATABASE.tables.products).not.toBeUndefined()
@@ -43,5 +43,14 @@ describe("Schema building should create valid schemas", () => {
     expect(TEST_DATABASE.tables.users).not.toBeUndefined()
     expect(TEST_DATABASE.tables.users.primaryKey).not.toBeUndefined()
     expect(TEST_DATABASE.tables.users.primaryKey.column).toBe("id")
+
+    expect(TEST_DATABASE.relations.orders_product_fk.source).toBe("products")
+    expect(TEST_DATABASE.relations.orders_product_fk.destination).toBe("orders")
+    expect(
+      TEST_DATABASE.relations.orders_product_fk.destinationColumns[0]
+    ).toBe("product_id")
+    expect(TEST_DATABASE.relations.orders_product_fk.sourceColumns[0]).toBe(
+      "id"
+    )
   })
 })

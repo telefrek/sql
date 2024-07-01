@@ -1,21 +1,5 @@
-import type { StringKeys } from "../type-utils/object.js"
 import type { SQLColumnSchema } from "./columns.js"
 import type { ForeignKey, PrimaryKey } from "./keys.js"
-
-/**
- * Helper type for getting keys from the schema
- */
-export type DatabaseTables<Schema extends SQLDatabaseSchema> = StringKeys<
-  Schema["tables"]
->
-
-/**
- * Helper type for getting the columns from a schema table
- */
-export type DatabaseTableColumns<
-  Schema extends SQLDatabaseSchema,
-  Table extends DatabaseTables<Schema>
-> = StringKeys<Schema["tables"][Table]["columns"]>
 
 /**
  * A table key
@@ -36,7 +20,13 @@ export type SQLTableSchema<
  * The set of database tables
  */
 export type SQLDatabaseTables = {
-  [key: string]: SQLTableSchema
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: SQLTableSchema<any>
+}
+
+export type ForeignKeys = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: ForeignKey<any>
 }
 
 // TODO: We need to support views later based on queries of the table layout
@@ -45,7 +35,7 @@ export type SQLDatabaseTables = {
  */
 export type SQLDatabaseSchema<
   Tables extends SQLDatabaseTables = SQLDatabaseTables,
-  Relations extends ForeignKey[] = ForeignKey[]
+  Relations extends ForeignKeys = ForeignKeys
 > = {
   tables: Tables
   relations: Relations
