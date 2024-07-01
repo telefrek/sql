@@ -34,7 +34,7 @@
     "baseUrl": "./"
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "dist", "./**/*.test.ts"],
+  "exclude": ["node_modules", "dist", "./**/*.test.ts", "./**/testUtils.ts"],
   "watchOptions": {
     "excludeDirectories": ["**/dist", "**/node_modules"]
   },

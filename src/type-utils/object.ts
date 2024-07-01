@@ -50,9 +50,6 @@ export type OptionalLiteralKeys<T> = {
 
 /**
  * Type guard to prevent duplicate keys
- *
- * @template K The candidate key
- * @template T The existing type
  */
 export type CheckDuplicateKey<K extends string, T> = [K] extends [StringKeys<T>]
   ? Invalid<"Duplicate keys are not allowed">
