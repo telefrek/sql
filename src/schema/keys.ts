@@ -82,7 +82,7 @@ type ExtractCompositeKeyTypes<
  */
 export type ForeignKeyColumns<
   Database extends SQLDatabaseTables,
-  Source extends ForeignKeySourceTables<Database>,
+  Source extends ForeignKeyReferenceTables<Database>,
   Destination extends StringKeys<Database>
 > = GetPrimaryKey<Database[Source]> extends SingleKey<
   Database[Source]["columns"],
@@ -107,7 +107,7 @@ export type ForeignKeyColumns<
 /**
  * Get candidate tables that have a defined primary key
  */
-export type ForeignKeySourceTables<Schema extends SQLDatabaseTables> = {
+export type ForeignKeyReferenceTables<Schema extends SQLDatabaseTables> = {
   [Key in StringKeys<Schema>]: Schema[Key] extends SQLTableSchema<
     infer TableSchema
   >
@@ -138,16 +138,16 @@ export type GetPrimaryKey<Schema extends SQLTableSchema> =
  */
 export type ForeignKey<
   Database extends SQLDatabaseTables,
-  Source extends ForeignKeySourceTables<Database> = ForeignKeySourceTables<Database>,
-  Destination extends StringKeys<Database> = StringKeys<Database>,
+  Reference extends ForeignKeyReferenceTables<Database> = ForeignKeyReferenceTables<Database>,
+  Target extends StringKeys<Database> = StringKeys<Database>,
   Columns extends ForeignKeyColumns<
     Database,
-    Source,
-    Destination
-  > = ForeignKeyColumns<Database, Source, Destination>
+    Reference,
+    Target
+  > = ForeignKeyColumns<Database, Reference, Target>
 > = {
-  source: Source
-  sourceColumns: GetPrimaryKey<Database[Source]>["column"]
-  destination: Destination
-  destinationColumns: Columns
+  reference: Reference
+  referenceColumns: GetPrimaryKey<Database[Reference]>["column"]
+  target: Target
+  targetColumns: Columns
 }

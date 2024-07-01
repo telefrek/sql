@@ -1,4 +1,4 @@
-import type { Flatten } from "../../type-utils/common.js"
+import type { Flatten, IgnoreEmpty } from "../../type-utils/common.js"
 import type { CheckDuplicateKey, StringKeys } from "../../type-utils/object.js"
 import type {
   ForeignKeys,
@@ -9,23 +9,14 @@ import type {
 import type {
   ForeignKey,
   ForeignKeyColumns,
-  ForeignKeySourceTables,
+  ForeignKeyReferenceTables,
 } from "../keys.js"
 import { createTableSchemaBuilder, type TableSchemaBuilder } from "./table.js"
 
 /**
- * Utility type to define an empty table schema with no tables
- */
-// eslint-disable-next-line @typescript-eslint/ban-types
-type EmptyTableSchema = {}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-type EmptyForeignKeys = {}
-
-/**
  * Utility type for an empty schema
  */
-type EmptyDatabaseSchema = SQLDatabaseSchema<EmptyTableSchema, EmptyForeignKeys>
+type EmptyDatabaseSchema = SQLDatabaseSchema<IgnoreEmpty, IgnoreEmpty>
 
 /**
  * A function that provides a TableSchemaBuilder and returns the builder or schema
@@ -129,26 +120,26 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
    * the given name
    *
    * @param name The name of the foreign key
-   * @param source The source table for the key
-   * @param destination The destination table for the key
+   * @param reference The reference table for the key
+   * @param target The target table for the key
    * @param column The columns from the destination that match the source
    * primary key
    */
   addForeignKey<
     Name extends string,
-    Source extends ForeignKeySourceTables<Schema["tables"]>,
-    Destination extends StringKeys<Schema["tables"]>,
-    Columns extends ForeignKeyColumns<Schema["tables"], Source, Destination>
+    Reference extends ForeignKeyReferenceTables<Schema["tables"]>,
+    Target extends StringKeys<Schema["tables"]>,
+    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>
   >(
     name: CheckDuplicateKey<Name, Schema["relations"]>,
-    source: Source,
-    destination: Destination,
+    reference: Reference,
+    target: Target,
     ...column: Columns
   ): DatabaseSchemaBuilder<
     AddForeignKeyToSchema<
       Schema,
       Name,
-      ForeignKey<Schema["tables"], Source, Destination, Columns>
+      ForeignKey<Schema["tables"], Reference, Target, Columns>
     >
   >
 }
@@ -200,19 +191,19 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
 
   addForeignKey<
     Name extends string,
-    Source extends ForeignKeySourceTables<Schema["tables"]>,
-    Destination extends StringKeys<Schema["tables"]>,
-    Columns extends ForeignKeyColumns<Schema["tables"], Source, Destination>
+    Reference extends ForeignKeyReferenceTables<Schema["tables"]>,
+    Target extends StringKeys<Schema["tables"]>,
+    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>
   >(
     name: CheckDuplicateKey<Name, Schema["relations"]>,
-    source: Source,
-    destination: Destination,
+    reference: Reference,
+    target: Target,
     ...column: Columns
   ): DatabaseSchemaBuilder<
     AddForeignKeyToSchema<
       Schema,
       Name,
-      ForeignKey<Schema["tables"], Source, Destination, Columns>
+      ForeignKey<Schema["tables"], Reference, Target, Columns>
     >
   > {
     const current = this._schema as Schema
@@ -221,10 +212,10 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
       enumerable: true,
       writable: false,
       value: {
-        source,
-        sourceColumns: this._getTableKey(current.tables[source]),
-        destination,
-        destinationColumns: column,
+        reference,
+        referenceColumns: this._getTableKey(current.tables[reference]),
+        target,
+        targetColumns: column,
       },
     })
 
@@ -232,7 +223,7 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
       AddForeignKeyToSchema<
         Schema,
         Name,
-        ForeignKey<Schema["tables"], Source, Destination, Columns>
+        ForeignKey<Schema["tables"], Reference, Target, Columns>
       >
     >
   }

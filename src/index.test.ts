@@ -44,12 +44,12 @@ describe("Schema building should create valid schemas", () => {
     expect(TEST_DATABASE.tables.users.primaryKey).not.toBeUndefined()
     expect(TEST_DATABASE.tables.users.primaryKey.column).toBe("id")
 
-    expect(TEST_DATABASE.relations.orders_product_fk.source).toBe("products")
-    expect(TEST_DATABASE.relations.orders_product_fk.destination).toBe("orders")
-    expect(
-      TEST_DATABASE.relations.orders_product_fk.destinationColumns[0]
-    ).toBe("product_id")
-    expect(TEST_DATABASE.relations.orders_product_fk.sourceColumns[0]).toBe(
+    expect(TEST_DATABASE.relations.orders_product_fk.reference).toBe("products")
+    expect(TEST_DATABASE.relations.orders_product_fk.target).toBe("orders")
+    expect(TEST_DATABASE.relations.orders_product_fk.targetColumns[0]).toBe(
+      "product_id"
+    )
+    expect(TEST_DATABASE.relations.orders_product_fk.referenceColumns[0]).toBe(
       "id"
     )
   })

@@ -1,4 +1,8 @@
-import type { AtLeastOne, Flatten } from "../../type-utils/common.js"
+import type {
+  AtLeastOne,
+  Flatten,
+  IgnoreEmpty,
+} from "../../type-utils/common.js"
 import type {
   CheckDuplicateKey,
   RequiredLiteralKeys,
@@ -15,15 +19,9 @@ import type { SQLTableSchema } from "../database.js"
 import type { CompositeKey, PrimaryKey, SingleKey } from "../keys.js"
 
 /**
- * We need to be able to define an empty set and object doesn't match the signature
- */
-// eslint-disable-next-line @typescript-eslint/ban-types
-type NoColumns = {}
-
-/**
  * An empty SQLTableSchema
  */
-type EmptyTableSchema = SQLTableSchema<NoColumns>
+type EmptyTableSchema = SQLTableSchema<IgnoreEmpty>
 
 /**
  * Utility type to add the key to the table schema
@@ -121,7 +119,7 @@ function SQLColumn<
  * @returns A {@link ColumnSchemaBuilder} to manipulate the schema
  */
 export function createColumnSchemaBuilder<
-  Schema extends SQLColumnSchema = NoColumns
+  Schema extends SQLColumnSchema = IgnoreEmpty
 >(current?: Schema): ColumnSchemaBuilder<Schema> {
   return new SQLColumnSchemaBuilder<Schema>(current ?? ({} as Schema))
 }
