@@ -44,6 +44,10 @@ type ForeignKeyColumnMatch<
     : never
 }[StringKeys<Table>]
 
+/**
+ * Recursive type that extracts all of the valid columns for each column in the
+ * original table key
+ */
 type CompositeForeignKeyColumnMatch<
   Table extends SQLColumnSchema,
   Columns extends SQLBuiltinTypes[]
@@ -58,6 +62,9 @@ type CompositeForeignKeyColumnMatch<
     : never
   : never
 
+/**
+ * Recursive type to extract the column types in order for a given primary key
+ */
 type ExtractCompositeKeyTypes<
   Table extends SQLColumnSchema,
   Columns extends StringKeys<Table>[]
@@ -69,6 +76,10 @@ type ExtractCompositeKeyTypes<
     : never
   : never
 
+/**
+ * Utility type to get the matching columns from a table given a primary key on
+ * the initial table
+ */
 export type ForeignKeyColumns<
   Database extends SQLDatabaseTables,
   Source extends ForeignKeySourceTables<Database>,
@@ -109,6 +120,9 @@ export type ForeignKeySourceTables<Schema extends SQLDatabaseTables> = {
     : never
 }[StringKeys<Schema>]
 
+/**
+ * Extract the primary key from a {@link SQLTableSchema}
+ */
 export type GetPrimaryKey<Schema extends SQLTableSchema> =
   Schema extends SQLTableSchema<infer Columns>
     ? Schema extends SQLTableSchema<

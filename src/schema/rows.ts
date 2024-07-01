@@ -1,6 +1,6 @@
-import type { Flatten } from "../type-utils/common.js"
+import type { Flatten, IgnoreAny } from "../type-utils/common.js"
 import type { TSSQLType } from "../types.js"
-import type { AnyColumnType, SQLColumnSchema } from "./columns.js"
+import type { ColumnTypeDefinition, SQLColumnSchema } from "./columns.js"
 import type { SQLTableSchema } from "./database.js"
 
 /**
@@ -22,9 +22,8 @@ export type SQLRow<T extends SQLColumnSchema> = Flatten<
 /**
  * Extract the typescript type for a column
  */
-export type ColumnTSType<T extends AnyColumnType> = T["array"] extends true
-  ? TSSQLType<T["type"]>[]
-  : TSSQLType<T["type"]>
+export type ColumnTSType<T extends ColumnTypeDefinition<IgnoreAny>> =
+  T["array"] extends true ? TSSQLType<T["type"]>[] : TSSQLType<T["type"]>
 
 /**
  * Type to extract the required keys of a schema which are values that are not

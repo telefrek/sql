@@ -59,6 +59,9 @@ type AddTableToSchema<
     : never
   : never
 
+/**
+ * Utililty type to add a foreign key to a schema
+ */
 type AddForeignKeyToSchema<
   Database extends SQLDatabaseSchema,
   Name extends string,
@@ -81,6 +84,9 @@ type AddForeignKeyToSchema<
     : never
   : never
 
+/**
+ * Type to narrow types to SQLDatabaseSchemas
+ */
 type CheckSQLDatabaseSchema<Tables, Relations> =
   Tables extends SQLDatabaseTables
     ? Relations extends ForeignKeys
@@ -88,6 +94,13 @@ type CheckSQLDatabaseSchema<Tables, Relations> =
       : never
     : never
 
+/**
+ * Create a {@link DatabaseSchemaBuilder} from an existing schema or start an
+ * empty one
+ *
+ * @param current The current schema if it exists
+ * @returns A {@link DatabaseSchemaBuilder}
+ */
 export function createDatabaseSchema<
   Schema extends SQLDatabaseSchema = EmptyDatabaseSchema
 >(current?: Schema): DatabaseSchemaBuilder<Schema> {
@@ -111,6 +124,16 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
     builder: TableBuilderFn<TableSchema>
   ): AddTableToBuilder<TableSchema, Table, Schema>
 
+  /**
+   * Create a foreign key given between the source and destination tables with
+   * the given name
+   *
+   * @param name The name of the foreign key
+   * @param source The source table for the key
+   * @param destination The destination table for the key
+   * @param column The columns from the destination that match the source
+   * primary key
+   */
   addForeignKey<
     Name extends string,
     Source extends ForeignKeySourceTables<Schema["tables"]>,
@@ -130,6 +153,9 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
   >
 }
 
+/**
+ * Default implementation of the {@link DatabaseSchemaBuilder}
+ */
 class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
   implements DatabaseSchemaBuilder<Schema>
 {

@@ -14,9 +14,6 @@ export type StringKeys<T> = Extract<Keys<T>, string>
 
 /**
  * Creates a type that has the required subset properties of T
- *
- * @template T The superset type
- * @template K The keys from the subset
  */
 export type RequiredSubset<T, K extends keyof T> = Flatten<{
   [k in K]-?: Required<T>[k]

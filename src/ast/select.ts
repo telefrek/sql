@@ -1,4 +1,4 @@
-import type { OneOrMore } from "../type-utils/common.js"
+import type { IgnoreAny, OneOrMore } from "../type-utils/common.js"
 import type { ColumnReference } from "./columns.js"
 import type { LogicalExpression } from "./filtering.js"
 import type { NamedQuery } from "./named.js"
@@ -9,8 +9,7 @@ import type { TableReference } from "./tables.js"
  * chains that come from FROM clauses allowing queries which can have selects,
  * completing a circular loop.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNamedQuery = NamedQuery<any>
+type AnyNamedQuery = NamedQuery<IgnoreAny>
 
 /**
  * The supported join types

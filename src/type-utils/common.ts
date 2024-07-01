@@ -1,7 +1,5 @@
 /**
  * Simple type that returns itself
- *
- * @template T The type to return
  */
 type Identity<T> = T
 
@@ -11,6 +9,19 @@ type Identity<T> = T
  * @template T The complex type to flatten
  */
 export type Flatten<T> = Identity<{ [K in keyof T]: T[K] }>
+
+/**
+ * Utility type to track all places where are are intentionally using any to
+ * break things
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type IgnoreAny = any
+
+/**
+ * Utility type to track all places where are are intentionally using an empty definition
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type IgnoreEmpty = {}
 
 /**
  * Utility type to carry some invalid type information

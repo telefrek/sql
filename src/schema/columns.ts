@@ -1,5 +1,4 @@
-import type { Flatten } from "../type-utils/common.js"
-import type { StringKeys } from "../type-utils/object.js"
+import type { Flatten, IgnoreAny } from "../type-utils/common.js"
 import type {
   IncrementalSQLTypes,
   SQLBuiltinTypes,
@@ -8,49 +7,23 @@ import type {
 } from "../types.js"
 
 /**
- * This utility type is required for inferring the types of columns when doing
- * type narrorwing or infer extends SQLColumnSchema as examples
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnyColumnType = ColumnTypeDefinition<any>
-
-/**
- * Retrieve the valid set of keys where the column types match and there are no
- * potentially error prone definitions (like nullable) where keys wouldn't work
- */
-export type ValidForeignKeyTargets<
-  Source extends SQLColumnSchema,
-  SourceColumn extends StringKeys<Source>,
-  Destination extends SQLColumnSchema
-> = {
-  [K in StringKeys<Destination>]: Destination[K]["nullable"] extends true
-    ? never
-    : Destination[K]["type"] extends Source[SourceColumn]["type"]
-    ? K
-    : never
-}[StringKeys<Destination>]
-
-/**
  * Define a schema
  */
 export type SQLColumnSchema = {
-  [key: string]: AnyColumnType
+  [key: string]: ColumnTypeDefinition<IgnoreAny>
 }
 
 /**
  * The options for definitin a column
  */
-export type SQLColumnOptions<T extends SQLBuiltinTypes> = Omit<
-  ColumnTypeDefinition<T>,
-  "type"
->
+export type SQLColumnOptions<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
+  Omit<ColumnTypeDefinition<T>, "type">
 
 /**
  * The type information for a column
  */
-export type ColumnTypeDefinition<T extends SQLBuiltinTypes> = Flatten<
-  IncrementalType<T> & VariableType<T> & BaseColumnDefinition<T>
->
+export type ColumnTypeDefinition<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
+  Flatten<IncrementalType<T> & VariableType<T> & BaseColumnDefinition<T>>
 
 /**
  * A value or provider of a value
