@@ -1,6 +1,34 @@
 import type { Flatten, Invalid } from "./common.js"
 
 /**
+ * Clone the object
+ * @param original The original object to clone
+ * @returns A clone of the object
+ */
+export function clone<T, U = T extends Array<infer V> ? V : never>(
+  original: T
+): T {
+  return original instanceof Date
+    ? (new Date(original.getTime()) as T & Date)
+    : Array.isArray(original)
+    ? (original.map((item) => clone(item)) as T & U[])
+    : original && typeof original === "object"
+    ? (Object.getOwnPropertyNames(original) as (keyof T)[]).reduce<T>(
+        (o, prop) => {
+          Object.defineProperty(
+            o,
+            prop,
+            Object.getOwnPropertyDescriptor(original, prop)!
+          )
+          o[prop] = clone(original[prop])
+          return o
+        },
+        Object.create(Object.getPrototypeOf(original))
+      )
+    : original
+}
+
+/**
  * Get all the keys of type T
  */
 export type Keys<T> = {

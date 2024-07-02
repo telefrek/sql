@@ -125,6 +125,14 @@ export function createColumnSchemaBuilder<
 }
 
 /**
+ * A schema builder
+ */
+export type ColumnSchemaBuilderFn<
+  Schema extends SQLColumnSchema,
+  Result extends SQLColumnSchema
+> = (original: ColumnSchemaBuilder<Schema>) => ColumnSchemaBuilder<Result>
+
+/**
  * Create a {@link TableSchemaBuilder} for the given schema or start with an
  * empty one
  *
