@@ -64,5 +64,6 @@ describe("Schema building should create valid schemas", () => {
         .select("id", "amount").ast
 
     expect(queryAst).not.toBeUndefined()
+    expect(queryAst.query.from.alias).toBe("orders")
   })
 })
