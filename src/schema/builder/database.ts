@@ -10,6 +10,7 @@ import type {
   ForeignKey,
   ForeignKeyColumns,
   ForeignKeyReferenceTables,
+  GetPrimaryKeyColumns,
 } from "../keys.js"
 import { createTableSchemaBuilder, type TableSchemaBuilder } from "./table.js"
 
@@ -59,16 +60,21 @@ type AddForeignKeyToSchema<
   FK
 > = Database extends SQLDatabaseSchema<infer Tables, infer Keys>
   ? FK extends ForeignKey<
-      Tables,
-      infer Source,
-      infer Destination,
+      infer Reference,
+      infer ReferenceColumns,
+      infer Target,
       infer Columns
     >
     ? SQLDatabaseSchema<
         Tables,
         Flatten<
           Keys & {
-            [key in Name]: ForeignKey<Tables, Source, Destination, Columns>
+            [key in Name]: ForeignKey<
+              Reference,
+              ReferenceColumns,
+              Target,
+              Columns
+            >
           }
         >
       >
@@ -139,7 +145,12 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
     AddForeignKeyToSchema<
       Schema,
       Name,
-      ForeignKey<Schema["tables"], Reference, Target, Columns>
+      ForeignKey<
+        Reference,
+        GetPrimaryKeyColumns<Schema["tables"][Reference]>,
+        Target,
+        Columns
+      >
     >
   >
 }
@@ -203,7 +214,12 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
     AddForeignKeyToSchema<
       Schema,
       Name,
-      ForeignKey<Schema["tables"], Reference, Target, Columns>
+      ForeignKey<
+        Reference,
+        GetPrimaryKeyColumns<Schema["tables"][Reference]>,
+        Target,
+        Columns
+      >
     >
   > {
     const current = this._schema as Schema
@@ -223,7 +239,12 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
       AddForeignKeyToSchema<
         Schema,
         Name,
-        ForeignKey<Schema["tables"], Reference, Target, Columns>
+        ForeignKey<
+          Reference,
+          GetPrimaryKeyColumns<Schema["tables"][Reference]>,
+          Target,
+          Columns
+        >
       >
     >
   }

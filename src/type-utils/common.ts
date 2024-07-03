@@ -36,4 +36,6 @@ export type OneOrMore<T> = T | AtLeastOne<T>
 /**
  * Type to ensure spread operators have at least one element
  */
-export type AtLeastOne<T> = [T, ...T[]]
+export type AtLeastOne<T> = T extends [infer Next, ...infer Rest]
+  ? [Next, ...Rest]
+  : [T, ...T[]]

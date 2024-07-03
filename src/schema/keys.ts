@@ -133,21 +133,22 @@ export type GetPrimaryKey<Schema extends SQLTableSchema> =
       : never
     : never
 
+export type GetPrimaryKeyColumns<Schema extends SQLTableSchema> =
+  GetPrimaryKey<Schema>["column"] extends string[]
+    ? GetPrimaryKey<Schema>["column"]
+    : never
+
 /**
  * Defines a foreign key
  */
 export type ForeignKey<
-  Database extends SQLDatabaseTables,
-  Reference extends ForeignKeyReferenceTables<Database> = ForeignKeyReferenceTables<Database>,
-  Target extends StringKeys<Database> = StringKeys<Database>,
-  Columns extends ForeignKeyColumns<
-    Database,
-    Reference,
-    Target
-  > = ForeignKeyColumns<Database, Reference, Target>
+  Reference extends string = string,
+  ReferenceColumns extends string[] = string[],
+  Target extends string = string,
+  Columns extends string[] = string[]
 > = {
   reference: Reference
-  referenceColumns: GetPrimaryKey<Database[Reference]>["column"]
+  referenceColumns: ReferenceColumns
   target: Target
   targetColumns: Columns
 }

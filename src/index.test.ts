@@ -1,3 +1,5 @@
+import { createFromQueryBuilder } from "./query/builder/from.js"
+import { createContext } from "./query/context.js"
 import { TEST_DATABASE } from "./testUtils.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -52,5 +54,15 @@ describe("Schema building should create valid schemas", () => {
     expect(TEST_DATABASE.relations.orders_product_fk.referenceColumns[0]).toBe(
       "id"
     )
+  })
+
+  it("should foo", () => {
+    const queryAst = createFromQueryBuilder(
+      createContext(TEST_DATABASE).context
+    )
+      .from("orders")
+      .select("*").ast
+
+    expect(queryAst).not.toBeUndefined()
   })
 })

@@ -15,12 +15,17 @@ export function clone<T, U = T extends Array<infer V> ? V : never>(
     : original && typeof original === "object"
     ? (Object.getOwnPropertyNames(original) as (keyof T)[]).reduce<T>(
         (o, prop) => {
-          Object.defineProperty(
-            o,
-            prop,
-            Object.getOwnPropertyDescriptor(original, prop)!
-          )
+          const descriptor = Object.getOwnPropertyDescriptor(original, prop)!
+          Object.defineProperty(o, prop, {
+            ...descriptor,
+            writable: true, // Mark this as readable temporarily
+          })
           o[prop] = clone(original[prop])
+
+          // Refreeze if necessary
+          if (descriptor.writable) {
+            Object.freeze(o[prop])
+          }
           return o
         },
         Object.create(Object.getPrototypeOf(original))

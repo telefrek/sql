@@ -10,7 +10,11 @@ import type {
   SQLTableSchema,
 } from "../schema/database.js"
 import type { Flatten, IgnoreEmpty, Invalid } from "../type-utils/common.js"
-import { clone, type CheckDuplicateKey } from "../type-utils/object.js"
+import {
+  clone,
+  type CheckDuplicateKey,
+  type StringKeys,
+} from "../type-utils/object.js"
 
 /**
  * Create a new builder for the given database
@@ -18,7 +22,7 @@ import { clone, type CheckDuplicateKey } from "../type-utils/object.js"
  * @param database The database to use
  * @returns A new {@link QueryContextBuilder}
  */
-export function createBuilder<Database extends SQLDatabaseSchema>(
+export function createContext<Database extends SQLDatabaseSchema>(
   database: Database
 ): QueryContextBuilder<Database> {
   return new QueryContextBuilder<Database>({
@@ -34,7 +38,7 @@ export function createBuilder<Database extends SQLDatabaseSchema>(
  * @param context The {@link QueryContext} to use
  * @returns A new {@link QueryContextBuilder}
  */
-export function modifyBuilder<Context extends QueryContext>(
+export function modifyContext<Context extends QueryContext>(
   context: Context
 ): QueryContextBuilder<Context["database"], Context> {
   return new QueryContextBuilder<Context["database"], Context>(context)
@@ -53,10 +57,15 @@ export type QueryContext<
   returning: Returning
 }
 
+export type GetContextTables<Context extends QueryContext> =
+  Context extends QueryContext<infer Database, infer Active, infer _>
+    ? StringKeys<Database["tables"]> | StringKeys<Active>
+    : never
+
 /**
  * Class used for manipulating {@link QueryContext} objects
  */
-export class QueryContextBuilder<
+class QueryContextBuilder<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database> = QueryContext<Database>
 > {
@@ -94,6 +103,8 @@ export class QueryContextBuilder<
 
     // Add the table
     Object.defineProperty(this._context["active"], table as string, {
+      enumerable: true,
+      writable: false,
       value: { columns: schema },
     })
 
@@ -144,7 +155,11 @@ export class QueryContextBuilder<
     Database,
     ChangeContextReturn<Database, Context, Schema>
   > {
-    Object.defineProperty(this._context, "returning", { value: schema })
+    Object.defineProperty(this._context, "returning", {
+      enumerable: true,
+      writable: false,
+      value: schema,
+    })
 
     return this as unknown as QueryContextBuilder<
       Database,
@@ -164,21 +179,33 @@ type CheckDuplicateTableReference<
   : Invalid<"Table reference alias conflicts with existing table name">
 
 /**
+ * Utility type for retrieving the table schema from the context
+ */
+export type GetContextTableSchema<
+  Context extends QueryContext,
+  Table extends string
+> = Context extends QueryContext<infer Database, infer Active, infer _>
+  ? Table extends StringKeys<Active>
+    ? Active[Table]["columns"]
+    : Table extends StringKeys<Database["tables"]>
+    ? Database["tables"][Table]["columns"]
+    : never
+  : never
+
+/**
  * Utility type that adds the given table and schema to the active context
  */
-type ActivateTableContext<
+export type ActivateTableContext<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database>,
   Table extends string,
-  Schema extends SQLColumnSchema
+  Schema extends SQLColumnSchema = GetContextTableSchema<Context, Table>
 > = Context extends QueryContext<Database, infer Active, infer Returning>
-  ? Active extends SQLDatabaseTables
-    ? QueryContext<
-        Database,
-        Flatten<Active & { [key in Table]: SQLTableSchema<Schema> }>,
-        Returning
-      >
-    : never
+  ? QueryContext<
+      Database,
+      Flatten<Active & { [key in Table]: SQLTableSchema<Schema> }>,
+      Returning
+    >
   : never
 
 /**
