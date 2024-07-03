@@ -122,6 +122,8 @@ describe("SQL databases should validate queries", () => {
   it("Should allow creating a query from a raw string", () => {
     const database = getDatabase(TEST_DATABASE)
     expect(database).not.toBeUndefined()
-    database.parseSQL("SELECT * FROM orders")
+    const query = database.parseSQL("SELECT * FROM orders")
+    expect(query.query.columns).toBe("*")
+    expect(query.query.from.table).toBe("orders")
   })
 })

@@ -1,6 +1,7 @@
 import type { Invalid } from "../../type-utils/common.js"
 import type { Dec, Inc } from "../../type-utils/numbers.js"
 import type { Join, Trim } from "../../type-utils/strings.js"
+import { NORMALIZE_TARGETS } from "./keywords.js"
 
 /**
  * Ensure a query has a known structure with keywords uppercase and consistent spacing
@@ -90,6 +91,36 @@ export type SplitSQL<
   : EqualParenthesis<`${S} ${T & string}`> extends true
   ? [Trim<`${S} ${T & string}`>]
   : Invalid<"Unequal parenthesis">
+
+export function normalize<T extends string>(s: T): NormalizeQuery<T> {
+  return s
+    .split(/ |\n|(?=[,()])|(?<=[,()])/g)
+    .filter((s) => s.length > 0)
+    .map((s) => normalizeWord(s.trim()))
+    .join(" ") as NormalizeQuery<T>
+}
+
+export function normalizeWord(s: string): string {
+  return NORMALIZE_TARGETS.indexOf(s.toUpperCase()) < 0 ? s : s.toUpperCase()
+}
+
+export function takeUntil(tokens: string[], filters: string[]): string[] {
+  const ret = []
+
+  let cnt = 0
+
+  while (tokens.length > 0 && filters.indexOf(tokens[0]) < 0 && cnt === 0) {
+    const token = tokens.shift()!
+    ret.push(token)
+    if (token === "(") {
+      cnt++
+    } else if (token === ")") {
+      cnt--
+    }
+  }
+
+  return ret
+}
 
 /**
  * Test if ( matches ) counts

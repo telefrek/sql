@@ -1,15 +1,16 @@
 import type { ColumnReference } from "../../ast/columns.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { Flatten, Invalid } from "../../type-utils/common.js"
-import type { ParseColumnReference } from "./columns.js"
-import type { FromKeywords } from "./keywords.js"
-import type {
-  ExtractUntil,
-  NextToken,
-  SplitSQL,
-  StartsWith,
+import { parseSelectedColumns, type ParseColumnReference } from "./columns.js"
+import { FROM_KEYS, type FromKeywords } from "./keywords.js"
+import {
+  takeUntil,
+  type ExtractUntil,
+  type NextToken,
+  type SplitSQL,
+  type StartsWith,
 } from "./normalize.js"
-import type { ParseTableReference } from "./table.js"
+import { parseFrom, type ParseTableReference } from "./table.js"
 
 /**
  * Parse the next select statement from the string
@@ -20,6 +21,14 @@ export type ParseSelect<T> = NextToken<T> extends [
 ]
   ? CheckSelect<ExtractColumns<Right>>
   : never
+
+export function parseSelectClause(tokens: string[]): SelectClause {
+  return {
+    type: "SelectClause",
+    ...parseSelectedColumns(takeUntil(tokens, ["FROM"])),
+    ...parseFrom(takeUntil(tokens, FROM_KEYS)),
+  }
+}
 
 /**
  * Check to get the type information
