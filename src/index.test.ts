@@ -98,4 +98,19 @@ describe("Query building should match parsers", () => {
     expect(query.query.from.alias).toBe("p")
     expect(query.query.from.table).toBe("products")
   })
+
+  it("Should allow a simple select statement with a column alias", () => {
+    const query: ParseSQL<"SELECT id as user_id FROM users"> =
+      createQueryBuilder(TEST_DATABASE)
+        .select.from("users")
+        .select("id AS user_id").ast
+    expect(query).not.toBeUndefined()
+    expect(query.query.columns.user_id.reference.column).toBe("id")
+  })
+
+  it.skip("Should allow a simple select statement with a column and table alias", () => {
+    // We won't run this test for now since it only applies to non-unique
+    // columns.  We want to limit the number of combinations of table.column or
+    // column types for the select clause since it causes a LOT of type explosion
+  })
 })

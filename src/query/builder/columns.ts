@@ -105,6 +105,7 @@ class DefaultSelectedColumnsBuilder<
   }
 }
 
+// TODO: Only allow non-table qualified for unique...
 /**
  * Extract the columns from an active table schema
  */

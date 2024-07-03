@@ -15,6 +15,7 @@ import {
   type CheckDuplicateKey,
   type StringKeys,
 } from "../type-utils/object.js"
+import type { ParseTableReference } from "./parser/table.js"
 
 /**
  * Create a new builder for the given database
@@ -93,7 +94,7 @@ class QueryContextBuilder<
     builder: ColumnSchemaBuilderFn<IgnoreEmpty, Updated> | Updated
   ): QueryContextBuilder<
     Database,
-    ActivateTableContext<Context, Table, Updated>
+    ActivateTableContext<Context, ParseTableReference<Table>, Updated>
   > {
     // Modify the schema
     const schema =
@@ -111,7 +112,7 @@ class QueryContextBuilder<
     // Ignore the typing we know it is correct here
     return this as unknown as QueryContextBuilder<
       Database,
-      ActivateTableContext<Context, Table, Updated>
+      ActivateTableContext<Context, ParseTableReference<Table>, Updated>
     >
   }
 
@@ -129,7 +130,7 @@ class QueryContextBuilder<
     Database,
     ActivateTableContext<
       Context,
-      Table["alias"],
+      Table,
       Database["tables"][Table["table"]]["columns"]
     >
   > {
@@ -196,8 +197,11 @@ export type GetContextTableSchema<
  */
 export type ActivateTableContext<
   Context extends QueryContext,
-  Table extends string,
-  Schema extends SQLColumnSchema = GetContextTableSchema<Context, Table>
+  Table extends TableReference,
+  Schema extends SQLColumnSchema = GetContextTableSchema<
+    Context,
+    Table["table"]
+  >
 > = Context extends QueryContext<
   Context["database"],
   infer Active,
@@ -206,7 +210,7 @@ export type ActivateTableContext<
   ? QueryContext<
       Context["database"],
       CheckSQLTables<
-        Flatten<Active & { [key in Table]: SQLTableSchema<Schema> }>
+        Flatten<Active & { [key in Table["alias"]]: SQLTableSchema<Schema> }>
       >,
       Returning
     >

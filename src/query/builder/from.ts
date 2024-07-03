@@ -18,7 +18,7 @@ export interface FromQueryBuilder<Context extends QueryContext> {
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): SelectedColumnsBuilder<
-    ActivateTableContext<Context, Table>,
+    ActivateTableContext<Context, ParseTableReference<Table>>,
     ParseTableReference<Table>
   >
 }
@@ -43,12 +43,16 @@ class DefaultFromQueryBuilder<
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): SelectedColumnsBuilder<
-    ActivateTableContext<Context, Table, GetContextTableSchema<Context, Table>>,
+    ActivateTableContext<
+      Context,
+      ParseTableReference<Table>,
+      GetContextTableSchema<Context, Table>
+    >,
     ParseTableReference<Table>
   > {
     let context = this._context as unknown as ActivateTableContext<
       Context,
-      Table,
+      ParseTableReference<Table>,
       GetContextTableSchema<Context, Table>
     >
 
@@ -62,7 +66,7 @@ class DefaultFromQueryBuilder<
       context = modifyContext(context).copy(reference as IgnoreAny)
         .context as unknown as ActivateTableContext<
         Context,
-        Table,
+        ParseTableReference<Table>,
         GetContextTableSchema<Context, Table>
       >
     }
