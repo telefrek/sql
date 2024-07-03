@@ -27,7 +27,7 @@ export interface SelectedColumnsBuilder<
   Context extends QueryContext = QueryContext,
   Table extends TableReference = TableReference
 > {
-  "select_*": SelectBuilder<Context, VerifyColumns<"*">, Table>
+  "*": SelectBuilder<Context, VerifyColumns<"*">, Table>
   select<
     Columns extends AllowAliasing<GetTableColumns<Context, Table["alias"]>>[]
   >(
@@ -65,12 +65,7 @@ class DefaultSelectedColumnsBuilder<
     this._from = from
   }
 
-  get "select_*"(): SelectBuilder<
-    Context,
-    "*",
-    Table,
-    SelectClause<"*", Table>
-  > {
+  get "*"(): SelectBuilder<Context, "*", Table, SelectClause<"*", Table>> {
     return {
       ast: {
         type: "SQLQuery",
