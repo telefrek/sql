@@ -17,4 +17,4 @@ type CheckSQL<Query> = [Query] extends [never]
   ? Invalid<"not a parsable query">
   : Query extends QueryClause
   ? SQLQuery<Query>
-  : "Query"
+  : Query

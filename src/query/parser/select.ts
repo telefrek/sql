@@ -14,7 +14,10 @@ import type { ParseTableReference } from "./table.js"
 /**
  * Parse the next select statement from the string
  */
-export type ParseSelect<T> = NextToken<T> extends ["SELECT", infer Right]
+export type ParseSelect<T> = NextToken<T> extends [
+  "SELECT",
+  infer Right extends string
+]
   ? CheckSelect<ExtractColumns<Right>>
   : never
 
@@ -25,25 +28,59 @@ type CheckSelect<T> = Flatten<T> extends Partial<
   SelectClause<infer Columns, infer From>
 >
   ? Flatten<SelectClause<Columns, From>>
-  : Invalid<"Not a valid SELECT statement">
+  : T
+
+type CheckNoSpaces<Column extends string> =
+  Column extends `${infer _Begin} ${infer _End}`
+    ? Invalid<`Column missing commas: ${Column}`>
+    : Column extends ""
+    ? Invalid<"Invalid empty column">
+    : true
+
+type CheckColumnIsValid<T extends string> =
+  T extends `${infer Column} AS ${infer Alias}`
+    ? CheckNoSpaces<Column> extends true
+      ? CheckNoSpaces<Alias> extends true
+        ? true
+        : CheckNoSpaces<Alias>
+      : CheckNoSpaces<Column>
+    : CheckNoSpaces<T>
+
+type CheckColumnSyntax<Columns> = Columns extends [
+  infer Next extends string,
+  ...infer Rest
+]
+  ? Rest extends never[]
+    ? CheckColumnIsValid<Next>
+    : CheckColumnIsValid<Next> extends true
+    ? CheckColumnSyntax<Rest>
+    : CheckColumnIsValid<Next>
+  : Invalid<"No columns found">
+
+/**
+ * Split by commas and verify no invalid syntax
+ */
+type CheckColumns<T extends string> = CheckColumnSyntax<SplitSQL<T>>
 
 /**
  * Parse out the columns and then process any from information
  */
-type ExtractColumns<T> = ExtractUntil<T, "FROM"> extends [
-  infer Columns,
-  infer From
+type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
+  infer Columns extends string,
+  infer From extends string
 ]
-  ? StartsWith<From, "FROM"> extends true
-    ? Columns extends "*"
-      ? {
-          columns: Columns
-        } & ExtractFrom<From>
-      : {
-          columns: ParseColumns<SplitSQL<Columns>>
-        } & ExtractFrom<From>
-    : never
-  : never
+  ? CheckColumns<Columns> extends true
+    ? StartsWith<From, "FROM"> extends true
+      ? Columns extends "*"
+        ? {
+            columns: Columns
+          } & ExtractFrom<From>
+        : {
+            columns: ParseColumns<SplitSQL<Columns>>
+          } & ExtractFrom<From>
+      : Invalid<"Failed to parse columns">
+    : CheckColumns<Columns>
+  : Invalid<"Missing FROM">
 
 /**
  * Parse the columns that were extracted

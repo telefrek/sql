@@ -1,5 +1,4 @@
-import { createFromQueryBuilder } from "./query/builder/from.js"
-import { createContext } from "./query/context.js"
+import { createQueryBuilder } from "./query/builder/query.js"
 import type { ParseSQL } from "./query/parser/query.js"
 import { TEST_DATABASE } from "./testUtils.js"
 import { SQLBuiltinTypes } from "./types.js"
@@ -56,14 +55,47 @@ describe("Schema building should create valid schemas", () => {
       "id"
     )
   })
+})
 
-  it("should foo", () => {
-    const queryAst: ParseSQL<"SELECT id, amount FROM orders"> =
-      createFromQueryBuilder(createContext(TEST_DATABASE).context)
-        .from("orders")
-        .select("id", "amount").ast
+/**
+ * Most of these tests only validate not-undefined since they are a check
+ * against the Invalid type returned from the type system itself.
+ */
+describe("Invalid queries should be rejected", () => {
+  describe("Invalid select should be rejected", () => {
+    it("Should reject a select with no from", () => {
+      const bad: ParseSQL<"SELECT column"> = "Missing FROM"
+      expect(bad).not.toBeUndefined()
+    })
 
-    expect(queryAst).not.toBeUndefined()
-    expect(queryAst.query.from.alias).toBe("orders")
+    it("Should reject a select with columns missing commas", () => {
+      const bad: ParseSQL<"SELECT col col col FROM table"> =
+        "Column missing commas: col col col"
+      expect(bad).not.toBeUndefined()
+    })
+
+    it("Should reject a select with no columns", () => {
+      const bad: ParseSQL<"SELECT FROM table"> = "Invalid empty column"
+      expect(bad).not.toBeUndefined()
+    })
+  })
+})
+
+describe("Query building should match parsers", () => {
+  it("Should identify a simple select statement", () => {
+    const query: ParseSQL<"SELECT * FROM orders"> =
+      createQueryBuilder(TEST_DATABASE).select.from("orders")["*"].ast
+    expect(query).not.toBeUndefined()
+    expect(query.query.columns).toBe("*")
+    expect(query.query.from.alias).toBe("orders")
+  })
+
+  it("Should allow a simple select statement with from alias", () => {
+    const query: ParseSQL<"SELECT * from products as p"> =
+      createQueryBuilder(TEST_DATABASE).select.from("products AS p")["*"].ast
+    expect(query).not.toBeUndefined()
+    expect(query.query.columns).toBe("*")
+    expect(query.query.from.alias).toBe("p")
+    expect(query.query.from.table).toBe("products")
   })
 })
