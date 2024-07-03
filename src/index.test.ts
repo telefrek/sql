@@ -1,3 +1,4 @@
+import { getDatabase } from "./index.js"
 import { createQueryBuilder } from "./query/builder/query.js"
 import type { ParseSQL } from "./query/parser/query.js"
 import { TEST_DATABASE } from "./testUtils.js"
@@ -40,11 +41,13 @@ describe("Schema building should create valid schemas", () => {
     // Just check tables and keys
     expect(TEST_DATABASE.tables.products).not.toBeUndefined()
     expect(TEST_DATABASE.tables.products.primaryKey).not.toBeUndefined()
-    expect(TEST_DATABASE.tables.products.primaryKey.column).toBe("id")
+    expect(TEST_DATABASE.tables.products.primaryKey.column).toMatchObject([
+      "id",
+    ])
 
     expect(TEST_DATABASE.tables.users).not.toBeUndefined()
     expect(TEST_DATABASE.tables.users.primaryKey).not.toBeUndefined()
-    expect(TEST_DATABASE.tables.users.primaryKey.column).toBe("id")
+    expect(TEST_DATABASE.tables.users.primaryKey.column).toMatchObject(["id"])
 
     expect(TEST_DATABASE.relations.orders_product_fk.reference).toBe("products")
     expect(TEST_DATABASE.relations.orders_product_fk.target).toBe("orders")
@@ -108,9 +111,17 @@ describe("Query building should match parsers", () => {
     expect(query.query.columns.user_id.reference.column).toBe("id")
   })
 
-  it.skip("Should allow a simple select statement with a column and table alias", () => {
+  it.skip("Should allow a simple select statement with a column and table alias that is joined", () => {
     // We won't run this test for now since it only applies to non-unique
-    // columns.  We want to limit the number of combinations of table.column or
+    // columns when we join.  We want to limit the number of combinations of table.column or
     // column types for the select clause since it causes a LOT of type explosion
+  })
+})
+
+describe("SQL databases should validate queries", () => {
+  it("Should allow creating a query from a raw string", () => {
+    const database = getDatabase(TEST_DATABASE)
+    expect(database).not.toBeUndefined()
+    database.parseSQL("SELECT * FROM orders")
   })
 })

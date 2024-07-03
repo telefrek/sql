@@ -6,9 +6,12 @@ import type { ParseSelect } from "./select.js"
 /**
  * Type to parse a SQL string into an AST
  */
-export type ParseSQL<T extends string> = CheckSQL<
-  ParseSelect<NormalizeQuery<T>>
->
+export type ParseSQL<T extends string> = CheckSQL<ParseQuery<T>>
+
+/**
+ * Type to parse a query segment
+ */
+export type ParseQuery<T extends string> = ParseSelect<NormalizeQuery<T>>
 
 /**
  * Validate the query structure or pass through the likely Invalid
