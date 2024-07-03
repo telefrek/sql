@@ -1,5 +1,6 @@
 import { createFromQueryBuilder } from "./query/builder/from.js"
 import { createContext } from "./query/context.js"
+import type { ParseSQL } from "./query/parser/query.js"
 import { TEST_DATABASE } from "./testUtils.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -57,11 +58,10 @@ describe("Schema building should create valid schemas", () => {
   })
 
   it("should foo", () => {
-    const queryAst = createFromQueryBuilder(
-      createContext(TEST_DATABASE).context
-    )
-      .from("orders")
-      .select("id", "amount").ast
+    const queryAst: ParseSQL<"SELECT id, amount FROM orders"> =
+      createFromQueryBuilder(createContext(TEST_DATABASE).context)
+        .from("orders")
+        .select("id", "amount").ast
 
     expect(queryAst).not.toBeUndefined()
   })
