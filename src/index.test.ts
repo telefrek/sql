@@ -61,7 +61,7 @@ describe("Schema building should create valid schemas", () => {
       createContext(TEST_DATABASE).context
     )
       .from("orders")
-      .select("*").ast
+      .select("id", "amount").ast
 
     expect(queryAst).not.toBeUndefined()
   })

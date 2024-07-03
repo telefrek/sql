@@ -93,7 +93,7 @@ class QueryContextBuilder<
     builder: ColumnSchemaBuilderFn<IgnoreEmpty, Updated> | Updated
   ): QueryContextBuilder<
     Database,
-    ActivateTableContext<Database, Context, Table, Updated>
+    ActivateTableContext<Context, Table, Updated>
   > {
     // Modify the schema
     const schema =
@@ -111,7 +111,7 @@ class QueryContextBuilder<
     // Ignore the typing we know it is correct here
     return this as unknown as QueryContextBuilder<
       Database,
-      ActivateTableContext<Database, Context, Table, Updated>
+      ActivateTableContext<Context, Table, Updated>
     >
   }
 
@@ -128,7 +128,6 @@ class QueryContextBuilder<
   ): QueryContextBuilder<
     Database,
     ActivateTableContext<
-      Database,
       Context,
       Table["alias"],
       Database["tables"][Table["table"]]["columns"]
@@ -196,17 +195,24 @@ export type GetContextTableSchema<
  * Utility type that adds the given table and schema to the active context
  */
 export type ActivateTableContext<
-  Database extends SQLDatabaseSchema,
-  Context extends QueryContext<Database>,
+  Context extends QueryContext,
   Table extends string,
   Schema extends SQLColumnSchema = GetContextTableSchema<Context, Table>
-> = Context extends QueryContext<Database, infer Active, infer Returning>
+> = Context extends QueryContext<
+  Context["database"],
+  infer Active,
+  infer Returning
+>
   ? QueryContext<
-      Database,
-      Flatten<Active & { [key in Table]: SQLTableSchema<Schema> }>,
+      Context["database"],
+      CheckSQLTables<
+        Flatten<Active & { [key in Table]: SQLTableSchema<Schema> }>
+      >,
       Returning
     >
   : never
+
+type CheckSQLTables<T> = T extends SQLDatabaseTables ? T : never
 
 /**
  * Change the context return type

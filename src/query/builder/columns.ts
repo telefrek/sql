@@ -9,7 +9,7 @@ import type {
   SQLDatabaseSchema,
   SQLTableSchema,
 } from "../../schema/database.js"
-import type { AtLeastOne, Flatten } from "../../type-utils/common.js"
+import type { Flatten } from "../../type-utils/common.js"
 import type { StringKeys } from "../../type-utils/object.js"
 import {
   ALIAS_REGEX,
@@ -24,18 +24,15 @@ import type { SelectBuilder } from "./select.js"
  * Interface that can provide the columns for a select builder
  */
 export interface SelectedColumnsBuilder<
-  Database extends SQLDatabaseSchema = SQLDatabaseSchema,
-  Context extends QueryContext<Database> = QueryContext<Database>,
+  Context extends QueryContext = QueryContext,
   Table extends TableReference = TableReference
 > {
-  select(
-    columns: "*"
-  ): SelectBuilder<Database, Context, VerifyColumns<"*">, Table>
+  "select_*": SelectBuilder<Context, VerifyColumns<"*">, Table>
   select<
     Columns extends AllowAliasing<GetTableColumns<Context, Table["alias"]>>[]
   >(
-    ...columns: AtLeastOne<Columns>
-  ): SelectBuilder<Database, Context, VerifyColumns<Columns>, Table>
+    ...columns: Columns
+  ): SelectBuilder<Context, VerifyColumns<Columns>, Table>
 }
 
 /**
@@ -47,10 +44,7 @@ export interface SelectedColumnsBuilder<
 export function createSelectedColumnsBuilder<
   Context extends QueryContext,
   Table extends TableReference
->(
-  context: Context,
-  from: Table
-): SelectedColumnsBuilder<Context["database"], Context, Table> {
+>(context: Context, from: Table): SelectedColumnsBuilder<Context, Table> {
   return new DefaultSelectedColumnsBuilder(context, from)
 }
 
@@ -61,7 +55,7 @@ class DefaultSelectedColumnsBuilder<
   Database extends SQLDatabaseSchema = SQLDatabaseSchema,
   Context extends QueryContext<Database> = QueryContext<Database>,
   Table extends TableReference = TableReference
-> implements SelectedColumnsBuilder<Database, Context, Table>
+> implements SelectedColumnsBuilder<Context, Table>
 {
   private _context: Context
   private _from: Table
@@ -71,57 +65,45 @@ class DefaultSelectedColumnsBuilder<
     this._from = from
   }
 
-  select(
-    columns: "*"
-  ): SelectBuilder<Database, Context, "*", Table, SelectClause<"*", Table>>
-  select<Columns extends GetTableColumns<Context, Table["alias"]>>(
-    first: Columns,
-    ...rest: Columns[]
-  ): SelectBuilder<Database, Context, "*", Table, SelectClause<"*", Table>>
-  select<
-    Columns extends GetTableColumns<Context, Table["alias"]> | "*",
-    Selected extends VerifyColumns<Columns>
-  >(
-    first: Columns,
-    ...rest: Columns[]
-  ): SelectBuilder<
-    Database,
+  get "select_*"(): SelectBuilder<
     Context,
-    Selected,
+    "*",
     Table,
-    SelectClause<Selected, Table>
+    SelectClause<"*", Table>
   > {
-    let columns: unknown = "*"
-
-    if (rest.length > 0) {
-      columns = [
-        buildColumnReference(first),
-        ...rest.map((r) => buildColumnReference(r)),
-      ].reduce((o, r) => {
-        Object.defineProperty(o, r.alias as string, {
-          enumerable: true,
-          value: r,
-          writable: false,
-        })
-        return o
-      }, {})
-    } else if (first !== "*") {
-      const ref = buildColumnReference(first)
-      columns = {}
-      Object.defineProperty(columns, ref.alias, {
-        enumerable: true,
-        writable: false,
-        value: ref,
-      })
-    }
-
     return {
       ast: {
         type: "SQLQuery",
         query: {
           type: "SelectClause",
           from: this._from,
-          columns: columns as Selected,
+          columns: "*",
+        },
+      },
+    }
+  }
+
+  select<
+    Columns extends AllowAliasing<GetTableColumns<Context, Table["alias"]>>[]
+  >(
+    ...columns: Columns
+  ): SelectBuilder<Context, VerifyColumns<Columns>, Table> {
+    return {
+      ast: {
+        type: "SQLQuery",
+        query: {
+          type: "SelectClause",
+          from: this._from,
+          columns: [
+            ...columns.map((r) => buildColumnReference(r as unknown as string)),
+          ].reduce((o, r) => {
+            Object.defineProperty(o, r.alias as string, {
+              enumerable: true,
+              value: r,
+              writable: false,
+            })
+            return o
+          }, {}) as VerifyColumns<Columns>,
         },
       },
     }
@@ -131,11 +113,13 @@ class DefaultSelectedColumnsBuilder<
 /**
  * Extract the columns from an active table schema
  */
-type GetTableColumns<
+export type GetTableColumns<
   Context extends QueryContext,
   Table extends string
 > = Context extends QueryContext<infer _DB, infer Active, infer _Returning>
   ? Active[Table] extends SQLTableSchema<infer Schema, infer _Key>
+    ? StringKeys<Schema>
+    : Active[Table] extends SQLTableSchema<infer Schema>
     ? StringKeys<Schema>
     : never
   : never

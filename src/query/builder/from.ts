@@ -14,29 +14,25 @@ import {
   type SelectedColumnsBuilder,
 } from "./columns.js"
 
-export interface FromQueryBuilder<
-  Database extends SQLDatabaseSchema,
-  Context extends QueryContext<Database>
-> {
+export interface FromQueryBuilder<Context extends QueryContext> {
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): SelectedColumnsBuilder<
-    Database,
-    ActivateTableContext<Database, Context, Table>,
+    ActivateTableContext<Context, Table>,
     ParseTableReference<Table>
   >
 }
 
 export function createFromQueryBuilder<Context extends QueryContext>(
   context: Context
-): FromQueryBuilder<Context["database"], Context> {
+): FromQueryBuilder<Context> {
   return new DefaultFromQueryBuilder(context)
 }
 
 class DefaultFromQueryBuilder<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database>
-> implements FromQueryBuilder<Database, Context>
+> implements FromQueryBuilder<Context>
 {
   private _context: Context
 
@@ -47,17 +43,10 @@ class DefaultFromQueryBuilder<
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): SelectedColumnsBuilder<
-    Database,
-    ActivateTableContext<
-      Database,
-      Context,
-      Table,
-      GetContextTableSchema<Context, Table>
-    >,
+    ActivateTableContext<Context, Table, GetContextTableSchema<Context, Table>>,
     ParseTableReference<Table>
   > {
     let context = this._context as unknown as ActivateTableContext<
-      Database,
       Context,
       Table,
       GetContextTableSchema<Context, Table>
@@ -70,10 +59,8 @@ class DefaultFromQueryBuilder<
       typeof context.active === "object" &&
       !(reference.alias in context.active)
     ) {
-      context = modifyContext(context).copy(
-        reference as IgnoreAny
-      ) as unknown as ActivateTableContext<
-        Database,
+      context = modifyContext(context).copy(reference as IgnoreAny)
+        .context as unknown as ActivateTableContext<
         Context,
         Table,
         GetContextTableSchema<Context, Table>
