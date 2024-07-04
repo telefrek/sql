@@ -1,6 +1,5 @@
-import { getDatabase } from "./index.js"
-import { createQueryBuilder } from "./query/builder/query.js"
-import type { ParseSQL } from "./query/parser/query.js"
+import type { ParseSQL } from "./index.js"
+import { createQueryBuilder, getDatabase } from "./index.js"
 import { TEST_DATABASE } from "./testUtils.js"
 import { SQLBuiltinTypes } from "./types.js"
 
