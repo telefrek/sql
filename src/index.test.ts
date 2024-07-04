@@ -1,7 +1,6 @@
 import type { ParseSQL } from "./index.js"
-import { createQueryBuilder, getDatabase } from "./index.js"
+import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
 import { TEST_DATABASE } from "./testUtils.js"
-import { SQLBuiltinTypes } from "./types.js"
 
 describe("Schema building should create valid schemas", () => {
   // Test to verify that our schema actually matches what we defined as types
