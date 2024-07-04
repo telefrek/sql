@@ -58,10 +58,48 @@ export type QueryContext<
   returning: Returning
 }
 
+/**
+ * Retrieve the full set of tables that are available (base as well as active)
+ */
 export type GetContextTables<Context extends QueryContext> =
   Context extends QueryContext<infer Database, infer Active, infer _>
     ? StringKeys<Database["tables"]> | StringKeys<Active>
     : never
+
+export type GetSelectableColumns<Context extends QueryContext> =
+  Context extends QueryContext<infer _DB, infer Active, infer _Ret>
+    ? GetColumnNames<Active>
+    : never
+
+type GetColumnNames<Schema extends SQLDatabaseTables> = {
+  [Table in StringKeys<Schema>]: {
+    [Column in StringKeys<Schema[Table]["columns"]>]: [Column] extends [
+      GetUniqueColumns<Schema>
+    ]
+      ? Column
+      : `${Table}.${Column}`
+  }[StringKeys<Schema[Table]["columns"]>]
+}[StringKeys<Schema>]
+
+type GetOtherColumns<
+  Schema extends SQLDatabaseTables,
+  Table extends keyof Schema
+> = {
+  [Key in keyof Schema]: Key extends Table
+    ? never
+    : StringKeys<Schema[Table]["columns"]>
+}[keyof Schema]
+
+type GetUniqueColumns<Schema extends SQLDatabaseTables> = {
+  [Key in keyof Schema]: UniqueKeys<
+    StringKeys<Schema[Key]["columns"]>,
+    GetOtherColumns<Schema, Key>
+  >
+}[keyof Schema]
+
+type UniqueKeys<Left extends string, Right extends string> = {
+  [V in Left]: [V] extends [Right] ? never : V
+}[Left]
 
 /**
  * Class used for manipulating {@link QueryContext} objects

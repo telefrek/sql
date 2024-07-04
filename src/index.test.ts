@@ -87,7 +87,7 @@ describe("Invalid queries should be rejected", () => {
 describe("Query building should match parsers", () => {
   it("Should identify a simple select statement", () => {
     const query: ParseSQL<"SELECT * FROM orders"> =
-      createQueryBuilder(TEST_DATABASE).select.from("orders")["*"].ast
+      createQueryBuilder(TEST_DATABASE).select.from("orders").ast
     expect(query).not.toBeUndefined()
     expect(query.query.columns).toBe("*")
     expect(query.query.from.alias).toBe("orders")
@@ -95,7 +95,7 @@ describe("Query building should match parsers", () => {
 
   it("Should allow a simple select statement with from alias", () => {
     const query: ParseSQL<"SELECT * from products as p"> =
-      createQueryBuilder(TEST_DATABASE).select.from("products AS p")["*"].ast
+      createQueryBuilder(TEST_DATABASE).select.from("products AS p").ast
     expect(query).not.toBeUndefined()
     expect(query.query.columns).toBe("*")
     expect(query.query.from.alias).toBe("p")
@@ -106,7 +106,7 @@ describe("Query building should match parsers", () => {
     const query: ParseSQL<"SELECT id as user_id FROM users"> =
       createQueryBuilder(TEST_DATABASE)
         .select.from("users")
-        .select("id AS user_id").ast
+        .columns("id AS user_id").ast
     expect(query).not.toBeUndefined()
     expect(query.query.columns.user_id.reference.column).toBe("id")
   })

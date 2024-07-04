@@ -3,20 +3,18 @@ import type {
   TableColumnReference,
   UnboundColumnReference,
 } from "../../ast/columns.js"
+import type { SQLQuery } from "../../ast/queries.js"
 import type { SelectClause, SelectColumns } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
-import type {
-  SQLDatabaseSchema,
-  SQLTableSchema,
-} from "../../schema/database.js"
+import type { SQLDatabaseSchema } from "../../schema/database.js"
 import type { Flatten } from "../../type-utils/common.js"
-import type { StringKeys } from "../../type-utils/object.js"
 import {
   ALIAS_REGEX,
   TABLE_BOUND_REGEX,
   type AllowAliasing,
+  type QueryAST,
 } from "../common.js"
-import type { QueryContext } from "../context.js"
+import type { GetSelectableColumns, QueryContext } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
 import type { SelectBuilder } from "./select.js"
 
@@ -26,11 +24,8 @@ import type { SelectBuilder } from "./select.js"
 export interface SelectedColumnsBuilder<
   Context extends QueryContext = QueryContext,
   Table extends TableReference = TableReference
-> {
-  "*": SelectBuilder<Context, VerifyColumns<"*">, Table>
-  select<
-    Columns extends AllowAliasing<GetTableColumns<Context, Table["alias"]>>[]
-  >(
+> extends QueryAST<SelectClause<"*", Table>> {
+  columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: Columns
   ): SelectBuilder<Context, VerifyColumns<Columns>, Table>
 }
@@ -65,22 +60,18 @@ class DefaultSelectedColumnsBuilder<
     this._from = from
   }
 
-  get "*"(): SelectBuilder<Context, "*", Table, SelectClause<"*", Table>> {
+  get ast(): SQLQuery<SelectClause<"*", Table>> {
     return {
-      ast: {
-        type: "SQLQuery",
-        query: {
-          type: "SelectClause",
-          from: this._from,
-          columns: "*",
-        },
+      type: "SQLQuery",
+      query: {
+        type: "SelectClause",
+        from: this._from,
+        columns: "*",
       },
     }
   }
 
-  select<
-    Columns extends AllowAliasing<GetTableColumns<Context, Table["alias"]>>[]
-  >(
+  columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: Columns
   ): SelectBuilder<Context, VerifyColumns<Columns>, Table> {
     return {
@@ -104,21 +95,6 @@ class DefaultSelectedColumnsBuilder<
     }
   }
 }
-
-// TODO: Only allow non-table qualified for unique...
-/**
- * Extract the columns from an active table schema
- */
-export type GetTableColumns<
-  Context extends QueryContext,
-  Table extends string
-> = Context extends QueryContext<infer _DB, infer Active, infer _Returning>
-  ? Active[Table] extends SQLTableSchema<infer Schema, infer _Key>
-    ? StringKeys<Schema>
-    : Active[Table] extends SQLTableSchema<infer Schema>
-    ? StringKeys<Schema>
-    : never
-  : never
 
 type TableColumnReferenceType<T extends string> =
   T extends `${infer Table}.${infer Column}`
