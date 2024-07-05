@@ -1,5 +1,6 @@
 /**
- * This is the entrypoint for SQL management
+ * This is a simple file used to setup the project
  */
 
-export { createDatabaseSchema } from "./schema/builder/database.js"
+/** Greeting message */
+export const GREETING = "Welcome to the SQL Parser!"
