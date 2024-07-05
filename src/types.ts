@@ -78,7 +78,7 @@ export type IncrementalSQLTypes =
 export type TSSQLType<T extends SQLBuiltinTypes> = [T] extends [BigIntSQLTypes]
   ? number | bigint
   : [T] extends [BinarySQLTypes]
-    ? Int8Array
+    ? Uint8Array
     : [T] extends [NumericSQLTypes]
       ? number
       : [T] extends [SQLBuiltinTypes.BIT]

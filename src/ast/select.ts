@@ -33,7 +33,7 @@ export type ColumnAggretator = "SUM" | "COUNT" | "AVG" | "MAX" | "MIN"
 export type JoinExpression<
   Type extends string = JoinType,
   From extends TableReference | NamedQuery = TableReference | NamedQuery,
-  On extends LogicalExpression = LogicalExpression
+  On extends LogicalExpression = LogicalExpression,
 > = {
   type: "JoinClause"
   joinType: Type
@@ -59,7 +59,7 @@ export type SelectColumns = {
 export type ColumnAggregate<
   Column extends ColumnReference = ColumnReference,
   Aggretator extends string = ColumnAggretator,
-  Alias extends string = string
+  Alias extends string = string,
 > = {
   type: "ColumnAggregate"
   column: Column
@@ -72,7 +72,7 @@ export type ColumnAggregate<
  */
 export type ColumnOrdering<
   Column extends ColumnReference = ColumnReference,
-  Order extends string = SortOrder
+  Order extends string = SortOrder,
 > = {
   type: "ColumnOrdering"
   column: Column
@@ -84,7 +84,7 @@ export type ColumnOrdering<
  */
 export type SelectClause<
   Columns extends SelectColumns | "*" = SelectColumns | "*",
-  From extends TableReference | AnyNamedQuery = TableReference | AnyNamedQuery
+  From extends TableReference | AnyNamedQuery = TableReference | AnyNamedQuery,
 > = {
   type: "SelectClause"
   columns: Columns
@@ -96,7 +96,7 @@ export type SelectClause<
  * A join clause
  */
 export type JoinClause<
-  Join extends OneOrMore<JoinExpression> = OneOrMore<JoinExpression>
+  Join extends OneOrMore<JoinExpression> = OneOrMore<JoinExpression>,
 > = {
   join: Join
 }
@@ -106,7 +106,7 @@ export type JoinClause<
  */
 export type LimitClause<
   Offset extends number = number,
-  Limit extends number = number
+  Limit extends number = number,
 > = {
   offset: Offset
   limit: Limit
@@ -116,7 +116,7 @@ export type LimitClause<
  * Structure for a group by clause
  */
 export type GroupByClause<
-  GroupBy extends OneOrMore<ColumnReference> = OneOrMore<ColumnReference>
+  GroupBy extends OneOrMore<ColumnReference> = OneOrMore<ColumnReference>,
 > = {
   groupBy: GroupBy
 }
@@ -125,7 +125,7 @@ export type GroupByClause<
  * Structure for an order by clause
  */
 export type OrderByClause<
-  OrderBy extends OneOrMore<ColumnOrdering> = OneOrMore<ColumnOrdering>
+  OrderBy extends OneOrMore<ColumnOrdering> = OneOrMore<ColumnOrdering>,
 > = {
   orderBy: OrderBy
 }
