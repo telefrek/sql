@@ -7,7 +7,7 @@ export interface QueryBuilder<Context extends QueryContext> {
 }
 
 export function createQueryBuilder<Database extends SQLDatabaseSchema>(
-  database: Database
+  database: Database,
 ): QueryBuilder<QueryContext<Database>> {
   return new DefaultQueryBuilder(createContext(database).context)
 }

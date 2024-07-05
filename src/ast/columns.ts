@@ -11,7 +11,7 @@ export type UnboundColumnReference<Column extends string = string> = {
  */
 export type TableColumnReference<
   Table extends string = string,
-  Column extends string = string
+  Column extends string = string,
 > = {
   type: "TableColumnReference"
   table: Table
@@ -25,7 +25,7 @@ export type ColumnReference<
   Reference extends UnboundColumnReference | TableColumnReference =
     | UnboundColumnReference
     | TableColumnReference,
-  Alias extends string = Reference["column"]
+  Alias extends string = Reference["column"],
 > = {
   type: "ColumnReference"
   reference: Reference

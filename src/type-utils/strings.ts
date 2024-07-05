@@ -3,13 +3,13 @@
  */
 export type Join<T extends string[], N extends string = " "> = T extends [
   infer Next extends string,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? Next
     : Rest extends string[]
-    ? `${Next}${N}${Join<Rest, N>}`
-    : ""
+      ? `${Next}${N}${Join<Rest, N>}`
+      : ""
   : ""
 
 /**
@@ -18,9 +18,9 @@ export type Join<T extends string[], N extends string = " "> = T extends [
 export type Trim<T> = T extends ` ${infer Rest}`
   ? Trim<Rest>
   : T extends `\n${infer Rest}`
-  ? Trim<Rest>
-  : T extends `${infer Rest} `
-  ? Trim<Rest>
-  : T extends `${infer Rest}\n`
-  ? Trim<Rest>
-  : T
+    ? Trim<Rest>
+    : T extends `${infer Rest} `
+      ? Trim<Rest>
+      : T extends `${infer Rest}\n`
+        ? Trim<Rest>
+        : T

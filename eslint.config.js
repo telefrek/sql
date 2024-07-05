@@ -22,5 +22,5 @@ export default tseslint.config(
       "no-warning-comments": 1,
     },
     ignores: ["**/*.config.js", "**/node_modules", "**/dist", "**/*.d.ts"],
-  }
+  },
 )

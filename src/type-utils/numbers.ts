@@ -140,7 +140,7 @@ type Increment = [
   125,
   126,
   127,
-  128
+  128,
 ]
 
 type Decrement = [
@@ -272,5 +272,5 @@ type Decrement = [
   124,
   125,
   126,
-  127
+  127,
 ]

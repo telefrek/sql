@@ -23,7 +23,7 @@ type EmptyDatabaseSchema = SQLDatabaseSchema<IgnoreEmpty, IgnoreEmpty>
  * A function that provides a TableSchemaBuilder and returns the builder or schema
  */
 type TableBuilderFn<Schema extends SQLTableSchema> = (
-  builder: TableSchemaBuilder
+  builder: TableSchemaBuilder,
 ) => TableSchemaBuilder<Schema> | Schema
 
 /**
@@ -32,7 +32,7 @@ type TableBuilderFn<Schema extends SQLTableSchema> = (
 type AddTableToBuilder<
   TableSchema extends SQLTableSchema,
   Table extends string,
-  Database extends SQLDatabaseSchema
+  Database extends SQLDatabaseSchema,
 > = DatabaseSchemaBuilder<AddTableToSchema<Database, Table, TableSchema>>
 
 /**
@@ -41,15 +41,16 @@ type AddTableToBuilder<
 type AddTableToSchema<
   Database extends SQLDatabaseSchema,
   Table extends string,
-  TableSchema extends SQLTableSchema
-> = Database extends SQLDatabaseSchema<infer Tables, infer Relations>
-  ? Relations extends ForeignKeys
-    ? CheckSQLDatabaseSchema<
-        Flatten<Tables & { [key in Table]: TableSchema }>,
-        Relations
-      >
+  TableSchema extends SQLTableSchema,
+> =
+  Database extends SQLDatabaseSchema<infer Tables, infer Relations>
+    ? Relations extends ForeignKeys
+      ? CheckSQLDatabaseSchema<
+          Flatten<Tables & { [key in Table]: TableSchema }>,
+          Relations
+        >
+      : never
     : never
-  : never
 
 /**
  * Utililty type to add a foreign key to a schema
@@ -57,29 +58,30 @@ type AddTableToSchema<
 type AddForeignKeyToSchema<
   Database extends SQLDatabaseSchema,
   Name extends string,
-  FK
-> = Database extends SQLDatabaseSchema<infer Tables, infer Keys>
-  ? FK extends ForeignKey<
-      infer Reference,
-      infer ReferenceColumns,
-      infer Target,
-      infer Columns
-    >
-    ? SQLDatabaseSchema<
-        Tables,
-        Flatten<
-          Keys & {
-            [key in Name]: ForeignKey<
-              Reference,
-              ReferenceColumns,
-              Target,
-              Columns
-            >
-          }
-        >
+  FK,
+> =
+  Database extends SQLDatabaseSchema<infer Tables, infer Keys>
+    ? FK extends ForeignKey<
+        infer Reference,
+        infer ReferenceColumns,
+        infer Target,
+        infer Columns
       >
+      ? SQLDatabaseSchema<
+          Tables,
+          Flatten<
+            Keys & {
+              [key in Name]: ForeignKey<
+                Reference,
+                ReferenceColumns,
+                Target,
+                Columns
+              >
+            }
+          >
+        >
+      : never
     : never
-  : never
 
 /**
  * Type to narrow types to SQLDatabaseSchemas
@@ -99,7 +101,7 @@ type CheckSQLDatabaseSchema<Tables, Relations> =
  * @returns A {@link DatabaseSchemaBuilder}
  */
 export function createDatabaseSchema<
-  Schema extends SQLDatabaseSchema = EmptyDatabaseSchema
+  Schema extends SQLDatabaseSchema = EmptyDatabaseSchema,
 >(current?: Schema): DatabaseSchemaBuilder<Schema> {
   return new SQLDatabaseSchemaBuilder(current)
 }
@@ -118,7 +120,7 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
    */
   addTable<Table extends string, TableSchema extends SQLTableSchema>(
     table: CheckDuplicateKey<Table, Schema["tables"]>,
-    builder: TableBuilderFn<TableSchema>
+    builder: TableBuilderFn<TableSchema>,
   ): AddTableToBuilder<TableSchema, Table, Schema>
 
   /**
@@ -135,7 +137,7 @@ export interface DatabaseSchemaBuilder<Schema extends SQLDatabaseSchema> {
     Name extends string,
     Reference extends ForeignKeyReferenceTables<Schema["tables"]>,
     Target extends StringKeys<Schema["tables"]>,
-    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>
+    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>,
   >(
     name: CheckDuplicateKey<Name, Schema["relations"]>,
     reference: Reference,
@@ -173,7 +175,7 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
 
   addTable<Table extends string, TableSchema extends SQLTableSchema>(
     table: CheckDuplicateKey<Table, Schema["tables"]>,
-    builder: TableBuilderFn<TableSchema>
+    builder: TableBuilderFn<TableSchema>,
   ): AddTableToBuilder<TableSchema, Table, Schema> {
     const result = builder(createTableSchemaBuilder())
     const schema = "schema" in result ? result["schema"] : result
@@ -204,7 +206,7 @@ class SQLDatabaseSchemaBuilder<Schema extends SQLDatabaseSchema>
     Name extends string,
     Reference extends ForeignKeyReferenceTables<Schema["tables"]>,
     Target extends StringKeys<Schema["tables"]>,
-    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>
+    Columns extends ForeignKeyColumns<Schema["tables"], Reference, Target>,
   >(
     name: CheckDuplicateKey<Name, Schema["relations"]>,
     reference: Reference,

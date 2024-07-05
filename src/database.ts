@@ -12,7 +12,7 @@ export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
 }
 
 export function getDatabase<Schema extends SQLDatabaseSchema>(
-  schema: Schema
+  schema: Schema,
 ): SQLDatabase<Schema> {
   const parseSQL = <T extends string>(query: CheckQuery<T>): ParseSQL<T> => {
     return new QueryParser(schema).parse(query as string) as ParseSQL<T>

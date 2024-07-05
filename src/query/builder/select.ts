@@ -7,5 +7,5 @@ export interface SelectBuilder<
   _Context extends QueryContext = QueryContext,
   Columns extends "*" | SelectColumns = "*" | SelectColumns,
   Table extends TableReference = TableReference,
-  Query extends SelectClause<Columns, Table> = SelectClause<Columns, Table>
+  Query extends SelectClause<Columns, Table> = SelectClause<Columns, Table>,
 > extends QueryAST<Query> {}

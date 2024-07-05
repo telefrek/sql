@@ -16,7 +16,7 @@ import {
 
 export interface FromQueryBuilder<Context extends QueryContext> {
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): SelectedColumnsBuilder<
     ActivateTableContext<Context, ParseTableReference<Table>>,
     ParseTableReference<Table>
@@ -24,14 +24,14 @@ export interface FromQueryBuilder<Context extends QueryContext> {
 }
 
 export function createFromQueryBuilder<Context extends QueryContext>(
-  context: Context
+  context: Context,
 ): FromQueryBuilder<Context> {
   return new DefaultFromQueryBuilder(context)
 }
 
 class DefaultFromQueryBuilder<
   Database extends SQLDatabaseSchema,
-  Context extends QueryContext<Database>
+  Context extends QueryContext<Database>,
 > implements FromQueryBuilder<Context>
 {
   private _context: Context
@@ -41,7 +41,7 @@ class DefaultFromQueryBuilder<
   }
 
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): SelectedColumnsBuilder<
     ActivateTableContext<
       Context,
@@ -76,7 +76,7 @@ class DefaultFromQueryBuilder<
 }
 
 function buildTableReference<Table extends string>(
-  table: Table
+  table: Table,
 ): ParseTableReference<Table> {
   const ref = {
     type: "TableReference",

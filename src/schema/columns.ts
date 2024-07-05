@@ -47,7 +47,7 @@ type BaseColumnDefinition<T extends SQLBuiltinTypes> = {
  * Extended information for incremental column types
  */
 type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
-  IncrementalSQLTypes
+  IncrementalSQLTypes,
 ]
   ? { autoIncrement?: true }
   : object

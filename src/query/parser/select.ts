@@ -15,12 +15,10 @@ import { parseFrom, type ParseTableReference } from "./table.js"
 /**
  * Parse the next select statement from the string
  */
-export type ParseSelect<T> = NextToken<T> extends [
-  "SELECT",
-  infer Right extends string
-]
-  ? CheckSelect<ExtractColumns<Right>>
-  : never
+export type ParseSelect<T> =
+  NextToken<T> extends ["SELECT", infer Right extends string]
+    ? CheckSelect<ExtractColumns<Right>>
+    : never
 
 export function parseSelectClause(tokens: string[]): SelectClause {
   return {
@@ -33,18 +31,17 @@ export function parseSelectClause(tokens: string[]): SelectClause {
 /**
  * Check to get the type information
  */
-type CheckSelect<T> = Flatten<T> extends Partial<
-  SelectClause<infer Columns, infer From>
->
-  ? Flatten<SelectClause<Columns, From>>
-  : T
+type CheckSelect<T> =
+  Flatten<T> extends Partial<SelectClause<infer Columns, infer From>>
+    ? Flatten<SelectClause<Columns, From>>
+    : T
 
 type CheckNoSpaces<Column extends string> =
   Column extends `${infer _Begin} ${infer _End}`
     ? Invalid<`Column missing commas: ${Column}`>
     : Column extends ""
-    ? Invalid<"Invalid empty column">
-    : true
+      ? Invalid<"Invalid empty column">
+      : true
 
 type CheckColumnIsValid<T extends string> =
   T extends `${infer Column} AS ${infer Alias}`
@@ -57,13 +54,13 @@ type CheckColumnIsValid<T extends string> =
 
 type CheckColumnSyntax<Columns> = Columns extends [
   infer Next extends string,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? CheckColumnIsValid<Next>
     : CheckColumnIsValid<Next> extends true
-    ? CheckColumnSyntax<Rest>
-    : CheckColumnIsValid<Next>
+      ? CheckColumnSyntax<Rest>
+      : CheckColumnIsValid<Next>
   : Invalid<"No columns found">
 
 /**
@@ -74,29 +71,30 @@ type CheckColumns<T extends string> = CheckColumnSyntax<SplitSQL<T>>
 /**
  * Parse out the columns and then process any from information
  */
-type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
-  infer Columns extends string,
-  infer From extends string
-]
-  ? CheckColumns<Columns> extends true
-    ? StartsWith<From, "FROM"> extends true
-      ? Columns extends "*"
-        ? {
-            columns: Columns
-          } & ExtractFrom<From>
-        : {
-            columns: ParseColumns<SplitSQL<Columns>>
-          } & ExtractFrom<From>
-      : Invalid<"Failed to parse columns">
-    : CheckColumns<Columns>
-  : Invalid<"Missing FROM">
+type ExtractColumns<T extends string> =
+  ExtractUntil<T, "FROM"> extends [
+    infer Columns extends string,
+    infer From extends string,
+  ]
+    ? CheckColumns<Columns> extends true
+      ? StartsWith<From, "FROM"> extends true
+        ? Columns extends "*"
+          ? {
+              columns: Columns
+            } & ExtractFrom<From>
+          : {
+              columns: ParseColumns<SplitSQL<Columns>>
+            } & ExtractFrom<From>
+        : Invalid<"Failed to parse columns">
+      : CheckColumns<Columns>
+    : Invalid<"Missing FROM">
 
 /**
  * Parse the columns that were extracted
  */
 type ParseColumns<T, O = object> = T extends [
   infer Column extends string,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? ParseColumnReference<Column> extends ColumnReference<infer C, infer A>
@@ -107,34 +105,32 @@ type ParseColumns<T, O = object> = T extends [
         >
       : Invalid<`Invalid column reference`>
     : ParseColumnReference<Column> extends ColumnReference<infer C, infer A>
-    ? Flatten<
-        ParseColumns<
-          Rest,
-          Flatten<
-            O & {
-              [key in A]: ColumnReference<C, A>
-            }
+      ? Flatten<
+          ParseColumns<
+            Rest,
+            Flatten<
+              O & {
+                [key in A]: ColumnReference<C, A>
+              }
+            >
           >
         >
-      >
-    : Invalid<`Invalid column reference`>
+      : Invalid<`Invalid column reference`>
   : never
 
 /**
  * Extract the from information
  */
-type ExtractFrom<T> = NextToken<T> extends [
-  infer _,
-  infer Clause extends string
-]
-  ? ExtractUntil<Clause, FromKeywords> extends [
-      infer From extends string,
-      infer _
-    ]
-    ? Flatten<{
-        from: ParseTableReference<From>
-      }>
-    : {
-        from: ParseTableReference<Clause>
-      }
-  : never
+type ExtractFrom<T> =
+  NextToken<T> extends [infer _, infer Clause extends string]
+    ? ExtractUntil<Clause, FromKeywords> extends [
+        infer From extends string,
+        infer _,
+      ]
+      ? Flatten<{
+          from: ParseTableReference<From>
+        }>
+      : {
+          from: ParseTableReference<Clause>
+        }
+    : never
