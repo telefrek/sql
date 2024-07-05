@@ -15,7 +15,7 @@ export type PrimaryKey<Schema extends SQLColumnSchema> =
  */
 export type SingleKey<
   Schema extends SQLColumnSchema,
-  Column extends StringKeys<Schema>
+  Column extends StringKeys<Schema>,
 > = {
   column: Column
 }
@@ -25,7 +25,7 @@ export type SingleKey<
  */
 export type CompositeKey<
   Schema extends SQLColumnSchema,
-  Columns extends StringKeys<Schema>[]
+  Columns extends StringKeys<Schema>[],
 > = {
   column: Columns
 }
@@ -35,7 +35,7 @@ export type CompositeKey<
  */
 type ForeignKeyColumnMatch<
   Table extends SQLColumnSchema,
-  ColumnType extends SQLBuiltinTypes
+  ColumnType extends SQLBuiltinTypes,
 > = {
   [Key in StringKeys<Table>]: Table[Key]["type"] extends ColumnType
     ? Table[Key]["nullable"] extends true
@@ -50,16 +50,16 @@ type ForeignKeyColumnMatch<
  */
 type CompositeForeignKeyColumnMatch<
   Table extends SQLColumnSchema,
-  Columns extends SQLBuiltinTypes[]
+  Columns extends SQLBuiltinTypes[],
 > = Columns extends [infer Next extends SQLBuiltinTypes, ...infer Rest]
   ? Rest extends never[]
     ? [ForeignKeyColumnMatch<Table, Next>]
     : Rest extends SQLBuiltinTypes[]
-    ? [
-        ForeignKeyColumnMatch<Table, Next>,
-        ...CompositeForeignKeyColumnMatch<Table, Rest>
-      ]
-    : never
+      ? [
+          ForeignKeyColumnMatch<Table, Next>,
+          ...CompositeForeignKeyColumnMatch<Table, Rest>,
+        ]
+      : never
   : never
 
 /**
@@ -67,13 +67,13 @@ type CompositeForeignKeyColumnMatch<
  */
 type ExtractCompositeKeyTypes<
   Table extends SQLColumnSchema,
-  Columns extends StringKeys<Table>[]
+  Columns extends StringKeys<Table>[],
 > = Columns extends [infer Column extends StringKeys<Table>, ...infer Rest]
   ? Rest extends never[]
     ? [Table[Column]["type"]]
     : Rest extends StringKeys<Table>[]
-    ? [Table[Column]["type"], ...ExtractCompositeKeyTypes<Table, Rest>]
-    : never
+      ? [Table[Column]["type"], ...ExtractCompositeKeyTypes<Table, Rest>]
+      : never
   : never
 
 /**
@@ -83,26 +83,27 @@ type ExtractCompositeKeyTypes<
 export type ForeignKeyColumns<
   Database extends SQLDatabaseTables,
   Source extends ForeignKeyReferenceTables<Database>,
-  Destination extends StringKeys<Database>
-> = GetPrimaryKey<Database[Source]> extends SingleKey<
-  Database[Source]["columns"],
-  infer Column extends StringKeys<Database[Source]["columns"]>
->
-  ? [
-      ForeignKeyColumnMatch<
-        Database[Destination]["columns"],
-        Database[Source]["columns"][Column]["type"]
-      >
-    ]
-  : GetPrimaryKey<Database[Source]> extends CompositeKey<
-      Database[Source]["columns"],
-      infer Columns extends StringKeys<Database[Source]["columns"]>[]
-    >
-  ? CompositeForeignKeyColumnMatch<
-      Database[Destination]["columns"],
-      ExtractCompositeKeyTypes<Database[Source]["columns"], Columns>
-    >
-  : never
+  Destination extends StringKeys<Database>,
+> =
+  GetPrimaryKey<Database[Source]> extends SingleKey<
+    Database[Source]["columns"],
+    infer Column extends StringKeys<Database[Source]["columns"]>
+  >
+    ? [
+        ForeignKeyColumnMatch<
+          Database[Destination]["columns"],
+          Database[Source]["columns"][Column]["type"]
+        >,
+      ]
+    : GetPrimaryKey<Database[Source]> extends CompositeKey<
+          Database[Source]["columns"],
+          infer Columns extends StringKeys<Database[Source]["columns"]>[]
+        >
+      ? CompositeForeignKeyColumnMatch<
+          Database[Destination]["columns"],
+          ExtractCompositeKeyTypes<Database[Source]["columns"], Columns>
+        >
+      : never
 
 /**
  * Get candidate tables that have a defined primary key
@@ -138,13 +139,14 @@ export type GetPrimaryKey<Schema extends SQLTableSchema> =
  */
 export type ForeignKey<
   Database extends SQLDatabaseTables,
-  Reference extends ForeignKeyReferenceTables<Database> = ForeignKeyReferenceTables<Database>,
+  Reference extends
+    ForeignKeyReferenceTables<Database> = ForeignKeyReferenceTables<Database>,
   Target extends StringKeys<Database> = StringKeys<Database>,
   Columns extends ForeignKeyColumns<
     Database,
     Reference,
     Target
-  > = ForeignKeyColumns<Database, Reference, Target>
+  > = ForeignKeyColumns<Database, Reference, Target>,
 > = {
   reference: Reference
   referenceColumns: GetPrimaryKey<Database[Reference]>["column"]
