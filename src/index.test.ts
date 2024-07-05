@@ -117,15 +117,21 @@ describe("Query building should match parsers", () => {
 })
 
 describe("SQL databases should validate queries", () => {
-  it("Should allow creating a query from a raw string", () => {
+  it("Should allow creating a query from a raw string with aliasing", () => {
     const database = getDatabase(TEST_DATABASE)
     expect(database).not.toBeUndefined()
 
     const query = database.parseSQL(
       "SELECT id as product_id FROM products AS o"
     )
-    expect(query.query.columns).toBe("*")
-    expect(query.query.from.table).toBe("orders")
+    expect(query.query.columns.product_id.reference.column).toBe("id")
+    expect(query.query.from.table).toBe("products")
     expect(query.query.from.alias).toBe("o")
+  })
+
+  it("Should allow creating a simple query from a raw string", () => {
+    const query = getDatabase(TEST_DATABASE).parseSQL("SELECT * FROM orders")
+    expect(query.query.type).toBe("SelectClause")
+    expect(query.query.from.table).toBe("orders")
   })
 })
