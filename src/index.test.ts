@@ -20,16 +20,16 @@ describe("Schema building should create valid schemas", () => {
     // Check the columns
     expect(TEST_DATABASE.tables.orders).not.toBeUndefined()
     expect(TEST_DATABASE.tables.orders.columns.id.type).toBe(
-      SQLBuiltinTypes.BIGINT,
+      SQLBuiltinTypes.BIGINT
     )
     expect(TEST_DATABASE.tables.orders.columns.id.autoIncrement).toBeTruthy()
 
     // Verify the default method is there and provides correct information
     expect(
-      TEST_DATABASE.tables.orders.columns.order_timestamp.default,
+      TEST_DATABASE.tables.orders.columns.order_timestamp.default
     ).not.toBeUndefined()
     expect(
-      typeof TEST_DATABASE.tables.orders.columns.order_timestamp.default,
+      typeof TEST_DATABASE.tables.orders.columns.order_timestamp.default
     ).toBe("function")
     const defaultProvider = TEST_DATABASE.tables.orders.columns.order_timestamp
       .default as () => number
@@ -50,10 +50,10 @@ describe("Schema building should create valid schemas", () => {
     expect(TEST_DATABASE.relations.orders_product_fk.reference).toBe("products")
     expect(TEST_DATABASE.relations.orders_product_fk.target).toBe("orders")
     expect(TEST_DATABASE.relations.orders_product_fk.targetColumns[0]).toBe(
-      "product_id",
+      "product_id"
     )
     expect(TEST_DATABASE.relations.orders_product_fk.referenceColumns[0]).toBe(
-      "id",
+      "id"
     )
   })
 })
@@ -120,8 +120,12 @@ describe("SQL databases should validate queries", () => {
   it("Should allow creating a query from a raw string", () => {
     const database = getDatabase(TEST_DATABASE)
     expect(database).not.toBeUndefined()
-    const query = database.parseSQL("SELECT * FROM orders")
+
+    const query = database.parseSQL(
+      "SELECT id as product_id FROM products AS o"
+    )
     expect(query.query.columns).toBe("*")
     expect(query.query.from.table).toBe("orders")
+    expect(query.query.from.alias).toBe("o")
   })
 })

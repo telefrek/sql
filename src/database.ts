@@ -8,13 +8,15 @@ import type { SQLDatabaseSchema } from "./schema/database.js"
 export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
   readonly schema: Schema
 
-  parseSQL<T extends string>(query: CheckQuery<T>): ParseSQL<T>
+  parseSQL<T extends string>(query: CheckQuery<Schema, T>): ParseSQL<T>
 }
 
 export function getDatabase<Schema extends SQLDatabaseSchema>(
-  schema: Schema,
+  schema: Schema
 ): SQLDatabase<Schema> {
-  const parseSQL = <T extends string>(query: CheckQuery<T>): ParseSQL<T> => {
+  const parseSQL = <T extends string>(
+    query: CheckQuery<Schema, T>
+  ): ParseSQL<T> => {
     return new QueryParser(schema).parse(query as string) as ParseSQL<T>
   }
   return {

@@ -22,8 +22,8 @@ export type ParseQuery<T extends string> = ParseSelect<NormalizeQuery<T>>
 type CheckSQL<Query> = [Query] extends [never]
   ? Invalid<"not a parsable query">
   : Query extends QueryClause
-    ? SQLQuery<Query>
-    : Query
+  ? SQLQuery<Query>
+  : Query
 
 /**
  * Class to help with Query parsing
