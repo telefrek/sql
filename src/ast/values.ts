@@ -45,9 +45,9 @@ export type BigIntValueType<B extends number | bigint = bigint> = {
 }
 
 /**
- * A {@link Int8Array} value
+ * A {@link Uint8Array} value
  */
-export type BufferValueType<B extends Int8Array = Int8Array> = {
+export type BufferValueType<B extends Uint8Array = Uint8Array> = {
   type: "BufferValue"
   value: B
 }

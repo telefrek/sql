@@ -26,10 +26,10 @@ export type RequiredLiteralKeys<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-    ? never
-    : object extends Pick<T, K>
-    ? never
-    : K]: T[K]
+      ? never
+      : object extends Pick<T, K>
+        ? never
+        : K]: T[K]
 }
 
 /**
@@ -39,10 +39,10 @@ export type OptionalLiteralKeys<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-    ? never
-    : object extends Pick<T, K>
-    ? K
-    : never]: T[K]
+      ? never
+      : object extends Pick<T, K>
+        ? K
+        : never]: T[K]
 }
 
 /**
