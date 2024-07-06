@@ -21,7 +21,7 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("email", SQLBuiltinTypes.TEXT)
-      .withKey("id"),
+      .withKey("id")
   )
   .addTable("orders", (table) =>
     table
@@ -33,24 +33,13 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("amount", SQLBuiltinTypes.DECIMAL)
-      .withKey("user_id", "product_id"),
+      .withKey("user_id", "product_id")
   )
   .addTable("products", (table) =>
     table
       .addColumn("id", SQLBuiltinTypes.BIGINT, { autoIncrement: true })
       .addColumn("name", SQLBuiltinTypes.TEXT)
       .addColumn("description", SQLBuiltinTypes.TEXT)
-      .withKey("id"),
+      .withKey("id")
   )
   .addForeignKey("orders_product_fk", "products", "orders", "product_id").schema
-
-createDatabaseSchema()
-  .addTable("table1", (b) =>
-    b
-      .addColumn("id", SQLBuiltinTypes.BIGINT, { autoIncrement: true })
-      .withKey("id"),
-  )
-  .addTable("table2", (b) =>
-    b.addColumn("id2", SQLBuiltinTypes.BIGINT).withKey("id2"),
-  )
-  .addForeignKey("my_fk", "table1", "table2", "id2")

@@ -1,8 +1,4 @@
-import type {
-  AtLeastOne,
-  Flatten,
-  IgnoreEmpty,
-} from "../../type-utils/common.js"
+import type { Flatten, IgnoreEmpty } from "../../type-utils/common.js"
 import type {
   CheckDuplicateKey,
   RequiredLiteralKeys,
@@ -32,7 +28,9 @@ type AddKeyToTable<Table extends SQLTableSchema, Column> = SQLTableSchema<
     ? Column["length"] extends 1
       ? SingleKey<Table["columns"], T>
       : CompositeKey<Table["columns"], Column>
-    : never
+    : Column extends StringKeys<Table["columns"]>
+      ? SingleKey<Table["columns"], Column>
+      : never
 >
 
 /**
@@ -126,6 +124,14 @@ export function createColumnSchemaBuilder<
 }
 
 /**
+ * A schema builder
+ */
+export type ColumnSchemaBuilderFn<
+  Schema extends SQLColumnSchema,
+  Result extends SQLColumnSchema,
+> = (original: ColumnSchemaBuilder<Schema>) => ColumnSchemaBuilder<Result>
+
+/**
  * Create a {@link TableSchemaBuilder} for the given schema or start with an
  * empty one
  *
@@ -181,7 +187,7 @@ export interface TableSchemaBuilder<
    *
    * @param columns The key columns in order
    */
-  withKey<Column extends AtLeastOne<StringKeys<Schema["columns"]>>>(
+  withKey<Column extends StringKeys<Schema["columns"]>[]>(
     ...columns: Column
   ): AddKeyToTable<Schema, Column>
 
@@ -300,15 +306,11 @@ class SQLTableSchemaBuilder<Schema extends SQLTableSchema>
     >
   }
 
-  withKey<Column extends AtLeastOne<StringKeys<Schema["columns"]>>>(
+  withKey<Column extends StringKeys<Schema["columns"]>[]>(
     ...columns: Column
   ): AddKeyToTable<Schema, Column> {
     // Add the key based on the number of columns passed through
-    if (columns.length === 1) {
-      this._key = { column: columns[0] }
-    } else {
-      this._key = { column: columns }
-    }
+    this._key = { column: columns }
 
     // Cast to correct type
     return this.table as unknown as AddKeyToTable<Schema, Column>
