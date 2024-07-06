@@ -30,6 +30,7 @@ export function getDatabase<Schema extends SQLDatabaseSchema>(
   ): ParseSQL<T> => {
     return new QueryParser(schema).parse(query as string) as ParseSQL<T>
   }
+
   return {
     schema,
     parseSQL,
