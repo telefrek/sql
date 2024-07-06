@@ -8,9 +8,20 @@ import type { SQLDatabaseSchema } from "./schema/database.js"
 export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
   readonly schema: Schema
 
+  /**
+   * Parse SQL and validate it against the database schema
+   *
+   * @param query The query to parse
+   */
   parseSQL<T extends string>(query: CheckQuery<Schema, T>): ParseSQL<T>
 }
 
+/**
+ * Create a new {@link SQLDatabase} for the given schema
+ *
+ * @param schema The reference schema to use
+ * @returns A {@link SQLDatabase} for the given schema
+ */
 export function getDatabase<Schema extends SQLDatabaseSchema>(
   schema: Schema
 ): SQLDatabase<Schema> {

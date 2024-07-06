@@ -13,6 +13,9 @@ import type { Invalid } from "../../type-utils/common.js"
 import type { StringKeys } from "../../type-utils/object.js"
 import type { UnionToTuple } from "../../type-utils/unsafe.js"
 
+/**
+ * Ensure that the select columns are valid
+ */
 export type ValidateSelectColumns<
   Active extends SQLDatabaseTables,
   Columns extends SelectColumns | "*"
@@ -22,6 +25,9 @@ export type ValidateSelectColumns<
   ? ValidateSelectedColumns<Active, ExtractSelectedColumns<Columns>>
   : Invalid<"Invalid selected columns">
 
+/**
+ * Extract the column references from the columns
+ */
 type ValidateSelectedColumns<
   Active extends SQLDatabaseTables,
   Columns
@@ -43,6 +49,9 @@ type ValidateSelectedColumns<
     : Invalid<`Invalid or corrupt column reference`>
   : Invalid<"Columns are not valid SelectedColumn[]">
 
+/**
+ * Extract the column reference from the SelectColumn property
+ */
 type GetColumnReference<Selected extends SelectedColumn> =
   Selected extends ColumnReference<infer Reference, infer _Alias>
     ? ColumnReference<Reference>
@@ -56,6 +65,11 @@ type GetColumnReference<Selected extends SelectedColumn> =
 
 // TODO: When we allow more tables via joins, this needs to ensure that unbound
 // columns are part of the unique column set...
+
+/**
+ * Verify that the column is part of the active set since don't want people
+ * pulling columns from tables that aren't part of the select clause
+ */
 type ColumnInActive<
   Active extends SQLDatabaseTables,
   Column extends UnboundColumnReference | TableColumnReference
@@ -71,6 +85,12 @@ type ColumnInActive<
   ? true
   : Invalid<`${Column["column"]} is not a valid column`>
 
+/**
+ * Extract the selected column properties as an array instead of a union
+ *
+ * NOTE: There is NO guarantee on the order these come back but that shouldn't
+ * matter for validation purposes...
+ */
 export type ExtractSelectedColumns<Columns extends SelectColumns> =
   UnionToTuple<
     {

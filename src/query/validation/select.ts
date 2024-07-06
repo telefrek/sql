@@ -6,6 +6,9 @@ import type { IgnoreEmpty, Invalid } from "../../type-utils/common.js"
 import type { StringKeys } from "../../type-utils/object.js"
 import type { ValidateSelectColumns } from "./columns.js"
 
+/**
+ * Verify if the select clause is valid
+ */
 export type ValidateSelectClause<
   Database extends SQLDatabaseTables,
   Select extends SelectClause,
