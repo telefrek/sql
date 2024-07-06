@@ -9,7 +9,7 @@
 
 # A Compile Time Query Utility
 
-This package is being created as part of a series of articles on Medium to
+This package is being created as part of a series of articles on [Medium](https://telefrek.medium.com) to
 handle parsing, validating and issuing SQL queries against a variety of systems
 while providing compile time validation of the SQL structure itself as well as
 the underlying database schemas.
