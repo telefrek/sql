@@ -21,11 +21,7 @@ jobs:
             pnpm install --no-frozen-lockfile
       - run:
           command: pnpm run ci
-          name: Build app for publishing
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - .
+          name: Build and test packages
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
