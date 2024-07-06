@@ -1,9 +1,9 @@
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type { SQLDatabaseTables } from "../../schema/database.js"
+import type { AddTableToSchema } from "../../schema/utils.js"
 import type { IgnoreEmpty, Invalid } from "../../type-utils/common.js"
 import type { StringKeys } from "../../type-utils/object.js"
-import type { AddTableToSchema } from "../context.js"
 import type { ValidateSelectColumns } from "./columns.js"
 
 export type ValidateSelectClause<

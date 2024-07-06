@@ -21,17 +21,26 @@ export type ParseColumnDetails<T extends string> =
     ? TableColumnReference<Table, Column>
     : UnboundColumnReference<T>
 
+/**
+ * Parse the selected columns
+ *
+ * @param tokens The tokens that represent the select clause
+ * @returns A {@link SelectColumns} or '*' depending on the input
+ */
 export function parseSelectedColumns(tokens: string[]): {
   columns: SelectColumns | "*"
 } {
+  // Join everything up and split out the commas
   const columns = tokens.join(" ").split(" , ")
 
+  // If only one column and it's '*' just return that
   if (columns.length === 1 && columns[0] === "*") {
     return {
       columns: "*",
     }
   }
 
+  // Parse out the column references and add them to an empty object
   return {
     columns: columns
       .map((c) => parseColumnReference(c))
@@ -42,8 +51,14 @@ export function parseSelectedColumns(tokens: string[]): {
   }
 }
 
-function parseColumnReference(s: string): ColumnReference {
-  const aData = s.split(" AS ")
+/**
+ * Parse a column reference from the given string
+ *
+ * @param columnReference The column reference to parse
+ * @returns A {@link ColumnReference}
+ */
+function parseColumnReference(columnReference: string): ColumnReference {
+  const aData = columnReference.split(" AS ")
   const cData = aData[0].split(".")
 
   const table = cData.length > 1 ? cData[0] : undefined

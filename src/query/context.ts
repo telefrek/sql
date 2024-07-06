@@ -9,7 +9,8 @@ import type {
   SQLDatabaseTables,
   SQLTableSchema,
 } from "../schema/database.js"
-import type { Flatten, IgnoreEmpty, Invalid } from "../type-utils/common.js"
+import type { AddTableToSchema } from "../schema/utils.js"
+import type { IgnoreAny, IgnoreEmpty, Invalid } from "../type-utils/common.js"
 import {
   clone,
   type CheckDuplicateKey,
@@ -26,10 +27,12 @@ import type { ParseTableReference } from "./parser/table.js"
 export function createContext<Database extends SQLDatabaseSchema>(
   database: Database
 ): QueryContextBuilder<Database> {
-  return new QueryContextBuilder<Database>({
-    database: clone(database),
+  return new QueryContextBuilder<Database>(<
+    QueryContext<Database, IgnoreEmpty, number>
+  >{
+    database,
     active: {},
-    returning: 0,
+    returning: 0, // This could be any number, we don't care
   })
 }
 
@@ -62,44 +65,17 @@ export type QueryContext<
  * Retrieve the full set of tables that are available (base as well as active)
  */
 export type GetContextTables<Context extends QueryContext> =
-  Context extends QueryContext<infer Database, infer Active, infer _>
-    ? StringKeys<Database["tables"]> | StringKeys<Active>
+  Context extends QueryContext<infer Database, infer _Active, infer _>
+    ? StringKeys<Database["tables"]>
     : never
 
+/**
+ * Retrieve the names of all of the selectable columns
+ */
 export type GetSelectableColumns<Context extends QueryContext> =
   Context extends QueryContext<infer _DB, infer Active, infer _Ret>
     ? GetColumnNames<Active>
     : never
-
-type GetColumnNames<Schema extends SQLDatabaseTables> = {
-  [Table in StringKeys<Schema>]: {
-    [Column in StringKeys<Schema[Table]["columns"]>]: [Column] extends [
-      GetUniqueColumns<Schema>
-    ]
-      ? Column
-      : `${Table}.${Column}`
-  }[StringKeys<Schema[Table]["columns"]>]
-}[StringKeys<Schema>]
-
-type GetOtherColumns<
-  Schema extends SQLDatabaseTables,
-  Table extends keyof Schema
-> = {
-  [Key in keyof Schema]: Key extends Table
-    ? never
-    : StringKeys<Schema[Table]["columns"]>
-}[keyof Schema]
-
-type GetUniqueColumns<Schema extends SQLDatabaseTables> = {
-  [Key in keyof Schema]: UniqueKeys<
-    StringKeys<Schema[Key]["columns"]>,
-    GetOtherColumns<Schema, Key>
-  >
-}[keyof Schema]
-
-type UniqueKeys<Left extends string, Right extends string> = {
-  [V in Left]: [V] extends [Right] ? never : V
-}[Left]
 
 /**
  * Class used for manipulating {@link QueryContext} objects
@@ -169,14 +145,37 @@ class QueryContextBuilder<
     ActivateTableContext<
       Context,
       Table,
-      Database["tables"][Table["table"]]["columns"]
+      GetTableSchema<Context, Table["table"]>
     >
   > {
     const t = table as unknown as Table
     return this.add(
       t.alias as CheckDuplicateKey<string, Context["active"]>,
-      this._context["database"]["tables"][t.table]["columns"]
+      this.getTableSchema(t.table)
     )
+  }
+
+  /**
+   * Retrieve the {@link SQLColumnSchema} from the database or active context
+   * for the given table name
+   *
+   * @param table The table to find
+   * @returns The {@link SQLColumnSchema} for the table
+   */
+  private getTableSchema(table: string): SQLColumnSchema {
+    if (table in this._context["database"]["tables"]) {
+      return clone(this._context["database"]["tables"][table]["columns"])
+    } else if (table in this._context["active"]) {
+      return clone(
+        (
+          (this._context["active"] as IgnoreAny)[
+            table
+          ] as unknown as SQLTableSchema
+        )["columns"]
+      )
+    }
+
+    throw new Error("Failed to locate table in active or database schemas")
   }
 
   /**
@@ -205,6 +204,63 @@ class QueryContextBuilder<
     >
   }
 }
+
+/**
+ * Retrieve the set of column names we support in our select queries
+ */
+type GetColumnNames<Schema extends SQLDatabaseTables> = {
+  [Table in StringKeys<Schema>]: {
+    [Column in StringKeys<Schema[Table]["columns"]>]: [Column] extends [
+      GetUniqueColumns<Schema>
+    ]
+      ? Column
+      : `${Table}.${Column}`
+  }[StringKeys<Schema[Table]["columns"]>]
+}[StringKeys<Schema>]
+
+/**
+ * Get all of the columns that are active but NOT part of the current table
+ */
+type GetOtherColumns<
+  Schema extends SQLDatabaseTables,
+  Table extends keyof Schema
+> = {
+  [Key in keyof Schema]: Key extends Table
+    ? never
+    : StringKeys<Schema[Table]["columns"]>
+}[keyof Schema]
+
+/**
+ * Get the set of Unique columns across all active tables
+ */
+type GetUniqueColumns<Schema extends SQLDatabaseTables> = {
+  [Key in keyof Schema]: UniqueKeys<
+    StringKeys<Schema[Key]["columns"]>,
+    GetOtherColumns<Schema, Key>
+  >
+}[keyof Schema]
+
+/**
+ * Get the set of unique keys between the two sets
+ */
+type UniqueKeys<Left extends string, Right extends string> = {
+  [V in Left]: [V] extends [Right] ? never : V
+}[Left]
+
+/**
+ * Retrieve the schema for the given table from the database or active portions
+ * of the context
+ */
+type GetTableSchema<
+  Context extends QueryContext,
+  Table extends string
+> = Context extends QueryContext<infer Database, infer Active, infer _>
+  ? [Table] extends [StringKeys<Database["tables"]>]
+    ? Database["tables"][Table]["columns"]
+    : [Table] extends [StringKeys<Active>]
+    ? Active[Table]["columns"]
+    : never
+  : never
 
 /**
  * Utility type to check for table reference conflict with an existing table
@@ -251,23 +307,6 @@ export type ActivateTableContext<
       Returning
     >
   : never
-
-/**
- * Utility type to add a table to a schema
- */
-export type AddTableToSchema<
-  Table extends string,
-  Schema extends SQLColumnSchema,
-  Tables extends SQLDatabaseTables
-> = CheckSQLTables<
-  Flatten<
-    Tables & {
-      [Key in Table]: SQLTableSchema<Schema>
-    }
-  >
->
-
-type CheckSQLTables<T> = T extends SQLDatabaseTables ? T : never
 
 /**
  * Change the context return type

@@ -31,11 +31,9 @@ export type Invalid<Error> = Error | void | never
 /**
  * Utility type to define an object or array
  */
-export type OneOrMore<T> = T | AtLeastOne<T>
+export type OneOrMore<T> = T | AtLeastOne<T[]>
 
 /**
  * Type to ensure spread operators have at least one element
  */
-export type AtLeastOne<T> = T extends [infer Next, ...infer Rest]
-  ? [Next, ...Rest]
-  : [T, ...T[]]
+export type AtLeastOne<T> = T extends never[] ? never : T

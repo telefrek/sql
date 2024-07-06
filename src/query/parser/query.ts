@@ -3,7 +3,7 @@ import type { SQLDatabaseSchema } from "../../schema/database.js"
 import type { Invalid } from "../../type-utils/common.js"
 import { createQueryBuilder, type QueryBuilder } from "../builder/query.js"
 import type { QueryContext } from "../context.js"
-import { normalize, type NormalizeQuery } from "./normalize.js"
+import { normalizeQuery, type NormalizeQuery } from "./normalize.js"
 import { parseSelectClause, type ParseSelect } from "./select.js"
 
 /**
@@ -35,12 +35,21 @@ export class QueryParser<Database extends SQLDatabaseSchema> {
     this._database = database
   }
 
+  /**
+   * Retrieve the query builder at this point in time
+   */
   get builder(): QueryBuilder<QueryContext<Database>> {
     return createQueryBuilder(this._database)
   }
 
+  /**
+   * Parse the given query into an AST
+   *
+   * @param query The query to parse
+   * @returns A fully parsed SQL query
+   */
   parse<T extends string>(query: T): ParseSQL<T> {
-    return parseQueryClause(normalize(query)) as ParseSQL<T>
+    return parseQueryClause(normalizeQuery(query)) as ParseSQL<T>
   }
 }
 
