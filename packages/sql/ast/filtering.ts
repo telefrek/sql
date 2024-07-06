@@ -16,13 +16,10 @@ type AnyLogicalTree = LogicalTree<any, string, any>
 /**
  * Utility type to verify a LogicalTree doesn't have invalid data
  */
-export type ValidateLogicalTree<Tree> = Tree extends LogicalTree<
-  infer Left,
-  infer Op,
-  infer Right
->
-  ? LogicalTree<Left, Op, Right>
-  : Invalid<"Tree is not a LogicalTree">
+export type ValidateLogicalTree<Tree> =
+  Tree extends LogicalTree<infer Left, infer Op, infer Right>
+    ? LogicalTree<Left, Op, Right>
+    : Invalid<"Tree is not a LogicalTree">
 
 /**
  * Types for building filtering trees
@@ -54,7 +51,7 @@ export type LogicalOperation = "AND" | "OR" | "NOT"
 export type SubqueryFilter<
   Column extends ColumnReference = ColumnReference,
   Operation extends string = SubQueryFilterOperation,
-  Subquery extends SubQuery = SubQuery
+  Subquery extends SubQuery = SubQuery,
 > = {
   type: "SubqueryFilter"
   column: Column
@@ -68,7 +65,7 @@ export type SubqueryFilter<
 export type LogicalTree<
   Left extends LogicalExpression = LogicalExpression,
   Operation extends string = LogicalOperation,
-  Right extends LogicalExpression = LogicalExpression
+  Right extends LogicalExpression = LogicalExpression,
 > = {
   type: "LogicalTree"
   left: Left
@@ -91,7 +88,7 @@ export type LogicalExpression =
 export type ColumnFilter<
   Left extends ColumnReference = ColumnReference,
   Operation extends string = FilteringOperation,
-  Right extends ValueTypes | ColumnReference = ValueTypes | ColumnReference
+  Right extends ValueTypes | ColumnReference = ValueTypes | ColumnReference,
 > = {
   type: "ColumnFilter"
   left: Left

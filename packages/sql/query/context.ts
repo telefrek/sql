@@ -29,7 +29,7 @@ import type { ParseTableReference } from "./parser/table.js"
  * @returns A new {@link QueryContextBuilder}
  */
 export function createContext<Database extends SQLDatabaseSchema>(
-  database: Database
+  database: Database,
 ): QueryContextBuilder<Database> {
   return new QueryContextBuilder<Database>(<
     QueryContext<Database, IgnoreEmpty, number>
@@ -47,7 +47,7 @@ export function createContext<Database extends SQLDatabaseSchema>(
  * @returns A new {@link QueryContextBuilder}
  */
 export function modifyContext<Context extends QueryContext>(
-  context: Context
+  context: Context,
 ): QueryContextBuilder<Context["database"], Context> {
   return new QueryContextBuilder<Context["database"], Context>(context)
 }
@@ -58,7 +58,7 @@ export function modifyContext<Context extends QueryContext>(
 export type QueryContext<
   Database extends SQLDatabaseSchema = SQLDatabaseSchema,
   Active extends SQLDatabaseTables = IgnoreEmpty,
-  Returning extends SQLColumnSchema | number = SQLColumnSchema | number
+  Returning extends SQLColumnSchema | number = SQLColumnSchema | number,
 > = {
   database: Database
   active: Active
@@ -86,7 +86,7 @@ export type GetSelectableColumns<Context extends QueryContext> =
  */
 class QueryContextBuilder<
   Database extends SQLDatabaseSchema,
-  Context extends QueryContext<Database> = QueryContext<Database>
+  Context extends QueryContext<Database> = QueryContext<Database>,
 > {
   private _context: Context
   constructor(context: Context) {
@@ -109,7 +109,7 @@ class QueryContextBuilder<
    */
   add<Table extends string, Updated extends SQLColumnSchema>(
     table: CheckDuplicateKey<Table, Context["active"]>,
-    builder: ColumnSchemaBuilderFn<IgnoreEmpty, Updated> | Updated
+    builder: ColumnSchemaBuilderFn<IgnoreEmpty, Updated> | Updated,
   ): QueryContextBuilder<
     Database,
     ActivateTableContext<Context, ParseTableReference<Table>, Updated>
@@ -143,7 +143,7 @@ class QueryContextBuilder<
    * @template Table The table from the database to copy
    */
   copy<Table extends TableReference>(
-    table: CheckDuplicateTableReference<Table, Context["active"]>
+    table: CheckDuplicateTableReference<Table, Context["active"]>,
   ): QueryContextBuilder<
     Database,
     ActivateTableContext<
@@ -155,7 +155,7 @@ class QueryContextBuilder<
     const t = table as unknown as Table
     return this.add(
       t.alias as CheckDuplicateKey<string, Context["active"]>,
-      this.getTableSchema(t.table)
+      this.getTableSchema(t.table),
     )
   }
 
@@ -175,7 +175,7 @@ class QueryContextBuilder<
           (this._context["active"] as IgnoreAny)[
             table
           ] as unknown as SQLTableSchema
-        )["columns"]
+        )["columns"],
       )
     }
 
@@ -191,7 +191,7 @@ class QueryContextBuilder<
    * @template Schema The new return schema
    */
   returning<Schema extends SQLColumnSchema>(
-    schema: Schema
+    schema: Schema,
   ): QueryContextBuilder<
     Database,
     ChangeContextReturn<Database, Context, Schema>
@@ -215,7 +215,7 @@ class QueryContextBuilder<
 type GetColumnNames<Schema extends SQLDatabaseTables> = {
   [Table in StringKeys<Schema>]: {
     [Column in StringKeys<Schema[Table]["columns"]>]: [Column] extends [
-      GetUniqueColumns<Schema>
+      GetUniqueColumns<Schema>,
     ]
       ? Column
       : `${Table}.${Column}`
@@ -227,7 +227,7 @@ type GetColumnNames<Schema extends SQLDatabaseTables> = {
  */
 type GetOtherColumns<
   Schema extends SQLDatabaseTables,
-  Table extends keyof Schema
+  Table extends keyof Schema,
 > = {
   [Key in keyof Schema]: Key extends Table
     ? never
@@ -255,40 +255,40 @@ type UniqueKeys<Left extends string, Right extends string> = {
  * Retrieve the schema for the given table from the database or active portions
  * of the context
  */
-type GetTableSchema<
-  Context extends QueryContext,
-  Table extends string
-> = Context extends QueryContext<infer Database, infer Active, infer _>
-  ? [Table] extends [StringKeys<Database["tables"]>]
-    ? Database["tables"][Table]["columns"]
-    : [Table] extends [StringKeys<Active>]
-    ? Active[Table]["columns"]
+type GetTableSchema<Context extends QueryContext, Table extends string> =
+  Context extends QueryContext<infer Database, infer Active, infer _>
+    ? [Table] extends [StringKeys<Database["tables"]>]
+      ? Database["tables"][Table]["columns"]
+      : [Table] extends [StringKeys<Active>]
+        ? Active[Table]["columns"]
+        : never
     : never
-  : never
 
 /**
  * Utility type to check for table reference conflict with an existing table
  */
 type CheckDuplicateTableReference<
   Table extends TableReference,
-  Tables extends SQLDatabaseTables
-> = CheckDuplicateKey<Table["alias"], Tables> extends Table["alias"]
-  ? Table
-  : Invalid<"Table reference alias conflicts with existing table name">
+  Tables extends SQLDatabaseTables,
+> =
+  CheckDuplicateKey<Table["alias"], Tables> extends Table["alias"]
+    ? Table
+    : Invalid<"Table reference alias conflicts with existing table name">
 
 /**
  * Utility type for retrieving the table schema from the context
  */
 export type GetContextTableSchema<
   Context extends QueryContext,
-  Table extends string
-> = Context extends QueryContext<infer Database, infer Active, infer _>
-  ? Table extends StringKeys<Active>
-    ? Active[Table]["columns"]
-    : Table extends StringKeys<Database["tables"]>
-    ? Database["tables"][Table]["columns"]
+  Table extends string,
+> =
+  Context extends QueryContext<infer Database, infer Active, infer _>
+    ? Table extends StringKeys<Active>
+      ? Active[Table]["columns"]
+      : Table extends StringKeys<Database["tables"]>
+        ? Database["tables"][Table]["columns"]
+        : never
     : never
-  : never
 
 /**
  * Utility type that adds the given table and schema to the active context
@@ -299,18 +299,19 @@ export type ActivateTableContext<
   Schema extends SQLColumnSchema = GetContextTableSchema<
     Context,
     Table["table"]
+  >,
+> =
+  Context extends QueryContext<
+    Context["database"],
+    infer Active,
+    infer Returning
   >
-> = Context extends QueryContext<
-  Context["database"],
-  infer Active,
-  infer Returning
->
-  ? QueryContext<
-      Context["database"],
-      AddTableToSchema<Table["alias"], Schema, Active>,
-      Returning
-    >
-  : never
+    ? QueryContext<
+        Context["database"],
+        AddTableToSchema<Table["alias"], Schema, Active>,
+        Returning
+      >
+    : never
 
 /**
  * Change the context return type
@@ -318,7 +319,8 @@ export type ActivateTableContext<
 type ChangeContextReturn<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database>,
-  Returning extends SQLColumnSchema
-> = Context extends QueryContext<Database, infer Active, infer _>
-  ? QueryContext<Database, Active, Returning>
-  : never
+  Returning extends SQLColumnSchema,
+> =
+  Context extends QueryContext<Database, infer Active, infer _>
+    ? QueryContext<Database, Active, Returning>
+    : never

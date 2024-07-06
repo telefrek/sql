@@ -7,7 +7,7 @@ import type { ForeignKey, PrimaryKey } from "./keys.js"
  */
 export type SQLTableSchema<
   Schema extends SQLColumnSchema = SQLColumnSchema,
-  Key extends PrimaryKey<Schema> = never
+  Key extends PrimaryKey<Schema> = never,
 > = [Key] extends [never]
   ? {
       columns: Schema
@@ -34,7 +34,7 @@ export type ForeignKeys = {
  */
 export type SQLDatabaseSchema<
   Tables extends SQLDatabaseTables = SQLDatabaseTables,
-  Relations extends ForeignKeys = ForeignKeys
+  Relations extends ForeignKeys = ForeignKeys,
 > = {
   tables: Tables
   relations: Relations

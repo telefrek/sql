@@ -11,10 +11,11 @@
   "scripts": {
     "clean": "tsc --build --clean tsconfig.json",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
-    "format": "pnpx prettier --write .",
+    "format": "pnpm run -r format",
     "build": "tsc --build tsconfig.json",
     "package": "tsc --build tsconfig.publish.json",
-    "lint": "pnpx eslint . --fix --ignore-pattern \"dist\""
+    "lint": "pnpm run -r lint",
+    "ci": "pnpm run lint && pnpm run build && pnpm run test"
   },
   "type": "module",
   "devDependencies": {

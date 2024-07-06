@@ -51,7 +51,6 @@
   },
   "scripts": {
     "clean": "tsc --build --clean tsconfig.json",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
     "format": "pnpx prettier --write .",
     "build": "tsc --build tsconfig.json",
     "lint": "pnpx eslint . --fix --ignore-pattern \"dist\""

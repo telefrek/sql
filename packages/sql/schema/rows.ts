@@ -33,10 +33,10 @@ type RequiredKeys<T extends SQLColumnSchema> = {
   [K in keyof T]: T[K]["nullable"] extends true
     ? never
     : T[K]["autoIncrement"] extends true
-    ? never
-    : T[K]["default"] extends [never]
-    ? K
-    : never
+      ? never
+      : T[K]["default"] extends [never]
+        ? K
+        : never
 }[keyof T]
 
 /**

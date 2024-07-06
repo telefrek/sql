@@ -122,7 +122,7 @@ describe("SQL databases should validate queries", () => {
     expect(database).not.toBeUndefined()
 
     const query = database.parseSQL(
-      "SELECT id as product_id FROM products AS o"
+      "SELECT id as product_id FROM products AS o",
     )
     expect(query.query.columns.product_id.reference.column).toBe("id")
     expect(query.query.from.table).toBe("products")

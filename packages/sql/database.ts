@@ -23,10 +23,10 @@ export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
  * @returns A {@link SQLDatabase} for the given schema
  */
 export function getDatabase<Schema extends SQLDatabaseSchema>(
-  schema: Schema
+  schema: Schema,
 ): SQLDatabase<Schema> {
   const parseSQL = <T extends string>(
-    query: CheckQuery<Schema, T>
+    query: CheckQuery<Schema, T>,
   ): ParseSQL<T> => {
     return new QueryParser(schema).parse(query as string) as ParseSQL<T>
   }

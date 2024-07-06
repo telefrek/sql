@@ -16,13 +16,10 @@ type AnyAssignmentTree = AssignmentTree<any, string, any>
 /**
  * Utility type to verify a LogicalTree doesn't have invalid data
  */
-export type ValidateAssignmentTree<Tree> = Tree extends AssignmentTree<
-  infer Left,
-  infer Op,
-  infer Right
->
-  ? AssignmentTree<Left, Op, Right>
-  : Invalid<"Tree is not an AssignmentTree">
+export type ValidateAssignmentTree<Tree> =
+  Tree extends AssignmentTree<infer Left, infer Op, infer Right>
+    ? AssignmentTree<Left, Op, Right>
+    : Invalid<"Tree is not an AssignmentTree">
 
 /**
  * Operation to modify a column using a value
@@ -59,7 +56,7 @@ export type AssignmentExpression =
 export type AssignmentTree<
   Left extends AssignmentExpression = AssignmentExpression,
   Operation extends string = AssignmentOperation,
-  Right extends AssignmentExpression = AssignmentExpression
+  Right extends AssignmentExpression = AssignmentExpression,
 > = {
   type: "AssignmentTree"
   left: Left
@@ -72,7 +69,7 @@ export type AssignmentTree<
  */
 export type UpdateClause<
   Table extends TableReference = TableReference,
-  Columns extends OneOrMore<ColumnAssignment> = OneOrMore<ColumnAssignment>
+  Columns extends OneOrMore<ColumnAssignment> = OneOrMore<ColumnAssignment>,
 > = {
   type: "UpdateClause"
   columns: Columns
@@ -85,7 +82,7 @@ export type UpdateClause<
  */
 export type ColumnAssignment<
   Column extends ColumnReference = ColumnReference,
-  Assignment extends AssignmentExpression = AssignmentExpression
+  Assignment extends AssignmentExpression = AssignmentExpression,
 > = {
   type: "ColumnAssignment"
   column: Column

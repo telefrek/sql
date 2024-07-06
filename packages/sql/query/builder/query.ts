@@ -17,7 +17,7 @@ export interface QueryBuilder<Context extends QueryContext> {
  * @returns A {@link QueryBuilder} for the database with an empty {@link QueryContext}
  */
 export function createQueryBuilder<Database extends SQLDatabaseSchema>(
-  database: Database
+  database: Database,
 ): QueryBuilder<QueryContext<Database>> {
   return new DefaultQueryBuilder(createContext(database).context)
 }
