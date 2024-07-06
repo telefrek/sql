@@ -33,18 +33,13 @@
     "target": "ESNext",
     "baseUrl": "./",
     "paths": {
-      "@telefrek/type-utils": ["./packages/type-utils"],
-      "@telefrek/type-utils/*": ["./packages/type-utils/*"],
-      "@telefrek/sql": ["./packages/sql"],
-      "@telefrek/sql/*": ["./packages/sql/*"]
+      "@telefrek/type-utils": ["../type-utils"],
+      "@telefrek/type-utils/*": ["../type-utils/*"]
     }
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules", "dist", "./**/*.test.ts", "./**/testUtils.ts"],
-  "references": [
-    { "path": "./packages/type-utils" },
-    { "path": "./packages/sql" }
-  ],
+  "references": [{ "path": "../type-utils" }],
   "watchOptions": {
     "excludeDirectories": ["**/dist", "**/node_modules"]
   },

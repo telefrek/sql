@@ -1,0 +1,65 @@
+{
+  "name": "@telefrek/postgres",
+  "displayName": "Telefrek Postgres Library",
+  "description": "This is a library that builds upon the our SQL package to support Postgres via the pg project for issuing queries",
+  "version": "1.0.0",
+  "keywords": [
+    "TypeScript",
+    "SQL"
+  ],
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
+  ],
+  "main": "./dist/index.js",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    },
+    "./*.js": {
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
+  },
+  "repository": {
+    "url": "https://github.com/telefrek/sql",
+    "type": "github"
+  },
+  "author": {
+    "name": "Nathan Northcutt",
+    "email": "nathan@telefrek.com"
+  },
+  "dependencies": {
+    "@telefrek/type-utils": "workspace:^",
+    "@telefrek/sql": "workspace:^",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.6"
+  },
+  "scripts": {
+    "clean": "tsc --build --clean tsconfig.json",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
+    "format": "pnpx prettier --write .",
+    "build": "tsc --build tsconfig.json",
+    "lint": "pnpx eslint . --fix --ignore-pattern \"dist\""
+  },
+  "type": "module",
+  "packageManager": "pnpm@9.3.0+sha256.e1f9e8d1a16607a46dd3c158b5f7a7dc7945501d1c6222d454d63d033d1d918f",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  }
+}
