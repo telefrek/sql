@@ -30,6 +30,6 @@ jobs:
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  build-granada-workflow:
+  build-sql-workflow:
     jobs:
       - build-and-test
