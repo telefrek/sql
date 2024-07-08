@@ -42,12 +42,7 @@ export function parseSelectedColumns(tokens: string[]): {
 
   // Parse out the column references and add them to an empty object
   return {
-    columns: columns
-      .map((c) => parseColumnReference(c))
-      .reduce((v, r) => {
-        Object.defineProperty(v, r.alias, { enumerable: true, value: r })
-        return v
-      }, {}),
+    columns: columns.map((c) => parseColumnReference(c)) as SelectColumns,
   }
 }
 
