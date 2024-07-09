@@ -5,7 +5,8 @@
   "version": "1.0.0",
   "keywords": [
     "TypeScript",
-    "SQL"
+    "SQL",
+    "MySQL"
   ],
   "files": [
     "dist/**/*.js",
@@ -45,9 +46,6 @@
     "@telefrek/type-utils": "workspace:^",
     "@telefrek/sql": "workspace:^",
     "mysql2": "^3.10.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.10"
   },
   "scripts": {
     "clean": "tsc --build --clean tsconfig.json",

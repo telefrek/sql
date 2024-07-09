@@ -1,5 +1,5 @@
 import { QueryParser, type ParseSQL } from "./query/parser/query.js"
-import type { CheckQuery } from "./query/validation/query.js"
+import type { VerifyQueryString } from "./query/validation/query.js"
 import type { SQLDatabaseSchema } from "./schema/database.js"
 
 /**
@@ -13,7 +13,7 @@ export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
    *
    * @param query The query to parse
    */
-  parseSQL<T extends string>(query: CheckQuery<Schema, T>): ParseSQL<T>
+  parseSQL<T extends string>(query: VerifyQueryString<Schema, T>): ParseSQL<T>
 }
 
 /**
@@ -23,10 +23,10 @@ export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
  * @returns A {@link SQLDatabase} for the given schema
  */
 export function getDatabase<Schema extends SQLDatabaseSchema>(
-  schema: Schema,
+  schema: Schema
 ): SQLDatabase<Schema> {
   const parseSQL = <T extends string>(
-    query: CheckQuery<Schema, T>,
+    query: VerifyQueryString<Schema, T>
   ): ParseSQL<T> => {
     return new QueryParser(schema).parse(query as string) as ParseSQL<T>
   }
