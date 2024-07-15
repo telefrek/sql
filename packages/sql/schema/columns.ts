@@ -3,7 +3,8 @@ import type {
   IncrementalSQLTypes,
   SQLBuiltinTypes,
   TSSQLType,
-  VariableSQLTypes,
+  VariableLengthSQLTypes,
+  VariableNumericTypes,
 } from "../types.js"
 
 /**
@@ -23,7 +24,12 @@ export type SQLColumnOptions<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
  * The type information for a column
  */
 export type ColumnTypeDefinition<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
-  Flatten<IncrementalType<T> & VariableType<T> & BaseColumnDefinition<T>>
+  Flatten<
+    IncrementalType<T> &
+      VariableLengthType<T> &
+      BaseColumnDefinition<T> &
+      VariableNumericType<T>
+  >
 
 /**
  * A value or provider of a value
@@ -47,7 +53,7 @@ type BaseColumnDefinition<T extends SQLBuiltinTypes> = {
  * Extended information for incremental column types
  */
 type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
-  IncrementalSQLTypes,
+  IncrementalSQLTypes
 ]
   ? { autoIncrement?: true }
   : object
@@ -55,6 +61,17 @@ type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
 /**
  * Extended information for variable size column types
  */
-type VariableType<T extends SQLBuiltinTypes> = [T] extends [VariableSQLTypes]
+type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
+  VariableLengthSQLTypes
+]
   ? { size?: number }
+  : object
+
+/**
+ * Extended information for variable numeric precision types
+ */
+type VariableNumericType<T extends SQLBuiltinTypes> = [T] extends [
+  VariableNumericTypes
+]
+  ? { precision?: number; scale?: number }
   : object

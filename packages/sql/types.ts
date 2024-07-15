@@ -61,8 +61,15 @@ export type NumericSQLTypes =
   | SQLBuiltinTypes.SMALLINT
   | SQLBuiltinTypes.TINYINT
 
+/** The set of numeric types that have options for sizing */
+export type VariableNumericTypes =
+  | SQLBuiltinTypes.DECIMAL
+  | SQLBuiltinTypes.FLOAT
+  | SQLBuiltinTypes.NUMERIC
+  | SQLBuiltinTypes.REAL
+
 /** The set of types that are variable length */
-export type VariableSQLTypes =
+export type VariableLengthSQLTypes =
   | SQLBuiltinTypes.NVARCHAR
   | SQLBuiltinTypes.VARBINARY
   | SQLBuiltinTypes.VARCHAR
@@ -78,9 +85,40 @@ export type IncrementalSQLTypes =
 export type TSSQLType<T extends SQLBuiltinTypes> = [T] extends [BigIntSQLTypes]
   ? number | bigint
   : [T] extends [BinarySQLTypes]
-    ? Uint8Array
-    : [T] extends [NumericSQLTypes]
-      ? number
-      : [T] extends [SQLBuiltinTypes.BIT]
-        ? boolean
-        : string
+  ? Uint8Array
+  : [T] extends [NumericSQLTypes]
+  ? number
+  : [T] extends [SQLBuiltinTypes.BIT]
+  ? boolean
+  : string
+
+/** This is a test for numbers that should fit under the Number.MAX_SAFE_INT */
+const SAFE_INT_REGEX = /^(-)?[0-8]?\d{1,15}$/
+
+/** This is NOT a test for a VALID regex, but simply a way to quickly identify
+ * strings that are likely UTC dates */
+const UTC_REGEX_TEST = /^\d{4}-\d{2}-\d{2}[ tT]\d{2}:\d{2}:\d{2}.*[zZ]?$/
+
+/**
+ * Parse the value as a number or bigint
+ *
+ * @param value The value to parse as a bigint or number
+ * @returns A number if in the safe range or bigint
+ */
+export function parseSafeBigInt(value: string): number | bigint {
+  return SAFE_INT_REGEX.test(value)
+    ? Number(value) // If number is less than 16 digits that start with a 9 we don't care
+    : (value.startsWith("-") ? value.substring(1) : value) > "9007199254740991"
+    ? BigInt(value)
+    : Number(value)
+}
+
+/**
+ * Parse the date string value as a safe bigint or number
+ *
+ * @param value The value to parse as a date into a bigint or number
+ * @returns A number if in the safe range or bigint
+ */
+export function parseDateToSafeBigInt(value: string): number | bigint {
+  return UTC_REGEX_TEST.test(value) ? Date.parse(value) : parseSafeBigInt(value)
+}

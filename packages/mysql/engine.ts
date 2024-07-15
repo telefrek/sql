@@ -7,7 +7,9 @@ import {
   type SubmittableQuery,
 } from "@telefrek/sql/engines/common.js"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
+import { parseDateToSafeBigInt } from "@telefrek/sql/types"
 import mysql from "mysql2/promise"
+import { parseAST } from "./visitor.js"
 
 let MYSQL_CONN: mysql.Connection | undefined
 
@@ -20,7 +22,7 @@ const TYPE_CAST: mysql.TypeCast = (field, next) => {
     case "LONG":
     case "LONGLONG": {
       const v = field.string("utf-8")
-      return v ? (UTC_REGEX.test(v) ? Date.parse(v) : safeBigInt(v)) : null
+      return v ? parseDateToSafeBigInt(v) : v
     }
   }
 
@@ -61,31 +63,20 @@ function checkQuery<T extends SubmittableQuery>(query: T): MySQLQuery {
 
 function createQuery<T extends SQLQuery>(
   name: string,
-  _query: T,
+  query: T,
   queryString?: string
 ): MySQLQuery {
-  return new MySQLQuery(name, queryString ?? "")
+  return new MySQLQuery(name, parseAST(query, queryString))
 }
-
-const SAFE_INT_REGEX = /^(-)?[0-8]?\d{1,15}$/
-
-const safeBigInt = (v: string) => {
-  return SAFE_INT_REGEX.test(v)
-    ? Number(v) // If number is less than 16 digits that start with a 9 we don't care
-    : (v.startsWith("-") ? v.substring(1) : v) > "9007199254740991"
-    ? BigInt(v)
-    : Number(v)
-}
-
-const UTC_REGEX = /\d{4}-\d{2}-\d{2}.?\d{2}:\d{2}:\d{2}.*/
 
 async function executeQuery<Query extends SubmittableQuery>(
   ...args: DatabaseEngineExecuteParameters<Query>
 ): Promise<GetReturnType<Query>> {
-  const [rows] = await MYSQL_CONN!.query({
+  const options = {
     sql: checkQuery(args[0]).query,
     typeCast: TYPE_CAST,
-  })
+  }
 
+  const [rows] = await MYSQL_CONN!.query(options)
   return rows as GetReturnType<Query>
 }

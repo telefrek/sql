@@ -1,5 +1,6 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
+import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./testUtils.js"
 
 describe("Schema building should create valid schemas", () => {
@@ -79,6 +80,32 @@ describe("Invalid queries should be rejected", () => {
       const bad: ParseSQL<"SELECT FROM table"> = "Invalid empty column"
       expect(bad).not.toBeUndefined()
     })
+  })
+})
+
+describe("Query visitors should produce equivalent SQL", () => {
+  it("Should be able to return a simple select", () => {
+    const queryString = "SELECT * FROM orders"
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const visitor = new DefaultQueryVisitor()
+    visitor.visitQuery(query)
+    expect(visitor.sql).toBe(queryString)
+  })
+
+  it("Should be able to return a select with columns", () => {
+    const queryString = "SELECT id, user_id FROM orders"
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const visitor = new DefaultQueryVisitor()
+    visitor.visitQuery(query)
+    expect(visitor.sql).toBe(queryString)
+  })
+
+  it("Should be able to return a select with alias", () => {
+    const queryString = "SELECT id AS order_id, user_id FROM orders AS o"
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const visitor = new DefaultQueryVisitor()
+    visitor.visitQuery(query)
+    expect(visitor.sql).toBe(queryString)
   })
 })
 

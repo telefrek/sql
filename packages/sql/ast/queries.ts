@@ -44,8 +44,7 @@ export type SubQuery<Query extends QueryClause = QueryClause> = {
  * Structure for a returning clause
  */
 export type ReturningClause<
-  Returning extends
-    OneOrMore<TableColumnReference> = OneOrMore<TableColumnReference>,
+  Returning extends OneOrMore<TableColumnReference> = OneOrMore<TableColumnReference>
 > = {
   returning: Returning
 }
@@ -66,7 +65,7 @@ export type InsertClause<
   Columns extends OneOrMore<ColumnReference> = OneOrMore<ColumnReference>,
   Values extends OneOrMore<ValueTypes> | RowGeneratingClause =
     | OneOrMore<ValueTypes>
-    | RowGeneratingClause,
+    | RowGeneratingClause
 > = {
   type: "InsertClause"
   table: Table
