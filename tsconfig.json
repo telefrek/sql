@@ -39,9 +39,7 @@
       "@telefrek/mysql": ["./packages/mysql"],
       "@telefrek/mysql/*": ["./packages/mysql/*"],
       "@telefrek/postgres": ["./packages/postgres"],
-      "@telefrek/postgres/*": ["./packages/postgres/*"],
-      "@telefrek/couchbase": ["./packages/couchbase"],
-      "@telefrek/couchbase/*": ["./packages/couchbase/*"]
+      "@telefrek/postgres/*": ["./packages/postgres/*"]
     }
   },
   "include": ["./**/*.ts"],
@@ -50,8 +48,7 @@
     { "path": "./packages/type-utils" },
     { "path": "./packages/sql" },
     { "path": "./packages/mysql" },
-    { "path": "./packages/postgres" },
-    { "path": "./packages/couchbase" }
+    { "path": "./packages/postgres" }
   ],
   "watchOptions": {
     "excludeDirectories": ["**/dist", "**/node_modules"]

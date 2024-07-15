@@ -47,6 +47,10 @@
     "@telefrek/sql": "workspace:^",
     "mysql2": "^3.10.2"
   },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@testcontainers/mysql": "^10.10.3"
+  },
   "scripts": {
     "clean": "tsc --build --clean tsconfig.json",
     "format": "pnpx prettier --write .",

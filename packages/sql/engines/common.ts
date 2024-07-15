@@ -12,12 +12,21 @@ export type GetReturnType<Query extends SubmittableQuery> =
       : Results[]
     : never
 
+export type GetRowType<Query extends SubmittableQuery> =
+  Query extends SubmittableQuery<infer Results, infer _>
+    ? Results extends number
+      ? never
+      : Results
+    : never
+
 type GetQueryType<
   Database extends SQLDatabaseSchema,
   T extends SQLQuery
 > = SubmittableQuery<
   SQLReturnRowType<BuildActive<Database["tables"], T>, T["query"]>
 >
+
+// TODO: Need to re-write execute to only require parameters if query requires parameters...
 
 type EngineConfig<QueryType extends Omit<SubmittableQuery, "execute">> = {
   checkQuery: <T extends SubmittableQuery>(query: T) => QueryType
@@ -29,10 +38,16 @@ type EngineConfig<QueryType extends Omit<SubmittableQuery, "execute">> = {
   ) => QueryType
 
   executeQuery: <Query extends SubmittableQuery>(
-    query: QueryType,
-    parameters: GetQueryParameters<Query>
+    ...args: DatabaseEngineExecuteParameters<Query>
   ) => Promise<GetReturnType<Query>>
 }
+
+export type DatabaseEngineExecuteParameters<Query extends SubmittableQuery> =
+  Query extends SubmittableQuery<infer _, infer Parameters>
+    ? [Parameters] extends [never]
+      ? [query: Query]
+      : [query: Query, parameters: Parameters]
+    : never
 
 export function createEngine<
   Database extends SQLDatabaseSchema,
@@ -52,8 +67,7 @@ export interface DatabaseEngine<Database extends SQLDatabaseSchema> {
   ): GetQueryType<Database, T>
 
   execute<Query extends SubmittableQuery>(
-    query: Query,
-    parameters: GetQueryParameters<Query>
+    ...args: DatabaseEngineExecuteParameters<Query>
   ): Promise<GetReturnType<Query>>
 }
 
@@ -72,18 +86,24 @@ export abstract class AbstractDatabaseEngine<
   ): GetQueryType<Database, T> {
     const q = this._createQuery(name, query, queryString)
 
+    const execute = this._executeQuery.bind(this)
+
     return {
       ...q,
-      execute: (_: GetQueryType<Database, T>, parameters: never) =>
-        this._executeQuery(q, parameters),
+      execute: (
+        ...args: DatabaseEngineExecuteParameters<GetQueryType<Database, T>>
+      ) => {
+        args[0] = q as unknown as GetQueryType<Database, T>
+        execute(...args)
+      },
     } as unknown as GetQueryType<Database, T>
   }
 
   execute<Query extends SubmittableQuery>(
-    query: Query,
-    parameters: GetQueryParameters<Query>
+    ...args: DatabaseEngineExecuteParameters<Query>
   ): Promise<GetReturnType<Query>> {
-    return this._executeQuery(this._checkQuery(query), parameters)
+    args[0] = this._checkQuery(args[0]) as unknown as Query
+    return this._executeQuery(...args)
   }
 
   protected abstract _checkQuery<T extends SubmittableQuery>(
@@ -97,22 +117,23 @@ export abstract class AbstractDatabaseEngine<
   ): QueryImplementation
 
   protected abstract _executeQuery<Query extends SubmittableQuery>(
-    query: QueryImplementation,
-    parameters: GetQueryParameters<Query>
+    ...args: DatabaseEngineExecuteParameters<Query>
   ): Promise<GetReturnType<Query>>
 }
+
+type SubmittableQueryParamters<P> = [P] extends [never] ? [] : [parameters: P]
 
 /**
  * An object that can be submitted to an engine
  */
 export interface SubmittableQuery<
-  RowType extends object | number = number,
+  RowType extends object | number = object | number,
   Parameters extends object = never
 > {
   readonly name: string
 
   execute(
-    parameters: Parameters
+    ...args: SubmittableQueryParamters<Parameters>
   ): Promise<RowType extends number ? number : RowType[]>
 }
 
@@ -129,8 +150,7 @@ class ConfigurableDatabaseEngine<
   ) => QueryType
 
   _executeQuery: <Query extends SubmittableQuery>(
-    query: QueryType,
-    parameters: GetQueryParameters<Query>
+    ...args: DatabaseEngineExecuteParameters<Query>
   ) => Promise<GetReturnType<Query>>
 
   constructor(database: Database, config: EngineConfig<QueryType>) {
