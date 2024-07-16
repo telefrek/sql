@@ -4,11 +4,13 @@ import {
   createEngine,
   type DatabaseEngineExecuteParameters,
   type GetReturnType,
+  type ParameterizedQuery,
   type SubmittableQuery,
 } from "@telefrek/sql/engines/common.js"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt } from "@telefrek/sql/types"
 import mysql from "mysql2/promise"
+import { inspect } from "util"
 import { parseAST } from "./visitor.js"
 
 let MYSQL_CONN: mysql.Connection | undefined
@@ -33,13 +35,33 @@ export function initializeMySQL(conn: mysql.Connection): void {
   MYSQL_CONN = conn
 }
 
-export class MySQLQuery {
-  readonly name: string
-  readonly query: string
+const MY_SQL_QUERY_TYPE: unique symbol = Symbol()
 
-  constructor(name: string, query: string) {
+export class MySQLQuery<
+  RowType extends object | number = object | number,
+  Parameters extends object = never
+> implements ParameterizedQuery<RowType, Parameters>
+{
+  [MY_SQL_QUERY_TYPE] = "mysql"
+
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return (
+      value !== null && typeof value === "object" && MY_SQL_QUERY_TYPE in value
+    )
+  }
+
+  readonly query: string
+  readonly name: string
+  readonly parameters?: Parameters
+
+  constructor(name: string, query: string, parameters?: Parameters) {
     this.name = name
     this.query = query
+    this.parameters = parameters
+  }
+
+  bind(parameters: Parameters): SubmittableQuery<RowType> {
+    return new MySQLQuery(this.name, this.query, parameters)
   }
 }
 
@@ -58,7 +80,13 @@ export function createMySQLEngine<Database extends SQLDatabaseSchema>(
 }
 
 function checkQuery<T extends SubmittableQuery>(query: T): MySQLQuery {
-  return query as unknown as MySQLQuery
+  if (query instanceof MySQLQuery) {
+    return query
+  }
+
+  console.log(inspect(query, true, 10, true))
+
+  throw new Error("Invalid query: expected MySQLQuery")
 }
 
 function createQuery<T extends SQLQuery>(
@@ -72,11 +100,11 @@ function createQuery<T extends SQLQuery>(
 async function executeQuery<Query extends SubmittableQuery>(
   ...args: DatabaseEngineExecuteParameters<Query>
 ): Promise<GetReturnType<Query>> {
-  const options = {
-    sql: checkQuery(args[0]).query,
-    typeCast: TYPE_CAST,
-  }
+  const query = checkQuery(args[0])
 
-  const [rows] = await MYSQL_CONN!.query(options)
+  const [rows] = await MYSQL_CONN!.query(<mysql.QueryOptions>{
+    sql: query.query,
+    typeCast: TYPE_CAST,
+  })
   return rows as GetReturnType<Query>
 }
