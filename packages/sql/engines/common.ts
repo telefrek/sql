@@ -24,18 +24,22 @@ export type GetRowType<Query extends SubmittableQuery> =
 type GetQueryType<
   Database extends SQLDatabaseSchema,
   T extends SQLQuery
-> = SubmittableQuery<
-  SQLReturnRowType<BuildActive<Database["tables"], T>, T["query"]>
+> = CheckQuery<
+  SubmittableQuery<
+    SQLReturnRowType<BuildActive<Database["tables"], T>, T["query"]>
+  >
 >
 
-type EngineConfig<QueryType extends Omit<SubmittableQuery, "execute">> = {
-  checkQuery: <T extends SubmittableQuery>(query: T) => QueryType
+type CheckQuery<T> = T extends SubmittableQuery<infer RowType>
+  ? SubmittableQuery<RowType>
+  : never
 
+type EngineConfig = {
   createQuery: <T extends SQLQuery>(
     name: string,
     query: T,
     queryString?: string
-  ) => QueryType
+  ) => SubmittableQuery
 
   executeQuery: <Query extends SubmittableQuery>(
     ...args: DatabaseEngineExecuteParameters<Query>
@@ -45,17 +49,14 @@ type EngineConfig<QueryType extends Omit<SubmittableQuery, "execute">> = {
 export type DatabaseEngineExecuteParameters<Query extends SubmittableQuery> =
   Query extends ParameterizedQuery<infer _, infer Parameters>
     ? [query: Query, parameters: Parameters]
-    : Query extends SubmittableQuery
+    : Query extends SubmittableQuery<infer _>
     ? [query: Query]
     : never
 
-export function createEngine<
-  Database extends SQLDatabaseSchema,
-  QueryType extends SubmittableQuery
->(
+export function createEngine<Database extends SQLDatabaseSchema>(
   database: Database,
-  config: EngineConfig<QueryType>
-): AbstractDatabaseEngine<Database, QueryType> {
+  config: EngineConfig
+): DatabaseEngine<Database> {
   return new ConfigurableDatabaseEngine(database, config)
 }
 
@@ -71,35 +72,30 @@ export interface DatabaseEngine<Database extends SQLDatabaseSchema> {
   ): Promise<GetReturnType<Query>>
 }
 
-export abstract class AbstractDatabaseEngine<
-  Database extends SQLDatabaseSchema,
-  QueryType extends SubmittableQuery
-> implements DatabaseEngine<Database>
+abstract class AbstractDatabaseEngine<Database extends SQLDatabaseSchema>
+  implements DatabaseEngine<Database>
 {
+  constructor(_database: Database) {}
+
   translateQuery<T extends SQLQuery>(
     name: string,
     query: T,
     queryString?: string
-  ): QueryType {
+  ): GetQueryType<Database, T> {
     return this._createQuery(name, query, queryString)
   }
 
   execute<Query extends SubmittableQuery>(
     ...args: DatabaseEngineExecuteParameters<Query>
   ): Promise<GetReturnType<Query>> {
-    args[0] = this._checkQuery(args[0])
     return this._executeQuery(...args)
   }
-
-  protected abstract _checkQuery<T extends SubmittableQuery>(
-    query: T
-  ): QueryType
 
   protected abstract _createQuery<T extends SQLQuery>(
     name: string,
     query: T,
     queryString?: string
-  ): QueryType
+  ): SubmittableQuery
 
   protected abstract _executeQuery<Query extends SubmittableQuery>(
     ...args: DatabaseEngineExecuteParameters<Query>
@@ -129,25 +125,21 @@ export interface ParameterizedQuery<
 }
 
 class ConfigurableDatabaseEngine<
-  Database extends SQLDatabaseSchema,
-  QueryType extends SubmittableQuery
-> extends AbstractDatabaseEngine<Database, QueryType> {
-  _checkQuery: <T extends SubmittableQuery>(query: T) => QueryType
-
+  Database extends SQLDatabaseSchema
+> extends AbstractDatabaseEngine<Database> {
   _createQuery: <T extends SQLQuery>(
     name: string,
     query: T,
     queryString?: string
-  ) => QueryType
+  ) => GetQueryType<Database, T>
 
   _executeQuery: <Query extends SubmittableQuery>(
     ...args: DatabaseEngineExecuteParameters<Query>
   ) => Promise<GetReturnType<Query>>
 
-  constructor(database: Database, config: EngineConfig<QueryType>) {
-    super()
+  constructor(database: Database, config: EngineConfig) {
+    super(database)
 
-    this._checkQuery = config.checkQuery.bind(this)
     this._createQuery = config.createQuery.bind(this)
     this._executeQuery = config.executeQuery.bind(this)
   }

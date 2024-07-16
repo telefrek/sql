@@ -1,6 +1,6 @@
 import type { SQLQuery } from "@telefrek/sql/ast/queries"
 import {
-  AbstractDatabaseEngine,
+  DatabaseEngine,
   createEngine,
   type DatabaseEngineExecuteParameters,
   type GetReturnType,
@@ -10,7 +10,6 @@ import {
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt } from "@telefrek/sql/types"
 import mysql from "mysql2/promise"
-import { inspect } from "util"
 import { parseAST } from "./visitor.js"
 
 let MYSQL_CONN: mysql.Connection | undefined
@@ -35,18 +34,18 @@ export function initializeMySQL(conn: mysql.Connection): void {
   MYSQL_CONN = conn
 }
 
-const MY_SQL_QUERY_TYPE: unique symbol = Symbol()
+const MYSQL_QUERY_TYPE: unique symbol = Symbol()
 
 export class MySQLQuery<
   RowType extends object | number = object | number,
   Parameters extends object = never
 > implements ParameterizedQuery<RowType, Parameters>
 {
-  [MY_SQL_QUERY_TYPE] = "mysql"
+  [MYSQL_QUERY_TYPE] = "mysql"
 
   static [Symbol.hasInstance](value: unknown): boolean {
     return (
-      value !== null && typeof value === "object" && MY_SQL_QUERY_TYPE in value
+      value !== null && typeof value === "object" && MYSQL_QUERY_TYPE in value
     )
   }
 
@@ -67,26 +66,15 @@ export class MySQLQuery<
 
 export function createMySQLEngine<Database extends SQLDatabaseSchema>(
   database: Database
-): AbstractDatabaseEngine<Database, MySQLQuery> {
+): DatabaseEngine<Database> {
   if (MYSQL_CONN === undefined) {
     throw new Error("Need to initialize MySQL")
   }
 
   return createEngine(database, {
-    checkQuery,
     createQuery,
     executeQuery,
-  }) as AbstractDatabaseEngine<Database, MySQLQuery>
-}
-
-function checkQuery<T extends SubmittableQuery>(query: T): MySQLQuery {
-  if (query instanceof MySQLQuery) {
-    return query
-  }
-
-  console.log(inspect(query, true, 10, true))
-
-  throw new Error("Invalid query: expected MySQLQuery")
+  })
 }
 
 function createQuery<T extends SQLQuery>(
@@ -100,11 +88,14 @@ function createQuery<T extends SQLQuery>(
 async function executeQuery<Query extends SubmittableQuery>(
   ...args: DatabaseEngineExecuteParameters<Query>
 ): Promise<GetReturnType<Query>> {
-  const query = checkQuery(args[0])
+  const query = args[0]
+  if (query instanceof MySQLQuery) {
+    const [rows] = await MYSQL_CONN!.query(<mysql.QueryOptions>{
+      sql: query.query,
+      typeCast: TYPE_CAST,
+    })
+    return rows as GetReturnType<Query>
+  }
 
-  const [rows] = await MYSQL_CONN!.query(<mysql.QueryOptions>{
-    sql: query.query,
-    typeCast: TYPE_CAST,
-  })
-  return rows as GetReturnType<Query>
+  throw new Error(`Invalid query supplied to engine`)
 }
