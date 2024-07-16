@@ -53,7 +53,7 @@ type BaseColumnDefinition<T extends SQLBuiltinTypes> = {
  * Extended information for incremental column types
  */
 type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
-  IncrementalSQLTypes
+  IncrementalSQLTypes,
 ]
   ? { autoIncrement?: true }
   : object
@@ -62,7 +62,7 @@ type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable size column types
  */
 type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableLengthSQLTypes
+  VariableLengthSQLTypes,
 ]
   ? { size?: number }
   : object
@@ -71,7 +71,7 @@ type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable numeric precision types
  */
 type VariableNumericType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableNumericTypes
+  VariableNumericTypes,
 ]
   ? { precision?: number; scale?: number }
   : object

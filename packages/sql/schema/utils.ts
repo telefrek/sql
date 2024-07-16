@@ -8,7 +8,7 @@ import type { SQLDatabaseTables, SQLTableSchema } from "./database.js"
 export type AddTableToSchema<
   Table extends string,
   Schema extends SQLColumnSchema,
-  Tables extends SQLDatabaseTables
+  Tables extends SQLDatabaseTables,
 > = CheckSQLTables<
   Flatten<
     Tables & {

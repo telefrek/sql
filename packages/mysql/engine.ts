@@ -1,12 +1,10 @@
 import type { SQLQuery } from "@telefrek/sql/ast/queries"
-import {
-  DatabaseEngine,
-  createEngine,
-  type DatabaseEngineExecuteParameters,
-  type GetReturnType,
-  type ParameterizedQuery,
-  type SubmittableQuery,
-} from "@telefrek/sql/engines/common.js"
+import { DatabaseEngine, createEngine } from "@telefrek/sql/engines/common.js"
+import type {
+  BoundQuery,
+  SubmittableQuery,
+} from "@telefrek/sql/engines/submittable"
+import type { GetReturnType } from "@telefrek/sql/engines/utils"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt } from "@telefrek/sql/types"
 import mysql from "mysql2/promise"
@@ -36,10 +34,8 @@ export function initializeMySQL(conn: mysql.Connection): void {
 
 const MYSQL_QUERY_TYPE: unique symbol = Symbol()
 
-export class MySQLQuery<
-  RowType extends object | number = object | number,
-  Parameters extends object = never
-> implements ParameterizedQuery<RowType, Parameters>
+export class MySQLQuery<RowType extends object | number = object | number>
+  implements SubmittableQuery<RowType>
 {
   [MYSQL_QUERY_TYPE] = "mysql"
 
@@ -49,19 +45,7 @@ export class MySQLQuery<
     )
   }
 
-  readonly query: string
-  readonly name: string
-  readonly parameters?: Parameters
-
-  constructor(name: string, query: string, parameters?: Parameters) {
-    this.name = name
-    this.query = query
-    this.parameters = parameters
-  }
-
-  bind(parameters: Parameters): SubmittableQuery<RowType> {
-    return new MySQLQuery(this.name, this.query, parameters)
-  }
+  constructor(readonly name: string, readonly queryString: string) {}
 }
 
 export function createMySQLEngine<Database extends SQLDatabaseSchema>(
@@ -85,13 +69,12 @@ function createQuery<T extends SQLQuery>(
   return new MySQLQuery(name, parseAST(query, queryString))
 }
 
-async function executeQuery<Query extends SubmittableQuery>(
-  ...args: DatabaseEngineExecuteParameters<Query>
+async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
+  query: Query
 ): Promise<GetReturnType<Query>> {
-  const query = args[0]
   if (query instanceof MySQLQuery) {
     const [rows] = await MYSQL_CONN!.query(<mysql.QueryOptions>{
-      sql: query.query,
+      sql: query.queryString,
       typeCast: TYPE_CAST,
     })
     return rows as GetReturnType<Query>

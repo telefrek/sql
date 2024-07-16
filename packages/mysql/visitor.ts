@@ -4,7 +4,7 @@ import { DefaultQueryVisitor } from "@telefrek/sql/query/visitor/common"
 
 export function parseAST<T extends SQLQuery>(
   query: T,
-  queryString?: string
+  queryString?: string,
 ): string {
   const mySQLVisitor = new MySQLQueryVisitor()
   mySQLVisitor.visitQuery(query)

@@ -1,48 +1,22 @@
 import type { SQLQuery } from "../ast/queries.js"
-import type { BuildActive, SQLReturnRowType } from "../results.js"
 import type { SQLDatabaseSchema } from "../schema/database.js"
+import {
+  DefaultBoundQuery,
+  type BoundQuery,
+  type ParameterizedQuery,
+  type SubmittableQuery,
+} from "./submittable.js"
+import type { GetQueryType, GetReturnType } from "./utils.js"
 
-export type GetQueryParameters<Query extends SubmittableQuery> =
-  Query extends ParameterizedQuery<infer _, infer Parameters>
-    ? Parameters
-    : never
-
-export type GetReturnType<Query extends SubmittableQuery> =
-  Query extends SubmittableQuery<infer Results>
-    ? Results extends number
-      ? number
-      : Results[]
-    : never
-
-export type GetRowType<Query extends SubmittableQuery> =
-  Query extends SubmittableQuery<infer Results>
-    ? Results extends number
-      ? never
-      : Results
-    : never
-
-type GetQueryType<
-  Database extends SQLDatabaseSchema,
-  T extends SQLQuery
-> = CheckQuery<
-  SubmittableQuery<
-    SQLReturnRowType<BuildActive<Database["tables"], T>, T["query"]>
-  >
->
-
-type CheckQuery<T> = T extends SubmittableQuery<infer RowType>
-  ? SubmittableQuery<RowType>
-  : never
-
-type EngineConfig = {
+export type EngineConfig<Database extends SQLDatabaseSchema> = {
   createQuery: <T extends SQLQuery>(
     name: string,
     query: T,
-    queryString?: string
-  ) => SubmittableQuery
+    originalQuery?: string
+  ) => GetQueryType<Database, T>
 
-  executeQuery: <Query extends SubmittableQuery>(
-    ...args: DatabaseEngineExecuteParameters<Query>
+  executeQuery: <Query extends SubmittableQuery | BoundQuery>(
+    query: Query
   ) => Promise<GetReturnType<Query>>
 }
 
@@ -55,7 +29,7 @@ export type DatabaseEngineExecuteParameters<Query extends SubmittableQuery> =
 
 export function createEngine<Database extends SQLDatabaseSchema>(
   database: Database,
-  config: EngineConfig
+  config: EngineConfig<Database>
 ): DatabaseEngine<Database> {
   return new ConfigurableDatabaseEngine(database, config)
 }
@@ -88,7 +62,13 @@ abstract class AbstractDatabaseEngine<Database extends SQLDatabaseSchema>
   execute<Query extends SubmittableQuery>(
     ...args: DatabaseEngineExecuteParameters<Query>
   ): Promise<GetReturnType<Query>> {
-    return this._executeQuery(...args)
+    if (args.length > 1) {
+      return this._executeQuery(
+        new DefaultBoundQuery(args[0].name, args[0].queryString, args[1]!)
+      ) as Promise<GetReturnType<Query>>
+    }
+
+    return this._executeQuery(args[0]) as Promise<GetReturnType<Query>>
   }
 
   protected abstract _createQuery<T extends SQLQuery>(
@@ -97,31 +77,9 @@ abstract class AbstractDatabaseEngine<Database extends SQLDatabaseSchema>
     queryString?: string
   ): SubmittableQuery
 
-  protected abstract _executeQuery<Query extends SubmittableQuery>(
-    ...args: DatabaseEngineExecuteParameters<Query>
+  protected abstract _executeQuery<Query extends SubmittableQuery | BoundQuery>(
+    query: Query
   ): Promise<GetReturnType<Query>>
-}
-
-export type SubmittableQueryParamters<P> = [P] extends [never]
-  ? []
-  : [parameters: P]
-
-export type QueryReturn<RowType> = RowType extends number ? number : RowType[]
-
-/**
- * An object that can be submitted to an engine
- */
-export interface SubmittableQuery<
-  _RowType extends object | number = object | number
-> {
-  readonly name: string
-}
-
-export interface ParameterizedQuery<
-  RowType extends object | number = object | number,
-  Parameters extends object = object
-> extends SubmittableQuery<RowType> {
-  bind(parameters: Parameters): SubmittableQuery<RowType>
 }
 
 class ConfigurableDatabaseEngine<
@@ -133,14 +91,14 @@ class ConfigurableDatabaseEngine<
     queryString?: string
   ) => GetQueryType<Database, T>
 
-  _executeQuery: <Query extends SubmittableQuery>(
-    ...args: DatabaseEngineExecuteParameters<Query>
+  _executeQuery: <Query extends SubmittableQuery | BoundQuery>(
+    query: Query
   ) => Promise<GetReturnType<Query>>
 
-  constructor(database: Database, config: EngineConfig) {
+  constructor(database: Database, config: EngineConfig<Database>) {
     super(database)
 
-    this._createQuery = config.createQuery.bind(this)
-    this._executeQuery = config.executeQuery.bind(this)
+    this._createQuery = config.createQuery
+    this._executeQuery = config.executeQuery
   }
 }

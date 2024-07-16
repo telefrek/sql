@@ -53,7 +53,7 @@ export interface QueryAstVisitor {
    */
   visitTableColumnReference<T extends TableColumnReference>(
     reference: T,
-    alias?: string
+    alias?: string,
   ): void
 }
 

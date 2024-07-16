@@ -1,12 +1,10 @@
 import type { SQLQuery } from "@telefrek/sql/ast/queries"
-import {
-  DatabaseEngine,
-  createEngine,
-  type DatabaseEngineExecuteParameters,
-  type GetReturnType,
-  type ParameterizedQuery,
-  type SubmittableQuery,
-} from "@telefrek/sql/engines/common.js"
+import { DatabaseEngine, createEngine } from "@telefrek/sql/engines/common.js"
+import type {
+  BoundQuery,
+  SubmittableQuery,
+} from "@telefrek/sql/engines/submittable"
+import type { GetReturnType } from "@telefrek/sql/engines/utils"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt, parseSafeBigInt } from "@telefrek/sql/types"
 import pg from "pg"
@@ -29,15 +27,9 @@ export function initializePostgres(client: pg.Client): void {
 
 const POSTGRES_QUERY_TYPE: unique symbol = Symbol()
 
-export class PostgresQuery<
-  RowType extends object | number = object | number,
-  Parameters extends object = never
-> implements ParameterizedQuery<RowType, Parameters>
+export class PostgresQuery<RowType extends object | number = object | number>
+  implements SubmittableQuery<RowType>
 {
-  readonly name: string
-  readonly query: string
-  readonly parameters?: Parameters;
-
   [POSTGRES_QUERY_TYPE] = "postgres"
 
   static [Symbol.hasInstance](value: unknown): boolean {
@@ -48,15 +40,7 @@ export class PostgresQuery<
     )
   }
 
-  constructor(name: string, query: string, parameters?: Parameters) {
-    this.name = name
-    this.query = query
-    this.parameters = parameters
-  }
-
-  bind(parameters: Parameters): SubmittableQuery<RowType> {
-    return new PostgresQuery(this.name, this.query, parameters)
-  }
+  constructor(readonly name: string, readonly queryString: string) {}
 }
 
 export function createPostgresEngine<Database extends SQLDatabaseSchema>(
@@ -80,12 +64,11 @@ function createQuery<T extends SQLQuery>(
   return new PostgresQuery(name, _queryString ?? "")
 }
 
-async function executeQuery<Query extends SubmittableQuery>(
-  ...args: DatabaseEngineExecuteParameters<Query>
+async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
+  query: Query
 ): Promise<GetReturnType<Query>> {
-  const query = args[0]
   if (query instanceof PostgresQuery) {
-    const result = await PG_CLIENT!.query(query.query)
+    const result = await PG_CLIENT!.query(query.queryString)
     if (result.rows.length > 0) {
       return result.rows as unknown as GetReturnType<Query>
     }

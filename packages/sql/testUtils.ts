@@ -55,10 +55,9 @@ export async function testDatabaseEngine(
 
   const queryString = "SELECT * FROM orders"
   const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
-
   const submittable = engine.translateQuery("test", query, queryString)
-
   const res = await engine.execute(submittable)
+
   expect(res.length).toBe(1)
   expect(res[0].id).toBe(1)
   expect(res[0].amount).toBe(10)

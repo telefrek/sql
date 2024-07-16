@@ -85,12 +85,12 @@ export type IncrementalSQLTypes =
 export type TSSQLType<T extends SQLBuiltinTypes> = [T] extends [BigIntSQLTypes]
   ? number | bigint
   : [T] extends [BinarySQLTypes]
-  ? Uint8Array
-  : [T] extends [NumericSQLTypes]
-  ? number
-  : [T] extends [SQLBuiltinTypes.BIT]
-  ? boolean
-  : string
+    ? Uint8Array
+    : [T] extends [NumericSQLTypes]
+      ? number
+      : [T] extends [SQLBuiltinTypes.BIT]
+        ? boolean
+        : string
 
 /** This is a test for numbers that should fit under the Number.MAX_SAFE_INT */
 const SAFE_INT_REGEX = /^(-)?[0-8]?\d{1,15}$/
@@ -109,8 +109,8 @@ export function parseSafeBigInt(value: string): number | bigint {
   return SAFE_INT_REGEX.test(value)
     ? Number(value) // If number is less than 16 digits that start with a 9 we don't care
     : (value.startsWith("-") ? value.substring(1) : value) > "9007199254740991"
-    ? BigInt(value)
-    : Number(value)
+      ? BigInt(value)
+      : Number(value)
 }
 
 /**

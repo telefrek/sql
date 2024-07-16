@@ -78,14 +78,14 @@ export class DefaultQueryVisitor
       this.append(
         column.alias !== column.reference.column
           ? `${column.reference.column} AS ${column.alias}`
-          : column.reference.column
+          : column.reference.column,
       )
     }
   }
 
   visitTableColumnReference<T extends TableColumnReference>(
     reference: T,
-    alias?: string
+    alias?: string,
   ): void {
     if (alias && alias !== reference.column) {
       this.append(`${reference.table}.${reference.column} AS ${alias}`)
