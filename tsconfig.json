@@ -30,10 +30,26 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "target": "ESNext",
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "paths": {
+      "@telefrek/type-utils": ["./packages/type-utils"],
+      "@telefrek/type-utils/*": ["./packages/type-utils/*"],
+      "@telefrek/sql": ["./packages/sql"],
+      "@telefrek/sql/*": ["./packages/sql/*"],
+      "@telefrek/mysql": ["./packages/mysql"],
+      "@telefrek/mysql/*": ["./packages/mysql/*"],
+      "@telefrek/postgres": ["./packages/postgres"],
+      "@telefrek/postgres/*": ["./packages/postgres/*"]
+    }
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "./packages/type-utils" },
+    { "path": "./packages/sql" },
+    { "path": "./packages/mysql" },
+    { "path": "./packages/postgres" }
+  ],
   "watchOptions": {
     "excludeDirectories": ["**/dist", "**/node_modules"]
   },

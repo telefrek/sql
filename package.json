@@ -1,24 +1,5 @@
 {
-  "name": "@telefrek/sql",
-  "displayName": "Telefrek SQL Parsing",
-  "description": "This is a utility library that helps to manage SQL resources, queries and type safety",
   "version": "1.0.0",
-  "keywords": [
-    "TypeScript",
-    "SQL"
-  ],
-  "files": [
-    "dist/**/*.js",
-    "dist/**/*.d.ts",
-    "dist/**/*.json"
-  ],
-  "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "exports": {
-    ".": "./dist/index.js",
-    "./*": "./dist/*.js",
-    "./*.js": "./dist/*.js"
-  },
   "repository": {
     "url": "https://github.com/telefrek/sql",
     "type": "github"
@@ -28,23 +9,26 @@
     "email": "nathan@telefrek.com"
   },
   "scripts": {
-    "clean": "rm -rf ./dist",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
-    "format": "pnpx prettier --write .",
+    "clean": "tsc --build --clean tsconfig.json",
+    "test": "pnpm unit-test",
+    "unit-test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit",
+    "integration-test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageProvider=v8 --detectOpenHandles --forceExit --config jest-integration.config.ts",
+    "format": "pnpm run -r format",
     "build": "tsc --build tsconfig.json",
     "package": "tsc --build tsconfig.publish.json",
-    "lint": "pnpx eslint . --fix --ignore-pattern \"dist\""
+    "lint": "pnpm run -r lint",
+    "ci": "pnpm run lint && pnpm run build && pnpm run test"
   },
   "type": "module",
   "devDependencies": {
-    "@eslint/js": "^9.6.0",
+    "@eslint/js": "^9.7.0",
     "@types/jest": "^29.5.12",
-    "eslint": "^9.6.0",
+    "eslint": "^9.7.0",
     "jest": "^29.7.0",
-    "ts-jest": "^29.1.5",
+    "ts-jest": "^29.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^7.15.0"
+    "typescript-eslint": "^7.16.0"
   },
   "packageManager": "pnpm@9.3.0+sha256.e1f9e8d1a16607a46dd3c158b5f7a7dc7945501d1c6222d454d63d033d1d918f",
   "engines": {

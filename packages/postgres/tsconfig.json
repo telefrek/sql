@@ -8,7 +8,6 @@
     "composite": true,
     "declaration": true,
     "diagnostics": true,
-    "downlevelIteration": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
@@ -33,18 +32,15 @@
     "target": "ESNext",
     "baseUrl": "./",
     "paths": {
-      "@telefrek/type-utils": ["./packages/type-utils"],
-      "@telefrek/type-utils/*": ["./packages/type-utils/*"],
-      "@telefrek/sql": ["./packages/sql"],
-      "@telefrek/sql/*": ["./packages/sql/*"]
+      "@telefrek/type-utils": ["../type-utils"],
+      "@telefrek/type-utils/*": ["../type-utils/*"],
+      "@telefrek/sql": ["../sql"],
+      "@telefrek/sql/*": ["../sql/*"]
     }
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "dist", "./**/*.test.ts", "./**/testUtils.ts"],
-  "references": [
-    { "path": "./packages/type-utils" },
-    { "path": "./packages/sql" }
-  ],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../type-utils" }, { "path": "../sql" }],
   "watchOptions": {
     "excludeDirectories": ["**/dist", "**/node_modules"]
   },
