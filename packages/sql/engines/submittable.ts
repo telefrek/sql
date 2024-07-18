@@ -1,8 +1,27 @@
 /**
+ * Type guard for bound queries
+ *
+ * @param query The {@link SubmittableQuery} to check
+ * @returns True if this is a {@link BoundQuery}
+ */
+export function isBoundQuery(query: SubmittableQuery): query is BoundQuery {
+  return (
+    query !== null &&
+    "parameters" in query &&
+    typeof query.parameters === "object"
+  )
+}
+
+/**
+ * A helper for tracking the provider of the query
+ */
+export const QUERY_PROVIDER_SYMBOL: unique symbol = Symbol()
+
+/**
  * An query that can be submitted to an engine
  */
 export interface SubmittableQuery<
-  _RowType extends object | number = object | number
+  _RowType extends object | number = object | number,
 > {
   readonly name: string
   readonly queryString: string
@@ -13,7 +32,7 @@ export interface SubmittableQuery<
  */
 export interface BoundQuery<
   RowType extends object | number = object | number,
-  Parameters extends object = object
+  Parameters extends object = object,
 > extends SubmittableQuery<RowType> {
   readonly parameters: Parameters
 }
@@ -23,7 +42,7 @@ export interface BoundQuery<
  */
 export interface ParameterizedQuery<
   RowType extends object | number = object | number,
-  Parameters extends object = object
+  Parameters extends object = object,
 > extends SubmittableQuery<RowType> {
   /**
    *
@@ -38,7 +57,10 @@ export interface ParameterizedQuery<
 export class DefaultSubmittableQuery<RowType extends object | number>
   implements SubmittableQuery<RowType>
 {
-  constructor(readonly name: string, readonly queryString: string) {}
+  constructor(
+    readonly name: string,
+    readonly queryString: string,
+  ) {}
 }
 
 /**
@@ -46,13 +68,26 @@ export class DefaultSubmittableQuery<RowType extends object | number>
  */
 export class DefaultParameterizedQuery<
   RowType extends object | number,
-  Parameters extends object
+  Parameters extends object,
 > implements ParameterizedQuery<RowType, Parameters>
 {
-  constructor(readonly name: string, readonly queryString: string) {}
+  constructor(
+    readonly name: string,
+    readonly queryString: string,
+  ) {}
 
   bind(parameters: Parameters): BoundQuery<RowType, Parameters> {
-    return new DefaultBoundQuery(this.name, this.queryString, parameters)
+    const bound = new DefaultBoundQuery(this.name, this.queryString, parameters)
+
+    if (QUERY_PROVIDER_SYMBOL in this) {
+      Object.defineProperty(bound, QUERY_PROVIDER_SYMBOL, {
+        enumerable: false,
+        writable: false,
+        value: this[QUERY_PROVIDER_SYMBOL],
+      })
+    }
+
+    return bound
   }
 }
 
@@ -61,12 +96,12 @@ export class DefaultParameterizedQuery<
  */
 export class DefaultBoundQuery<
   RowType extends object | number,
-  Parameters extends object
+  Parameters extends object,
 > implements BoundQuery<RowType, Parameters>
 {
   constructor(
     readonly name: string,
     readonly queryString: string,
-    readonly parameters: Parameters
+    readonly parameters: Parameters,
   ) {}
 }

@@ -1,7 +1,4 @@
-import type {
-  ColumnReference,
-  TableColumnReference,
-} from "../../ast/columns.js"
+import type { ColumnReference } from "../../ast/columns.js"
 import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
@@ -18,21 +15,21 @@ export class DefaultQueryVisitor
     super()
   }
 
-  visitQuery<T extends SQLQuery>(query: T): void {
-    this.visitQueryClause(query.query)
+  visitQuery<T extends SQLQuery>(query: Readonly<T>): void {
+    this.visitQueryClause(query.query as Readonly<QueryClause>)
   }
 
-  visitQueryClause<T extends QueryClause>(clause: T): void {
+  visitQueryClause<T extends QueryClause>(clause: Readonly<T>): void {
     switch (clause.type) {
       case "SelectClause":
-        this.visitSelectClause(clause)
+        this.visitSelectClause(clause as Readonly<SelectClause>)
         break
       default:
         throw new Error(`Unsupported QueryClause: ${clause.type}`)
     }
   }
 
-  visitSelectClause<T extends SelectClause>(select: T): void {
+  visitSelectClause<T extends SelectClause>(select: Readonly<T>): void {
     this.append("SELECT")
 
     // Add the columns
@@ -63,7 +60,7 @@ export class DefaultQueryVisitor
     }
   }
 
-  visitTableReference<T extends TableReference>(table: T): void {
+  visitTableReference<T extends TableReference>(table: Readonly<T>): void {
     if (table.alias !== table.table) {
       this.append(`${table.table} AS ${table.alias}`)
     } else {
@@ -71,26 +68,21 @@ export class DefaultQueryVisitor
     }
   }
 
-  visitColumnReference<T extends ColumnReference>(column: T): void {
-    if (column.reference.type === "TableColumnReference") {
-      this.visitTableColumnReference(column.reference, column.alias)
-    } else {
-      this.append(
-        column.alias !== column.reference.column
-          ? `${column.reference.column} AS ${column.alias}`
-          : column.reference.column,
+  visitColumnReference<T extends ColumnReference>(column: Readonly<T>): void {
+    if (column.alias !== column.reference.column) {
+      super.append(
+        `${
+          column.reference.type === "TableColumnReference"
+            ? `${column.reference.table}.${column.reference.column}`
+            : column.reference.column
+        } AS ${column.alias}`
       )
-    }
-  }
-
-  visitTableColumnReference<T extends TableColumnReference>(
-    reference: T,
-    alias?: string,
-  ): void {
-    if (alias && alias !== reference.column) {
-      this.append(`${reference.table}.${reference.column} AS ${alias}`)
     } else {
-      this.append(`${reference.table}.${reference.column}`)
+      super.append(
+        column.reference.type === "TableColumnReference"
+          ? `${column.reference.table}.${column.reference.column}`
+          : column.reference.column
+      )
     }
   }
 }

@@ -1,17 +1,25 @@
-import type { SQLQuery } from "@telefrek/sql/ast/queries"
 import { DatabaseEngine, createEngine } from "@telefrek/sql/engines/common.js"
-import type {
-  BoundQuery,
-  SubmittableQuery,
+import {
+  QUERY_PROVIDER_SYMBOL,
+  type BoundQuery,
+  type SubmittableQuery,
 } from "@telefrek/sql/engines/submittable"
-import type { GetReturnType } from "@telefrek/sql/engines/utils"
+import { parseQuery, type GetReturnType } from "@telefrek/sql/engines/utils"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt } from "@telefrek/sql/types"
 import mysql from "mysql2/promise"
-import { parseAST } from "./visitor.js"
+import { DRIVER_ID } from "./index.js"
+import { MySQLQueryVisitor } from "./visitor.js"
 
 let MYSQL_CONN: mysql.Connection | undefined
 
+/**
+ * A type cast to match our TypeScript values
+ *
+ * @param field The field to parse
+ * @param next The next method to call
+ * @returns The value of the field
+ */
 const TYPE_CAST: mysql.TypeCast = (field, next) => {
   switch (field.type) {
     case "DECIMAL":
@@ -28,51 +36,49 @@ const TYPE_CAST: mysql.TypeCast = (field, next) => {
   return next()
 }
 
+/**
+ * Initialize our test engine
+ *
+ * @param conn The connection to use
+ */
 export function initializeMySQL(conn: mysql.Connection): void {
   MYSQL_CONN = conn
 }
 
-const MYSQL_QUERY_TYPE: unique symbol = Symbol()
-
-export class MySQLQuery<RowType extends object | number = object | number>
-  implements SubmittableQuery<RowType>
-{
-  [MYSQL_QUERY_TYPE] = "mysql"
-
-  static [Symbol.hasInstance](value: unknown): boolean {
-    return (
-      value !== null && typeof value === "object" && MYSQL_QUERY_TYPE in value
-    )
-  }
-
-  constructor(readonly name: string, readonly queryString: string) {}
-}
-
+/**
+ * Create a MySQL engine to use
+ *
+ * @param database The database schema to use
+ * @returns A {@link DatabaseEngine} for MySQL
+ */
 export function createMySQLEngine<Database extends SQLDatabaseSchema>(
-  database: Database
+  database: Database,
 ): DatabaseEngine<Database> {
   if (MYSQL_CONN === undefined) {
     throw new Error("Need to initialize MySQL")
   }
 
   return createEngine(database, {
-    createQuery,
+    createQuery(name, query, _originalQuery) {
+      return parseQuery(name, query, DRIVER_ID, new MySQLQueryVisitor())
+    },
     executeQuery,
   })
 }
 
-function createQuery<T extends SQLQuery>(
-  name: string,
-  query: T,
-  queryString?: string
-): MySQLQuery {
-  return new MySQLQuery(name, parseAST(query, queryString))
-}
-
+/**
+ * Execute the query
+ *
+ * @param query The query to execute
+ * @returns The results of the query execution
+ */
 async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
-  query: Query
+  query: Query,
 ): Promise<GetReturnType<Query>> {
-  if (query instanceof MySQLQuery) {
+  if (
+    QUERY_PROVIDER_SYMBOL in query &&
+    query[QUERY_PROVIDER_SYMBOL] === DRIVER_ID
+  ) {
     const [rows] = await MYSQL_CONN!.query(<mysql.QueryOptions>{
       sql: query.queryString,
       typeCast: TYPE_CAST,

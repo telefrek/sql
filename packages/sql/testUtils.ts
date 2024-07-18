@@ -46,8 +46,16 @@ export const TEST_DATABASE = createDatabaseSchema()
   )
   .addForeignKey("orders_product_fk", "products", "orders", "product_id").schema
 
+/**
+ * The type of our TEST_DATABASE object
+ */
 export type DB_TYPE = typeof TEST_DATABASE
 
+/**
+ * Run a query test against an engine to validate it works
+ *
+ * @param engine The {@link DatabaseEngine} to test against
+ */
 export async function testDatabaseEngine(
   engine: DatabaseEngine<DB_TYPE>
 ): Promise<void> {
@@ -55,7 +63,7 @@ export async function testDatabaseEngine(
 
   const queryString = "SELECT * FROM orders"
   const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
-  const submittable = engine.translateQuery("test", query, queryString)
+  const submittable = engine.translateQuery("test", query)
   const res = await engine.execute(submittable)
 
   expect(res.length).toBe(1)
@@ -63,4 +71,15 @@ export async function testDatabaseEngine(
   expect(res[0].amount).toBe(10)
   expect(res[0].product_id).toBe(1)
   expect(res[0].user_id).toBe(1)
+
+  const query2 = getDatabase(TEST_DATABASE).parseSQL(
+    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o"
+  )
+
+  const submittable2 = engine.translateQuery("test2", query2)
+  const res2 = await engine.execute(submittable2)
+  expect(res2.length).toBe(1)
+  expect(res2[0].id).toBe(1)
+  expect(res2[0].userId).toBe(1)
+  expect(res2[0].productId).toBe(1)
 }

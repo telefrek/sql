@@ -1,17 +1,9 @@
-import type { SQLQuery } from "@telefrek/sql/ast/queries"
 import type { TableReference } from "@telefrek/sql/ast/tables"
 import { DefaultQueryVisitor } from "@telefrek/sql/query/visitor/common"
 
-export function parseAST<T extends SQLQuery>(
-  query: T,
-  queryString?: string,
-): string {
-  const mySQLVisitor = new MySQLQueryVisitor()
-  mySQLVisitor.visitQuery(query)
-
-  return mySQLVisitor.sql ?? queryString ?? ""
-}
-
+/**
+ * Extensions for MySQL protocol
+ */
 export class MySQLQueryVisitor extends DefaultQueryVisitor {
   constructor() {
     super()

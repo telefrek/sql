@@ -1,7 +1,4 @@
-import type {
-  ColumnReference,
-  TableColumnReference,
-} from "../../ast/columns.js"
+import type { ColumnReference } from "../../ast/columns.js"
 import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
@@ -15,46 +12,35 @@ export interface QueryAstVisitor {
    *
    * @param query The {@link SQLQuery} to visit
    */
-  visitQuery<T extends SQLQuery>(query: T): void
+  visitQuery<T extends SQLQuery>(query: Readonly<T>): void
 
   /**
    * Visit the query clause
    *
    * @param clause The {@link QueryClause} to visit
    */
-  visitQueryClause<T extends QueryClause>(clause: T): void
+  visitQueryClause<T extends QueryClause>(clause: Readonly<T>): void
 
   /**
    * Visit the select clause
    *
    * @param select The {@link SelectClause} to visit
    */
-  visitSelectClause<T extends SelectClause>(select: T): void
+  visitSelectClause<T extends SelectClause>(select: Readonly<T>): void
 
   /**
    * Visit the table reference
    *
    * @param table the {@link TableReference} to visit
    */
-  visitTableReference<T extends TableReference>(table: T): void
+  visitTableReference<T extends TableReference>(table: Readonly<T>): void
 
   /**
    * Visit the column reference
    *
    * @param column The {@link ColumnReference} to visit
    */
-  visitColumnReference<T extends ColumnReference>(column: T): void
-
-  /**
-   * Visit the table column reference
-   *
-   * @param reference The {@link TableColumnReference} to visit
-   * @param alias The alias for the column
-   */
-  visitTableColumnReference<T extends TableColumnReference>(
-    reference: T,
-    alias?: string,
-  ): void
+  visitColumnReference<T extends ColumnReference>(column: Readonly<T>): void
 }
 
 /**

@@ -12,15 +12,19 @@ import type { ValidateSelectColumns } from "./columns.js"
 export type ValidateSelectClause<
   Database extends SQLDatabaseTables,
   Select extends SelectClause,
-  Active extends SQLDatabaseTables = IgnoreEmpty,
-> =
-  Select extends SelectClause<infer Columns, infer From>
-    ? From extends TableReference<infer Table, infer _>
-      ? [Table] extends [StringKeys<Database>]
-        ? ValidateSelectColumns<
-            AddTableToSchema<Table, Database[Table]["columns"], Active>,
-            Columns
-          >
-        : Invalid<`${Table} is not a table in the referenced schema`>
-      : Invalid<"Corrupt from clause">
-    : Invalid<"Invalid select clause">
+  Active extends SQLDatabaseTables = IgnoreEmpty
+> = Select extends SelectClause<
+  infer Columns,
+  infer From extends TableReference
+>
+  ? [From["table"]] extends [StringKeys<Database>]
+    ? ValidateSelectColumns<
+        AddTableToSchema<
+          From["alias"],
+          Database[From["table"]]["columns"],
+          Active
+        >,
+        Columns
+      >
+    : Invalid<`${From["table"]} is not a table in the referenced schema`>
+  : Invalid<"Invalid select clause">
