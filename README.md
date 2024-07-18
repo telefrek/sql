@@ -6,6 +6,7 @@
 /____/\___\_\/_____/  /_/    \__,_/_/  /____/_/_/ /_/\__, /
                                                     /____/
 ```
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/6kA2hiyjMtAV1oA7sfoGhu/LtjteKYYnUjM5A1viAHywk/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/circleci/6kA2hiyjMtAV1oA7sfoGhu/LtjteKYYnUjM5A1viAHywk/tree/main)
 
 # A Compile Time Query Utility
 
