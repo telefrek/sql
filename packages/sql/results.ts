@@ -22,20 +22,21 @@ type ColumnTSType<T extends ColumnTypeDefinition<IgnoreAny>> =
  */
 type GetColumn<
   Tables extends SQLDatabaseTables,
-  Column extends ColumnReference
-> = Column extends ColumnReference<infer Reference, infer _Alias>
-  ? Reference extends UnboundColumnReference<infer _Name>
-    ? GetUnboundReference<
-        Tables,
-        Reference["column"],
-        GetColumnTable<Tables, Reference["column"]>
-      >
-    : Reference extends TableColumnReference<infer Table, infer Name>
-    ? [Table] extends [StringKeys<Tables>]
-      ? ColumnTSType<Tables[Table]["columns"][Name]>
-      : never
+  Column extends ColumnReference,
+> =
+  Column extends ColumnReference<infer Reference, infer _Alias>
+    ? Reference extends UnboundColumnReference<infer _Name>
+      ? GetUnboundReference<
+          Tables,
+          Reference["column"],
+          GetColumnTable<Tables, Reference["column"]>
+        >
+      : Reference extends TableColumnReference<infer Table, infer Name>
+        ? [Table] extends [StringKeys<Tables>]
+          ? ColumnTSType<Tables[Table]["columns"][Name]>
+          : never
+        : never
     : never
-  : never
 
 /**
  * Type to get an unbound table reference
@@ -43,7 +44,7 @@ type GetColumn<
 type GetUnboundReference<
   Tables extends SQLDatabaseTables,
   Column extends string,
-  Table extends string
+  Table extends string,
 > = [Table] extends [never]
   ? never
   : ColumnTSType<Tables[Table]["columns"][Column]>
@@ -53,7 +54,7 @@ type GetUnboundReference<
  */
 type GetColumnTable<Tables extends SQLDatabaseTables, Column extends string> = {
   [Table in keyof Tables]: [Column] extends [
-    StringKeys<Tables[Table]["columns"]>
+    StringKeys<Tables[Table]["columns"]>,
   ]
     ? Table
     : never
@@ -64,7 +65,7 @@ type GetColumnTable<Tables extends SQLDatabaseTables, Column extends string> = {
  */
 type GetColumnReferences<
   Tables extends SQLDatabaseTables,
-  Columns
+  Columns,
 > = Columns extends [infer Next extends ColumnReference, ...infer Rest]
   ? Rest extends never[]
     ? {
@@ -82,15 +83,16 @@ type GetColumnReferences<
  */
 export type SQLReturnRowType<
   Tables extends SQLDatabaseTables,
-  Query extends QueryClause
-> = Query extends SelectClause<infer Columns, infer From>
-  ? Columns extends "*"
-    ? [From["alias"]] extends [StringKeys<Tables>]
-      ? {
-          [Column in StringKeys<
-            Tables[From["alias"]]["columns"]
-          >]: ColumnTSType<Tables[From["alias"]]["columns"][Column]>
-        }
-      : never
-    : GetColumnReferences<Tables, Columns>
-  : never
+  Query extends QueryClause,
+> =
+  Query extends SelectClause<infer Columns, infer From>
+    ? Columns extends "*"
+      ? [From["alias"]] extends [StringKeys<Tables>]
+        ? {
+            [Column in StringKeys<
+              Tables[From["alias"]]["columns"]
+            >]: ColumnTSType<Tables[From["alias"]]["columns"][Column]>
+          }
+        : never
+      : GetColumnReferences<Tables, Columns>
+    : never

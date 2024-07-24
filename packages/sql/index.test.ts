@@ -1,5 +1,7 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
+import { normalizeQuery } from "./query/parser/normalize.js"
+import { parseQueryClause } from "./query/parser/query.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./testUtils.js"
 
@@ -165,5 +167,14 @@ describe("SQL databases should validate queries", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL("SELECT * FROM orders")
     expect(query.query.type).toBe("SelectClause")
     expect(query.query.from.table).toBe("orders")
+  })
+})
+
+describe("Insert statements should work", () => {
+  it("Should allow a simple insert", () => {
+    const query = parseQueryClause(
+      normalizeQuery("INSERT INTO foo VALUES(1, true, 3.4, null)"),
+    )
+    expect(query.query.type).toBe("InsertClause")
   })
 })

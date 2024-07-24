@@ -1,5 +1,5 @@
 import type { Invalid } from "@telefrek/type-utils/common.js"
-import type { Dec, Inc } from "@telefrek/type-utils/numbers.js"
+import type { Decrement, Increment } from "@telefrek/type-utils/math.js"
 import type { Join, Trim } from "@telefrek/type-utils/strings.js"
 import { NORMALIZE_TARGETS } from "./keywords.js"
 
@@ -64,16 +64,16 @@ export type SplitWords<T> =
 export type ExtractUntil<
   T extends string,
   K extends string,
-  N = 0,
+  N extends number = 0,
   S extends string = "",
 > =
   NextToken<T> extends [infer Token extends string, infer Rest extends string]
     ? Rest extends ""
       ? [Trim<S>]
       : Token extends "("
-        ? ExtractUntil<Rest, K, Inc<N>, `${S} (`>
+        ? ExtractUntil<Rest, K, Increment<N>, `${S} (`>
         : Token extends ")"
-          ? ExtractUntil<Rest, K, Dec<N>, `${S} )`>
+          ? ExtractUntil<Rest, K, Decrement<N>, `${S} )`>
           : [Token] extends [K]
             ? N extends 0
               ? [Trim<S>, Trim<`${Token} ${Rest}`>]
@@ -155,6 +155,53 @@ export function takeUntil(tokens: string[], terminal: string[]): string[] {
 }
 
 /**
+ * Extract the next set of parenthesis
+ *
+ * @param tokens The current tokens
+ * @returns The set of tokens between two parenthesis (may have an internal
+ * parenthesis pair)
+ */
+export function extractParenthesis(tokens: string[]): string[] {
+  const ret = []
+
+  if (tokens.length === 0 || tokens[0] !== "(") {
+    throw new Error(
+      `Invalid, does not start with a parenthesis: ${
+        tokens.length > 0 ? tokens[0] : "empty array"
+      }`,
+    )
+  }
+  tokens.shift()
+
+  let cnt = 1
+  while (tokens.length > 0 && cnt === 1) {
+    const token = tokens.shift()!
+
+    switch (token) {
+      case "(":
+        cnt++
+        ret.push(token)
+        break
+      case ")":
+        {
+          if (cnt === 1) {
+            cnt = 0
+          } else {
+            cnt--
+            ret.push(token)
+          }
+        }
+        break
+      default:
+        ret.push(token)
+        break
+    }
+  }
+
+  return ret
+}
+
+/**
  * Test if ( matches ) counts
  */
 type EqualParenthesis<T> = CountOpen<T> extends CountClosed<T> ? true : false
@@ -163,7 +210,7 @@ type EqualParenthesis<T> = CountOpen<T> extends CountClosed<T> ? true : false
  * Count the ( characters
  */
 type CountOpen<T, N extends number = 0> = T extends `${infer _}(${infer Right}`
-  ? CountOpen<Right, Inc<N>>
+  ? CountOpen<Right, Increment<N>>
   : N
 
 /**
@@ -172,7 +219,7 @@ type CountOpen<T, N extends number = 0> = T extends `${infer _}(${infer Right}`
 type CountClosed<
   T,
   N extends number = 0,
-> = T extends `${infer _})${infer Right}` ? CountClosed<Right, Inc<N>> : N
+> = T extends `${infer _})${infer Right}` ? CountClosed<Right, Increment<N>> : N
 
 /**
  * Split and then rejoin a string

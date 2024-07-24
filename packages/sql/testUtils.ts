@@ -23,7 +23,7 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("email", SQLBuiltinTypes.TEXT)
-      .withKey("id")
+      .withKey("id"),
   )
   .addTable("orders", (table) =>
     table
@@ -35,14 +35,14 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("amount", SQLBuiltinTypes.DECIMAL)
-      .withKey("user_id", "product_id")
+      .withKey("user_id", "product_id"),
   )
   .addTable("products", (table) =>
     table
       .addColumn("id", SQLBuiltinTypes.BIGINT, { autoIncrement: true })
       .addColumn("name", SQLBuiltinTypes.TEXT)
       .addColumn("description", SQLBuiltinTypes.TEXT)
-      .withKey("id")
+      .withKey("id"),
   )
   .addForeignKey("orders_product_fk", "products", "orders", "product_id").schema
 
@@ -57,7 +57,7 @@ export type DB_TYPE = typeof TEST_DATABASE
  * @param engine The {@link DatabaseEngine} to test against
  */
 export async function testDatabaseEngine(
-  engine: DatabaseEngine<DB_TYPE>
+  engine: DatabaseEngine<DB_TYPE>,
 ): Promise<void> {
   expect(engine).not.toBeUndefined()
 
@@ -73,7 +73,7 @@ export async function testDatabaseEngine(
   expect(res[0].user_id).toBe(1)
 
   const query2 = getDatabase(TEST_DATABASE).parseSQL(
-    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o"
+    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o",
   )
 
   const submittable2 = engine.translateQuery("test2", query2)

@@ -15,11 +15,11 @@ import { PostgresQueryVisitor } from "./visitor.js"
 let PG_CLIENT: pg.Client | undefined
 
 pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (v) =>
-  v ? parseDateToSafeBigInt(v) : v
+  v ? parseDateToSafeBigInt(v) : v,
 )
 
 pg.types.setTypeParser(pg.types.builtins.INT8, (v) =>
-  v ? parseSafeBigInt(v) : v
+  v ? parseSafeBigInt(v) : v,
 )
 
 pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v) => +v)
@@ -40,7 +40,7 @@ export function initializePostgres(client: pg.Client): void {
  * @returns A new {@link DatabaseEngine} for Postgres
  */
 export function createPostgresEngine<Database extends SQLDatabaseSchema>(
-  database: Database
+  database: Database,
 ): DatabaseEngine<Database> {
   if (PG_CLIENT === undefined) {
     throw new Error("Need to initialize pg")
@@ -61,7 +61,7 @@ export function createPostgresEngine<Database extends SQLDatabaseSchema>(
  * @returns The results of executing the query
  */
 async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
-  query: Query
+  query: Query,
 ): Promise<GetReturnType<Query>> {
   if (
     QUERY_PROVIDER_SYMBOL in query &&

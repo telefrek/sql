@@ -25,10 +25,10 @@
     "@types/jest": "^29.5.12",
     "eslint": "^9.7.0",
     "jest": "^29.7.0",
-    "ts-jest": "^29.2.2",
+    "ts-jest": "^29.2.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3",
-    "typescript-eslint": "^7.16.0"
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^7.17.0"
   },
   "packageManager": "pnpm@9.3.0+sha256.e1f9e8d1a16607a46dd3c158b5f7a7dc7945501d1c6222d454d63d033d1d918f",
   "engines": {

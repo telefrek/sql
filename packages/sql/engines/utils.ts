@@ -27,12 +27,12 @@ export interface EngineVisitor extends QueryAstVisitor, QueryProvider {}
  */
 export function parseQuery<
   Database extends SQLDatabaseSchema,
-  Query extends SQLQuery
+  Query extends SQLQuery,
 >(
   name: string,
   query: Query,
   provider?: string,
-  visitor: EngineVisitor = new DefaultQueryVisitor()
+  visitor: EngineVisitor = new DefaultQueryVisitor(),
 ): GetQueryType<Database, Query> {
   visitor.visitQuery(query)
   const submittable = new DefaultSubmittableQuery(name, visitor.sql)
@@ -71,7 +71,7 @@ export type GetReturnType<Query extends SubmittableQuery> =
  */
 export type GetQueryType<
   Database extends SQLDatabaseSchema,
-  T extends SQLQuery
+  T extends SQLQuery,
 > = FlattenQuery<
   SubmittableQuery<
     SQLReturnRowType<BuildActive<Database["tables"], T>, T["query"]>
@@ -81,11 +81,9 @@ export type GetQueryType<
 /**
  * Collapse the definition for the query so the IDE looks reasonable
  */
-type FlattenQuery<T extends SubmittableQuery> = T extends ParameterizedQuery<
-  infer RowType,
-  infer Parameters
->
-  ? ParameterizedQuery<RowType, Parameters>
-  : T extends SubmittableQuery<infer RowType>
-  ? SubmittableQuery<RowType>
-  : never
+type FlattenQuery<T extends SubmittableQuery> =
+  T extends ParameterizedQuery<infer RowType, infer Parameters>
+    ? ParameterizedQuery<RowType, Parameters>
+    : T extends SubmittableQuery<infer RowType>
+      ? SubmittableQuery<RowType>
+      : never

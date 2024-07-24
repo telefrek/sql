@@ -52,7 +52,7 @@ export function parseSelectedColumns(tokens: string[]): {
  * @param columnReference The column reference to parse
  * @returns A {@link ColumnReference}
  */
-function parseColumnReference(columnReference: string): ColumnReference {
+export function parseColumnReference(columnReference: string): ColumnReference {
   const aData = columnReference.split(" AS ")
   const cData = aData[0].split(".")
 

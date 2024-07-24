@@ -3,6 +3,7 @@ import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SQLDatabaseSchema } from "../../schema/database.js"
 import { createQueryBuilder, type QueryBuilder } from "../builder/query.js"
 import type { QueryContext } from "../context.js"
+import { parseInsertClause } from "./insert.js"
 import { normalizeQuery, type NormalizeQuery } from "./normalize.js"
 import { parseSelectClause, type ParseSelect } from "./select.js"
 
@@ -63,13 +64,18 @@ export class QueryParser<Database extends SQLDatabaseSchema> {
  * @returns A generic SQLQuery
  */
 
-function parseQueryClause(s: string): SQLQuery {
+export function parseQueryClause(s: string): SQLQuery {
   const tokens = s.split(" ")
   switch (tokens.shift()!) {
     case "SELECT":
       return {
         type: "SQLQuery",
         query: parseSelectClause(tokens),
+      }
+    case "INSERT":
+      return {
+        type: "SQLQuery",
+        query: parseInsertClause(tokens.slice(1)),
       }
     default:
       throw new Error(`Cannot parse ${s}`)

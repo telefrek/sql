@@ -1,7 +1,7 @@
 import type { OneOrMore } from "@telefrek/type-utils/common.js"
-import type { ColumnReference, TableColumnReference } from "./columns.js"
+import type { ColumnReference } from "./columns.js"
 import type { CombinedSelectClause } from "./combined.js"
-import type { SelectClause } from "./select.js"
+import type { SelectClause, SelectColumns } from "./select.js"
 import type { TableReference } from "./tables.js"
 import type { UpdateClause } from "./update.js"
 import type { ValueTypes } from "./values.js"
@@ -44,8 +44,7 @@ export type SubQuery<Query extends QueryClause = QueryClause> = {
  * Structure for a returning clause
  */
 export type ReturningClause<
-  Returning extends
-    OneOrMore<TableColumnReference> = OneOrMore<TableColumnReference>,
+  Returning extends SelectColumns | "*" = SelectColumns | "*",
 > = {
   returning: Returning
 }

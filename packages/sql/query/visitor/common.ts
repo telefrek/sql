@@ -75,13 +75,13 @@ export class DefaultQueryVisitor
           column.reference.type === "TableColumnReference"
             ? `${column.reference.table}.${column.reference.column}`
             : column.reference.column
-        } AS ${column.alias}`
+        } AS ${column.alias}`,
       )
     } else {
       super.append(
         column.reference.type === "TableColumnReference"
           ? `${column.reference.table}.${column.reference.column}`
-          : column.reference.column
+          : column.reference.column,
       )
     }
   }

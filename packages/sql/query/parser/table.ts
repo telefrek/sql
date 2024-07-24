@@ -35,7 +35,7 @@ export function parseFrom(tokens: string[]): {
  * @param table the table string to parse
  * @returns A {@link TableReference}
  */
-function parseTableReference(table: string): TableReference {
+export function parseTableReference(table: string): TableReference {
   if (table.indexOf(" AS ") > 0) {
     const data = table.split(" AS ")
     return {
