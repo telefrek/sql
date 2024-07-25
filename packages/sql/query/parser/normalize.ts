@@ -6,25 +6,33 @@ import { NORMALIZE_TARGETS } from "./keywords.js"
 /**
  * Ensure a query has a known structure with keywords uppercase and consistent spacing
  */
-export type NormalizeQuery<T> = SplitJoin<
-  SplitJoin<SplitJoin<SplitJoin<SplitJoin<T, "\t">, "\n">, ",">, "(">,
-  ")"
->
+export type NormalizeQuery<Query extends string> = SplitJoin<
+  Query,
+  "\t"
+> extends infer Tabs extends string
+  ? SplitJoin<Tabs, "\n"> extends infer NewLines extends string
+    ? SplitJoin<NewLines, ","> extends infer Commas extends string
+      ? SplitJoin<Commas, "("> extends infer OpenParen extends string
+        ? SplitJoin<OpenParen, ")"> extends infer Normalized extends string
+          ? Trim<Normalized>
+          : never
+        : never
+      : never
+    : never
+  : never
 
 /**
  * Normalize the values by ensuring capitalization
  */
 export type NormalizedJoin<T, Keywords = NormalizedKeyWords> = T extends [
   infer Left,
-  ...infer Rest,
+  ...infer Rest
 ]
   ? Rest extends never[]
     ? Check<Left & string, Keywords>
-    : `${Check<Left & string, Keywords> & string} ${NormalizedJoin<
-        Rest,
-        Keywords
-      > &
-        string}`
+    : NormalizedJoin<Rest, Keywords> extends infer NJ extends string
+    ? `${Check<Left & string, Keywords> & string} ${NJ}`
+    : never
   : ""
 
 /**
@@ -43,20 +51,21 @@ export type Extractor<U> = [clause: U | never, remainder: string]
 /**
  * Check if T starts with S (case insensitive)
  */
-export type StartsWith<T extends string, S> =
-  NextToken<T> extends [infer Left extends string, infer _]
-    ? Uppercase<Left> extends S
-      ? true
-      : false
+export type StartsWith<T extends string, S> = NextToken<T> extends [
+  infer Left extends string,
+  infer _
+]
+  ? Uppercase<Left> extends S
+    ? true
     : false
+  : false
 
 /**
  * Split words based on spacing only
  */
-export type SplitWords<T> =
-  Trim<T> extends `${infer Left} ${infer Right}`
-    ? [...SplitWords<Left>, ...SplitWords<Right>]
-    : [Trim<T>]
+export type SplitWords<T> = Trim<T> extends `${infer Left} ${infer Right}`
+  ? [...SplitWords<Left>, ...SplitWords<Right>]
+  : [Trim<T>]
 
 /**
  * Keep aggregating the next token until the terminator is reached
@@ -65,21 +74,20 @@ export type ExtractUntil<
   T extends string,
   K extends string,
   N extends number = 0,
-  S extends string = "",
-> =
-  NextToken<T> extends [infer Token extends string, infer Rest extends string]
-    ? Rest extends ""
-      ? [Trim<S>]
-      : Token extends "("
-        ? ExtractUntil<Rest, K, Increment<N>, `${S} (`>
-        : Token extends ")"
-          ? ExtractUntil<Rest, K, Decrement<N>, `${S} )`>
-          : [Token] extends [K]
-            ? N extends 0
-              ? [Trim<S>, Trim<`${Token} ${Rest}`>]
-              : ExtractUntil<Rest, K, N, `${S} ${Token}`>
-            : ExtractUntil<Rest, K, N, `${S} ${Token}`>
-    : never
+  S extends string = ""
+> = NextToken<T> extends [infer Token extends string, infer Rest extends string]
+  ? Rest extends ""
+    ? [Trim<S>]
+    : Token extends "("
+    ? ExtractUntil<Rest, K, Increment<N>, `${S} (`>
+    : Token extends ")"
+    ? ExtractUntil<Rest, K, Decrement<N>, `${S} )`>
+    : [Token] extends [K]
+    ? N extends 0
+      ? [Trim<S>, Trim<`${Token} ${Rest}`>]
+      : ExtractUntil<Rest, K, N, `${S} ${Token}`>
+    : ExtractUntil<Rest, K, N, `${S} ${Token}`>
+  : never
 
 /**
  * Custom split that is SQL aware and respects parenthesis depth
@@ -87,14 +95,16 @@ export type ExtractUntil<
 export type SplitSQL<
   T extends string,
   Token extends string = ",",
-  S extends string = "",
-> = T extends `${infer Left} ${Token} ${infer Right}`
+  S extends string = ""
+> = Trim<T> extends `${infer Left} ${Token} ${infer Right}`
   ? EqualParenthesis<`${S} ${Left}`> extends true
-    ? [Trim<`${S} ${Left}`>, ...SplitSQL<Trim<Right>, Token>]
+    ? SplitSQL<Right, Token> extends infer Tokens extends string[]
+      ? [Trim<`${S} ${Left}`>, ...Tokens]
+      : Invalid<"Unequal parenthesis">
     : SplitSQL<Right, Token, Trim<`${S} ${Left} ${Token}`>>
   : EqualParenthesis<`${S} ${T}`> extends true
-    ? [Trim<`${S} ${T}`>]
-    : Invalid<"Unequal parenthesis">
+  ? [Trim<`${S} ${T}`>]
+  : Invalid<"Unequal parenthesis">
 
 /**
  * This function is responsible for making sure that the query string being
@@ -168,7 +178,7 @@ export function extractParenthesis(tokens: string[]): string[] {
     throw new Error(
       `Invalid, does not start with a parenthesis: ${
         tokens.length > 0 ? tokens[0] : "empty array"
-      }`,
+      }`
     )
   }
   tokens.shift()
@@ -218,21 +228,32 @@ type CountOpen<T, N extends number = 0> = T extends `${infer _}(${infer Right}`
  */
 type CountClosed<
   T,
-  N extends number = 0,
+  N extends number = 0
 > = T extends `${infer _})${infer Right}` ? CountClosed<Right, Increment<N>> : N
 
 /**
  * Split and then rejoin a string
  */
-type SplitJoin<T, C extends string = ","> = Join<SplitTrim<T, C>>
+type SplitJoin<T, C extends string = ","> = SplitTrim<
+  T,
+  C
+> extends infer Tokens extends string[]
+  ? Join<Tokens>
+  : never
 
 /**
  * Split and trim all the values
  */
-type SplitTrim<T, C extends string = ","> =
-  Trim<T> extends `${infer Left}${C}${infer Right}`
-    ? [...SplitTrim<Left, C>, Trim<C>, ...SplitTrim<Right, C>]
-    : [NormalizedJoin<SplitWords<Trim<T>>>]
+type SplitTrim<
+  T,
+  C extends string = ","
+> = Trim<T> extends `${infer Left}${C}${infer Right}`
+  ? [...SplitTrim<Left, C>, Trim<C>, ...SplitTrim<Right, C>]
+  : Trim<T> extends infer S extends string
+  ? SplitWords<S> extends infer Words extends string[]
+    ? [NormalizedJoin<Words>]
+    : never
+  : never
 
 /**
  * Check if a value is a normalized keyword

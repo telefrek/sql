@@ -1,6 +1,18 @@
 import type { Flatten, IgnoreAny } from "@telefrek/type-utils/common.js"
 import type {
+  ArrayValueType,
+  BigIntValueType,
+  BooleanValueType,
+  BufferValueType,
+  JsonValueType,
+  NumberValueType,
+  StringValueType,
+} from "../ast/values.js"
+import type {
+  BigIntSQLTypes,
+  BinarySQLTypes,
   IncrementalSQLTypes,
+  NumericSQLTypes,
   SQLBuiltinTypes,
   TSSQLType,
   VariableLengthSQLTypes,
@@ -31,6 +43,25 @@ export type ColumnTypeDefinition<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
       VariableNumericType<T>
   >
 
+export type GetValueType<Column extends ColumnTypeDefinition> =
+  Column["array"] extends true
+    ? ArrayValueType<TSSQLType<Column["type"]>[]>
+    : GetColumnValueType<Column["type"]>
+
+type GetColumnValueType<T extends SQLBuiltinTypes> = [T] extends [
+  BigIntSQLTypes
+]
+  ? NumberValueType | BigIntValueType
+  : [T] extends [BinarySQLTypes]
+  ? BufferValueType
+  : [T] extends [NumericSQLTypes]
+  ? NumberValueType
+  : [T] extends [SQLBuiltinTypes.BIT]
+  ? BooleanValueType
+  : [T] extends [SQLBuiltinTypes.JSON]
+  ? JsonValueType<IgnoreAny>
+  : StringValueType
+
 /**
  * A value or provider of a value
  */
@@ -53,7 +84,7 @@ type BaseColumnDefinition<T extends SQLBuiltinTypes> = {
  * Extended information for incremental column types
  */
 type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
-  IncrementalSQLTypes,
+  IncrementalSQLTypes
 ]
   ? { autoIncrement?: true }
   : object
@@ -62,7 +93,7 @@ type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable size column types
  */
 type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableLengthSQLTypes,
+  VariableLengthSQLTypes
 ]
   ? { size?: number }
   : object
@@ -71,7 +102,7 @@ type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable numeric precision types
  */
 type VariableNumericType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableNumericTypes,
+  VariableNumericTypes
 ]
   ? { precision?: number; scale?: number }
   : object

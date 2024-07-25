@@ -101,6 +101,28 @@ function isBigInt(value: string): boolean {
 }
 
 /**
+ * Extract values types from an array of strings
+ */
+export type ExtractValues<Values> = Values extends [
+  infer Value extends string,
+  ...infer Rest
+]
+  ? ExtractValueType<Value> extends infer V extends ValueTypes
+    ? Rest extends never[]
+      ? [V]
+      : ExtractValues<Rest> extends infer V1 extends ValueTypes[]
+      ? [V, ...V1]
+      : ExtractValues<Rest>
+    : ExtractValueType<Value>
+  : never
+
+type ExtractValueType<T extends string> = ExtractValue<T> extends [
+  infer V extends string
+]
+  ? CheckValueType<V>
+  : Invalid<`Failed to extract value type`>
+
+/**
  * Parse out the entire value string (may be quoted)
  */
 export type ExtractValue<

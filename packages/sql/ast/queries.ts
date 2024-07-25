@@ -1,4 +1,3 @@
-import type { OneOrMore } from "@telefrek/type-utils/common.js"
 import type { ColumnReference } from "./columns.js"
 import type { CombinedSelectClause } from "./combined.js"
 import type { SelectClause, SelectColumns } from "./select.js"
@@ -63,8 +62,8 @@ export type DeleteClause<Table extends TableReference = TableReference> = {
 export type InsertClause<
   Table extends TableReference = TableReference,
   Columns extends ColumnReference[] = ColumnReference[],
-  Values extends OneOrMore<ValueTypes> | RowGeneratingClause =
-    | OneOrMore<ValueTypes>
+  Values extends ValueTypes[] | RowGeneratingClause =
+    | ValueTypes[]
     | RowGeneratingClause
 > = {
   type: "InsertClause"

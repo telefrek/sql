@@ -52,7 +52,7 @@ type CheckValues<Current> = Current extends [
     ? ParseSelect<Select> extends infer S extends SelectClause
       ? CheckColumns<[Flatten<Returning & { values: NamedQuery<S> }>, Previous]>
       : ParseSelect<Select>
-    : Invalid<"VALUES or SELECT are required for INSERT">
+    : Invalid<`VALUES or SELECT are required for INSERT: ${Remainder}`>
   : Current
 
 type CheckColumns<Current> = Current extends [

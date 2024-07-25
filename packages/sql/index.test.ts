@@ -1,7 +1,5 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
-import { normalizeQuery } from "./query/parser/normalize.js"
-import { parseQueryClause } from "./query/parser/query.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./testUtils.js"
 
@@ -82,6 +80,8 @@ describe("Invalid queries should be rejected", () => {
       const bad: ParseSQL<"SELECT FROM table"> = "Invalid empty column"
       expect(bad).not.toBeUndefined()
     })
+
+    // TODO: Add insert tests
   })
 })
 
@@ -140,6 +140,27 @@ describe("Query building should match parsers", () => {
     ).toBe("id")
   })
 
+  it("Should allow a simple insert statement without returning", () => {
+    const query: ParseSQL<"INSERT INTO users(first_name, last_name, address, email) VALUES('firstName', 'lastName', '12345 make believe way', 'first@last.name')"> =
+      createQueryBuilder(TEST_DATABASE)
+        .insert.into("users")
+        .columns("first_name", "last_name", "address", "email")
+        .values(
+          { type: "StringValue", value: "firstName" },
+          { type: "StringValue", value: "lastName" },
+          { type: "StringValue", value: "12345 make believe way" },
+          { type: "StringValue", value: "first@last.name" }
+        ).ast
+
+    expect(query).not.toBeUndefined()
+    expect(
+      query.query.columns.find((c) => c.alias === "first_name")
+    ).not.toBeUndefined()
+    expect(
+      query.query.values.find((v) => v.value === "firstName")
+    ).not.toBeUndefined()
+  })
+
   it.skip("Should allow a simple select statement with a column and table alias that is joined", () => {
     // We won't run this test for now since it only applies to non-unique
     // columns when we join.  We want to limit the number of combinations of table.column or
@@ -167,14 +188,5 @@ describe("SQL databases should validate queries", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL("SELECT * FROM orders")
     expect(query.query.type).toBe("SelectClause")
     expect(query.query.from.table).toBe("orders")
-  })
-})
-
-describe("Insert statements should work", () => {
-  it("Should allow a simple insert", () => {
-    const query = parseQueryClause(
-      normalizeQuery("INSERT INTO foo VALUES(1, true, 3.4, null)").split(" ")
-    )
-    expect(query.type).toBe("InsertClause")
   })
 })

@@ -1,6 +1,6 @@
 import type { IgnoreAny } from "@telefrek/type-utils/common.js"
 import type { SQLDatabaseSchema } from "../../schema/database.js"
-import { ALIAS_REGEX, type AllowAliasing } from "../common.js"
+import { type AllowAliasing } from "../common.js"
 import {
   modifyContext,
   type ActivateTableContext,
@@ -13,6 +13,7 @@ import {
   createSelectedColumnsBuilder,
   type SelectedColumnsBuilder,
 } from "./columns.js"
+import { buildTableReference } from "./table.js"
 
 /**
  * Start selection from a table in the context
@@ -24,7 +25,7 @@ export interface FromQueryBuilder<Context extends QueryContext> {
    * @param table The table or table alias to select from
    */
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table,
+    table: Table
   ): SelectedColumnsBuilder<
     ActivateTableContext<Context, ParseTableReference<Table>>,
     ParseTableReference<Table>
@@ -38,14 +39,14 @@ export interface FromQueryBuilder<Context extends QueryContext> {
  * @returns A {@link FromQureyBuilder} for the given context
  */
 export function createFromQueryBuilder<Context extends QueryContext>(
-  context: Context,
+  context: Context
 ): FromQueryBuilder<Context> {
   return new DefaultFromQueryBuilder(context)
 }
 
 class DefaultFromQueryBuilder<
   Database extends SQLDatabaseSchema,
-  Context extends QueryContext<Database>,
+  Context extends QueryContext<Database>
 > implements FromQueryBuilder<Context>
 {
   private _context: Context
@@ -55,7 +56,7 @@ class DefaultFromQueryBuilder<
   }
 
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table,
+    table: Table
   ): SelectedColumnsBuilder<
     ActivateTableContext<
       Context,
@@ -87,22 +88,4 @@ class DefaultFromQueryBuilder<
 
     return createSelectedColumnsBuilder(context, reference)
   }
-}
-
-function buildTableReference<Table extends string>(
-  table: Table,
-): ParseTableReference<Table> {
-  const ref = {
-    type: "TableReference",
-    table,
-    alias: table,
-  } as unknown as ParseTableReference<Table>
-
-  if (ALIAS_REGEX.test(table)) {
-    const data = table.split(" AS ")
-    ref.table = data[0]
-    ref.alias = data[1]
-  }
-
-  return ref
 }
