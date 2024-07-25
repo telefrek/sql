@@ -1,5 +1,7 @@
 import type { Flatten, Invalid } from "@telefrek/type-utils/common.js"
+import type { NamedQuery } from "../../ast/named.js"
 import type { SelectClause } from "../../ast/select.js"
+import type { TableReference } from "../../ast/tables.js"
 import { parseSelectedColumns, type ParseColumnReference } from "./columns.js"
 import { FROM_KEYS, type FromKeywords } from "./keywords.js"
 import {
@@ -9,15 +11,18 @@ import {
   type SplitSQL,
   type StartsWith,
 } from "./normalize.js"
-import { parseFrom, type ParseTableReference } from "./table.js"
+import { parseTableReference, type ParseTableReference } from "./table.js"
+import { tryParseNamedQuery } from "./utils.js"
 
 /**
  * Parse the next select statement from the string
  */
-export type ParseSelect<T extends string> =
-  NextToken<T> extends ["SELECT", infer Right extends string]
-    ? CheckSelect<ExtractColumns<Right>>
-    : Invalid<"Corrupt SELECT syntax">
+export type ParseSelect<T extends string> = NextToken<T> extends [
+  "SELECT",
+  infer Right extends string
+]
+  ? CheckSelect<ExtractColumns<Right>>
+  : Invalid<"Corrupt SELECT syntax">
 
 /**
  * Parse out the given select clause
@@ -28,18 +33,55 @@ export type ParseSelect<T extends string> =
 export function parseSelectClause(tokens: string[]): SelectClause {
   return {
     type: "SelectClause",
-    ...parseSelectedColumns(takeUntil(tokens, ["FROM"])),
+    columns: parseSelectedColumns(takeUntil(tokens, ["FROM"])),
     ...parseFrom(takeUntil(tokens, FROM_KEYS)),
+  }
+}
+
+/**
+ * Parse the tokens into the correct table or subquery object
+ *
+ * @param tokens The tokens of the from clause
+ * @returns A from clause
+ */
+function parseFrom(tokens: string[]): {
+  from: TableReference | NamedQuery
+} {
+  // We need to remove the from which is still part of the query
+  const check = tokens.shift()
+  if (check !== "FROM") {
+    throw new Error(
+      `Corrupt query segment, expected FROM but received: ${check}`
+    )
+  }
+
+  // Ensure no truncated token
+  if (tokens.length === 0) {
+    throw new Error(`Corrupt query segment ended with FROM`)
+  }
+
+  // Check for a subquery
+  const subquery = tryParseNamedQuery(tokens)
+  if (subquery !== undefined) {
+    return {
+      from: subquery,
+    }
+  }
+
+  // Just parse the table reference
+  return {
+    from: parseTableReference(tokens),
   }
 }
 
 /**
  * Check to get the type information
  */
-type CheckSelect<T> =
-  Flatten<T> extends Partial<SelectClause<infer Columns, infer From>>
-    ? Flatten<SelectClause<Columns, From>>
-    : T
+type CheckSelect<T> = Flatten<T> extends Partial<
+  SelectClause<infer Columns, infer From>
+>
+  ? Flatten<SelectClause<Columns, From>>
+  : T
 
 /**
  * Validation for no invalid spaces between columns
@@ -48,8 +90,8 @@ type CheckNoSpaces<Column extends string> =
   Column extends `${infer _Begin} ${infer _End}`
     ? Invalid<`Column missing commas: ${Column}`>
     : Column extends ""
-      ? Invalid<"Invalid empty column">
-      : true
+    ? Invalid<"Invalid empty column">
+    : true
 
 /**
  * Ensure the column reference is valid including the aliasing
@@ -68,13 +110,13 @@ type CheckColumnIsValid<T extends string> =
  */
 type CheckColumnSyntax<Columns> = Columns extends [
   infer Next extends string,
-  ...infer Rest,
+  ...infer Rest
 ]
   ? Rest extends never[]
     ? CheckColumnIsValid<Next>
     : CheckColumnIsValid<Next> extends true
-      ? CheckColumnSyntax<Rest>
-      : CheckColumnIsValid<Next>
+    ? CheckColumnSyntax<Rest>
+    : CheckColumnIsValid<Next>
   : Invalid<"No columns found">
 
 /**
@@ -85,23 +127,22 @@ type CheckColumns<T extends string> = CheckColumnSyntax<SplitSQL<T>>
 /**
  * Parse out the columns and then process any from information
  */
-type ExtractColumns<T extends string> =
-  ExtractUntil<T, "FROM"> extends [
-    infer Columns extends string,
-    infer From extends string,
-  ]
-    ? CheckColumns<Columns> extends true
-      ? StartsWith<From, "FROM"> extends true
-        ? Columns extends "*"
-          ? {
-              columns: Columns
-            } & ExtractFrom<From>
-          : {
-              columns: ParseColumns<SplitSQL<Columns>>
-            } & ExtractFrom<From>
-        : Invalid<"Failed to parse columns">
-      : CheckColumns<Columns>
-    : Invalid<"Missing FROM">
+type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
+  infer Columns extends string,
+  infer From extends string
+]
+  ? CheckColumns<Columns> extends true
+    ? StartsWith<From, "FROM"> extends true
+      ? Columns extends "*"
+        ? {
+            columns: Columns
+          } & ExtractFrom<From>
+        : {
+            columns: ParseColumns<SplitSQL<Columns>>
+          } & ExtractFrom<From>
+      : Invalid<"Failed to parse columns">
+    : CheckColumns<Columns>
+  : Invalid<"Missing FROM">
 
 /**
  * Parse the columns that were extracted
@@ -115,16 +156,18 @@ type ParseColumns<T> = T extends [infer Column extends string, ...infer Rest]
 /**
  * Extract the from information
  */
-type ExtractFrom<T extends string> =
-  NextToken<T> extends [infer _, infer Clause extends string]
-    ? ExtractUntil<Clause, FromKeywords> extends [
-        infer From extends string,
-        infer _,
-      ]
-      ? Flatten<{
-          from: ParseTableReference<From>
-        }>
-      : {
-          from: ParseTableReference<Clause>
-        }
-    : never
+type ExtractFrom<T extends string> = NextToken<T> extends [
+  infer _,
+  infer Clause extends string
+]
+  ? ExtractUntil<Clause, FromKeywords> extends [
+      infer From extends string,
+      infer _
+    ]
+    ? Flatten<{
+        from: ParseTableReference<From>
+      }>
+    : {
+        from: ParseTableReference<Clause>
+      }
+  : never

@@ -1,47 +1,72 @@
 import type { Invalid } from "@telefrek/type-utils/common"
-import type { InsertClause, ReturningClause } from "../../ast/queries.js"
-import { parseColumnReference, parseSelectedColumns } from "./columns.js"
-import { extractParenthesis, takeUntil, type NextToken } from "./normalize.js"
+import type { ColumnReference } from "../../ast/columns.js"
+import type {
+  InsertClause,
+  ReturningClause,
+  RowGeneratingClause,
+} from "../../ast/queries.js"
+import type { ValueTypes } from "../../ast/values.js"
+import { parseColumnReference } from "./columns.js"
+import { extractParenthesis, type NextToken } from "./normalize.js"
+import { parseQueryClause } from "./query.js"
 import { parseTableReference } from "./table.js"
+import { tryParseReturning } from "./utils.js"
 import { parseValue } from "./values.js"
 
-export type ParseInsert<T extends string> =
-  NextToken<T> extends ["INSERT", "INTO", infer _Right extends string]
-    ? never
-    : Invalid<"Corrupt INSERT INTO syntax">
+export type ParseInsert<T extends string> = NextToken<T> extends [
+  "INSERT",
+  "INTO",
+  infer _Right extends string
+]
+  ? never
+  : Invalid<"Corrupt INSERT INTO syntax">
 
 export function parseInsertClause(
-  tokens: string[],
+  tokens: string[]
 ): InsertClause & Partial<ReturningClause> {
-  const tableAndValues = takeUntil(tokens, ["COLUMNS", "VALUES", "SELECT"])
+  // Parse the table reference first
+  const table = parseTableReference(tokens)
 
-  const table = parseTableReference(
-    takeUntil(tableAndValues, ["COLUMNS", "VALUES"]).join(" "),
-  )
+  // Extract the columns if they are specified
+  const columns = parseColumns(tokens)
 
-  // Get the columns up until the values or select clause starts
-  const columns = takeUntil(tokens, ["VALUES", "SELECT"]).map((c) =>
-    parseColumnReference(c),
-  )
+  // Parse the values or starting clause
+  const values = parseValuesOrSelect(tokens)
 
-  const values = extractParenthesis(tokens.slice(1))
-    .join(" ")
-    .split(" , ")
-    .map((v) => parseValue(v.trim()))
-
-  const insert = {
+  return {
     type: "InsertClause",
     table,
     columns,
     values,
+    ...tryParseReturning(tokens),
+  }
+}
+
+function parseColumns(tokens: string[]): ColumnReference[] {
+  if (tokens.length > 0 && tokens[0] === "(") {
+    return extractParenthesis(tokens)
+      .join(" ")
+      .split(" , ")
+      .map((c) => parseColumnReference(c.split(" ")))
   }
 
-  if (tokens.length > 0 && tokens[0] === "RETURNING") {
-    return {
-      ...insert,
-      returning: parseSelectedColumns(tokens.slice(1)),
-    } as unknown as InsertClause & Partial<ReturningClause>
+  return []
+}
+
+function parseValuesOrSelect(
+  tokens: string[]
+): ValueTypes[] | RowGeneratingClause {
+  if (tokens[0] === "VALUES") {
+    return extractParenthesis(tokens.slice(1))
+      .join(" ")
+      .split(" , ")
+      .map((v) => parseValue(v.trim())) as ValueTypes[]
   }
 
-  return insert as InsertClause & Partial<ReturningClause>
+  const subquery = parseQueryClause(tokens)
+  if (subquery.type === "SelectClause") {
+    return subquery
+  }
+
+  throw new Error(`Unsupported subquery type: ${subquery.type}`)
 }

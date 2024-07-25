@@ -30,10 +30,15 @@ export function parseValue(
       type: "BooleanValue",
       value: Boolean(value),
     }
-  } else if (!isNaN(Number(value))) {
+  } else if (isNumber(value)) {
     return {
       type: "NumberValue",
-      value: Number.parseFloat(value),
+      value: Number(value),
+    }
+  } else if (isBigInt(value)) {
+    return {
+      type: "BigIntValue",
+      value: BigInt(value),
     }
   } else if (value === "null") {
     return {
@@ -56,7 +61,42 @@ export function parseValue(
       value: value.slice(1, -1),
     }
   } else {
-    return parseColumnReference(value)
+    return parseColumnReference(value.split(" "))
+  }
+}
+
+/**
+ * Regex to test for valid numbers
+ */
+const NUMERIC_REGEX = /NaN|-?((\d*\.\d+|\d+)([Ee][+-]?\d+)?|Infinity)/
+
+/**
+ * Regex to test for simple integers that are positive/negative
+ */
+const INT_REGEX = /-?[0-9]+/
+
+/**
+ * Test for values that are less than MAX_SAFE_INTEGER for int
+ * @param value The value to test
+ * @returns True if it's a safe number
+ */
+function isNumber(value: string): boolean {
+  return (
+    !isNaN(Number(value)) &&
+    (INT_REGEX.test(value) ? Number(value) < Number.MAX_SAFE_INTEGER : true)
+  )
+}
+
+/**
+ *
+ * @param value Test if the value is a big integer
+ * @returns
+ */
+function isBigInt(value: string): boolean {
+  try {
+    return NUMERIC_REGEX.test(value) && BigInt(value) !== null
+  } catch {
+    return true
   }
 }
 

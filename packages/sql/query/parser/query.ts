@@ -23,8 +23,8 @@ export type ParseQuery<T extends string> = ParseSelect<NormalizeQuery<T>>
 type CheckSQL<Query> = [Query] extends [never]
   ? Invalid<"not a parsable query">
   : Query extends QueryClause
-    ? SQLQuery<Query>
-    : Query
+  ? SQLQuery<Query>
+  : Query
 
 /**
  * Class to help with Query parsing
@@ -50,7 +50,10 @@ export class QueryParser<Database extends SQLDatabaseSchema> {
    * @returns A fully parsed SQL query
    */
   parse<T extends string>(query: T): ParseSQL<T> {
-    return parseQueryClause(normalizeQuery(query)) as ParseSQL<T>
+    return {
+      type: "SQLQuery",
+      query: parseQueryClause(normalizeQuery(query).split(" ")),
+    } as ParseSQL<T>
   }
 }
 
@@ -64,20 +67,18 @@ export class QueryParser<Database extends SQLDatabaseSchema> {
  * @returns A generic SQLQuery
  */
 
-export function parseQueryClause(s: string): SQLQuery {
-  const tokens = s.split(" ")
-  switch (tokens.shift()!) {
+export function parseQueryClause(tokens: string[]): QueryClause {
+  const check = tokens.shift()
+  if (check === undefined) {
+    throw new Error("Cannot parse empty string as query")
+  }
+
+  switch (check) {
     case "SELECT":
-      return {
-        type: "SQLQuery",
-        query: parseSelectClause(tokens),
-      }
+      return parseSelectClause(tokens)
     case "INSERT":
-      return {
-        type: "SQLQuery",
-        query: parseInsertClause(tokens.slice(1)),
-      }
+      return parseInsertClause(tokens.slice(1))
     default:
-      throw new Error(`Cannot parse ${s}`)
+      throw new Error(`Cannot parse ${check}`)
   }
 }

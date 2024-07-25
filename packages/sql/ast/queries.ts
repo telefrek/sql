@@ -44,7 +44,7 @@ export type SubQuery<Query extends QueryClause = QueryClause> = {
  * Structure for a returning clause
  */
 export type ReturningClause<
-  Returning extends SelectColumns | "*" = SelectColumns | "*",
+  Returning extends SelectColumns | "*" = SelectColumns | "*"
 > = {
   returning: Returning
 }
@@ -62,10 +62,10 @@ export type DeleteClause<Table extends TableReference = TableReference> = {
  */
 export type InsertClause<
   Table extends TableReference = TableReference,
-  Columns extends OneOrMore<ColumnReference> = OneOrMore<ColumnReference>,
+  Columns extends ColumnReference[] = ColumnReference[],
   Values extends OneOrMore<ValueTypes> | RowGeneratingClause =
     | OneOrMore<ValueTypes>
-    | RowGeneratingClause,
+    | RowGeneratingClause
 > = {
   type: "InsertClause"
   table: Table

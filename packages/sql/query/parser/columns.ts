@@ -4,6 +4,7 @@ import type {
   UnboundColumnReference,
 } from "../../ast/columns.js"
 import type { SelectColumns } from "../../ast/select.js"
+import { tryParseAlias } from "./utils.js"
 
 /**
  * Utility type to parse a value as a ColumnReference
@@ -27,23 +28,17 @@ export type ParseColumnDetails<T extends string> =
  * @param tokens The tokens that represent the select clause
  * @returns A {@link SelectColumns} or '*' depending on the input
  */
-export function parseSelectedColumns(tokens: string[]): {
-  columns: SelectColumns | "*"
-} {
+export function parseSelectedColumns(tokens: string[]): SelectColumns | "*" {
   // Join everything up and split out the commas
   const columns = tokens.join(" ").split(" , ")
 
   // If only one column and it's '*' just return that
   if (columns.length === 1 && columns[0] === "*") {
-    return {
-      columns: "*",
-    }
+    return "*"
   }
 
   // Parse out the column references and add them to an empty object
-  return {
-    columns: columns.map((c) => parseColumnReference(c)) as SelectColumns,
-  }
+  return columns.map((c) => parseColumnReference(c.split(" "))) as SelectColumns
 }
 
 /**
@@ -52,27 +47,44 @@ export function parseSelectedColumns(tokens: string[]): {
  * @param columnReference The column reference to parse
  * @returns A {@link ColumnReference}
  */
-export function parseColumnReference(columnReference: string): ColumnReference {
-  const aData = columnReference.split(" AS ")
-  const cData = aData[0].split(".")
+export function parseColumnReference(tokens: string[]): ColumnReference {
+  const column = tokens.shift()
+  if (column === undefined) {
+    throw new Error("Failed to parse column from empty token stack")
+  }
 
-  const table = cData.length > 1 ? cData[0] : undefined
-  const column = cData.length > 1 ? cData[1] : cData[0]
-  const alias = aData.length > 1 ? aData[1] : column
+  const reference = parseReference(column)
 
   return {
     type: "ColumnReference",
-    reference:
-      table === undefined
-        ? {
-            type: "UnboundColumnReference",
-            column,
-          }
-        : {
-            type: "TableColumnReference",
-            table,
-            column,
-          },
-    alias,
+    reference,
+    alias: tryParseAlias(tokens) ?? reference.column,
+  }
+}
+
+/**
+ * Parse the underlying reference
+ *
+ * @param column The column to parse
+ * @returns the correct table or unbound reference
+ */
+function parseReference(
+  column: string
+): TableColumnReference | UnboundColumnReference {
+  // Check for a table reference
+  const idx = column.indexOf(".")
+  if (idx >= 0) {
+    const table = column.substring(0, idx - 1)
+    const name = column.substring(idx + 1)
+    return {
+      type: "TableColumnReference",
+      table,
+      column: name,
+    }
+  }
+
+  return {
+    type: "UnboundColumnReference",
+    column,
   }
 }

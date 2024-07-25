@@ -5,7 +5,7 @@ import type { QueryClause } from "./queries.js"
  * Structure for a with clause
  */
 export type WithClause<
-  With extends OneOrMore<NamedQuery> = OneOrMore<NamedQuery>,
+  With extends OneOrMore<NamedQuery> = OneOrMore<NamedQuery>
 > = {
   with: With
 }
@@ -15,9 +15,9 @@ export type WithClause<
  */
 export type NamedQuery<
   Query extends QueryClause = QueryClause,
-  Alias extends string = string,
+  Alias extends string = string
 > = {
   type: "NamedQuery"
   query: Query
-  alias: Alias
+  alias?: Alias
 }
