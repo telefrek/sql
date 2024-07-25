@@ -38,7 +38,7 @@ class DefaultReturningBuilder<
   }
 
   returning<Columns extends AllowAliasing<Extract<Keys<Schema>, string>>[]>(
-    ...columns: AtLeastOne<Columns>
+    ..._columns: AtLeastOne<Columns>
   ): SQLQuery<Query & ReturningClause<VerifySelectColumns<Columns>>> {
     throw new Error("Method not implemented.")
   }

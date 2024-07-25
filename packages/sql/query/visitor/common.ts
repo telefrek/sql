@@ -1,5 +1,5 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type { QueryClause, SQLQuery } from "../../ast/queries.js"
+import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
@@ -60,6 +60,10 @@ export class DefaultQueryVisitor
     }
   }
 
+  visitInsertClause<T extends InsertClause>(_insert: Readonly<T>): void {
+    // TODO: Lots here and defaults: https://stackoverflow.com/a/2148101/23595914
+  }
+
   visitTableReference<T extends TableReference>(table: Readonly<T>): void {
     if (table.alias !== table.table) {
       this.append(`${table.table} AS ${table.alias}`)
@@ -75,13 +79,13 @@ export class DefaultQueryVisitor
           column.reference.type === "TableColumnReference"
             ? `${column.reference.table}.${column.reference.column}`
             : column.reference.column
-        } AS ${column.alias}`,
+        } AS ${column.alias}`
       )
     } else {
       super.append(
         column.reference.type === "TableColumnReference"
           ? `${column.reference.table}.${column.reference.column}`
-          : column.reference.column,
+          : column.reference.column
       )
     }
   }

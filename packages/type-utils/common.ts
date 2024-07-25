@@ -10,6 +10,10 @@ type Identity<T> = T
  */
 export type Flatten<T> = Identity<{ [K in keyof T]: T[K] }>
 
+export type AddKVToType<T, K extends string | number, V> = Flatten<
+  T & { [key in K]: V }
+>
+
 /**
  * Utility type to track all places where are are intentionally using any to
  * break things
