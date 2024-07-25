@@ -1,8 +1,8 @@
-import type { Flatten, Invalid } from "@telefrek/type-utils/common.js"
+import type { Invalid } from "@telefrek/type-utils/common.js"
 import type { NamedQuery } from "../../ast/named.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
-import { parseSelectedColumns, type ParseColumnReference } from "./columns.js"
+import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
 import { FROM_KEYS, type FromKeywords } from "./keywords.js"
 import {
   takeUntil,
@@ -77,10 +77,8 @@ function parseFrom(tokens: string[]): {
 /**
  * Check to get the type information
  */
-type CheckSelect<T> = Flatten<T> extends Partial<
-  SelectClause<infer Columns, infer From>
->
-  ? Flatten<SelectClause<Columns, From>>
+type CheckSelect<T> = T extends Partial<SelectClause<infer Columns, infer From>>
+  ? SelectClause<Columns, From>
   : T
 
 /**
@@ -133,40 +131,27 @@ type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
 ]
   ? CheckColumns<Columns> extends true
     ? StartsWith<From, "FROM"> extends true
-      ? Columns extends "*"
-        ? {
-            columns: Columns
-          } & ExtractFrom<From>
-        : {
-            columns: ParseColumns<SplitSQL<Columns>>
-          } & ExtractFrom<From>
+      ? {
+          columns: ParseSelectedColumns<Columns>
+        } & ExtractFrom<From>
       : Invalid<"Failed to parse columns">
     : CheckColumns<Columns>
   : Invalid<"Missing FROM">
 
 /**
- * Parse the columns that were extracted
- */
-type ParseColumns<T> = T extends [infer Column extends string, ...infer Rest]
-  ? Rest extends never[]
-    ? [ParseColumnReference<Column>]
-    : [ParseColumnReference<Column>, ...ParseColumns<Rest>]
-  : never
-
-/**
  * Extract the from information
  */
 type ExtractFrom<T extends string> = NextToken<T> extends [
-  infer _,
+  "FROM",
   infer Clause extends string
 ]
   ? ExtractUntil<Clause, FromKeywords> extends [
       infer From extends string,
       infer _
     ]
-    ? Flatten<{
+    ? {
         from: ParseTableReference<From>
-      }>
+      }
     : {
         from: ParseTableReference<Clause>
       }

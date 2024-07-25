@@ -1,8 +1,9 @@
+import type { Invalid } from "@telefrek/type-utils/common"
 import type { NamedQuery } from "../../ast/named.js"
-import type { ReturningClause } from "../../ast/queries.js"
-import { parseSelectedColumns } from "./columns.js"
+import type { QueryClause, ReturningClause } from "../../ast/queries.js"
+import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
 import { extractParenthesis } from "./normalize.js"
-import { parseQueryClause } from "./query.js"
+import { parseQueryClause, type ParseQuery } from "./query.js"
 
 /**
  * Parse an optional alias from the stack
@@ -18,6 +19,20 @@ export function tryParseAlias(tokens: string[]): string | undefined {
 
   return
 }
+
+/**
+ * Parse an underlying named query
+ */
+export type ParseNamedQuery<T extends string> =
+  T extends `( ${infer SubQuery} ) AS ${infer Alias}`
+    ? ParseQuery<SubQuery> extends infer Clause extends QueryClause
+      ? NamedQuery<Clause, Alias>
+      : ParseQuery<SubQuery>
+    : T extends `( ${infer SubQuery} )`
+    ? ParseQuery<SubQuery> extends infer Clause extends QueryClause
+      ? NamedQuery<Clause>
+      : ParseQuery<SubQuery>
+    : Invalid<"Failed to parse named query">
 
 /**
  * Attempt to parse out a named query
@@ -49,6 +64,14 @@ export function tryParseNamedQuery(tokens: string[]): NamedQuery | undefined {
 
   return
 }
+
+/**
+ * Parse the returning clause
+ */
+export type ParseReturning<T extends string> =
+  T extends `RETURNING ${infer Columns extends string}`
+    ? ReturningClause<ParseSelectedColumns<Columns>>
+    : Invalid<"Not a valid RETURNING clause">
 
 /**
  * Attempts to read a RETURNING clause from the stack

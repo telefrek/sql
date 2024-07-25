@@ -4,23 +4,24 @@ import type {
   UnboundColumnReference,
 } from "../../ast/columns.js"
 import type { SelectColumns } from "../../ast/select.js"
+import type { SplitSQL } from "./normalize.js"
 import { tryParseAlias } from "./utils.js"
 
 /**
- * Utility type to parse a value as a ColumnReference
+ * Parse the selected columns
  */
-export type ParseColumnReference<T extends string> =
-  T extends `${infer ColumnDetails} AS ${infer Alias}`
-    ? ColumnReference<ParseColumnDetails<ColumnDetails>, Alias>
-    : ColumnReference<ParseColumnDetails<T>>
+export type ParseSelectedColumns<Columns extends string> = Columns extends "*"
+  ? Columns
+  : ParseColumns<SplitSQL<Columns>>
 
 /**
- * Utility type to parse column details
+ * Parse the columns that were extracted
  */
-export type ParseColumnDetails<T extends string> =
-  T extends `${infer Table}.${infer Column}`
-    ? TableColumnReference<Table, Column>
-    : UnboundColumnReference<T>
+type ParseColumns<T> = T extends [infer Column extends string, ...infer Rest]
+  ? Rest extends never[]
+    ? [ParseColumnReference<Column>]
+    : [ParseColumnReference<Column>, ...ParseColumns<Rest>]
+  : never
 
 /**
  * Parse the selected columns
@@ -40,6 +41,22 @@ export function parseSelectedColumns(tokens: string[]): SelectColumns | "*" {
   // Parse out the column references and add them to an empty object
   return columns.map((c) => parseColumnReference(c.split(" "))) as SelectColumns
 }
+
+/**
+ * Utility type to parse a value as a ColumnReference
+ */
+export type ParseColumnReference<T extends string> =
+  T extends `${infer ColumnDetails} AS ${infer Alias}`
+    ? ColumnReference<ParseColumnDetails<ColumnDetails>, Alias>
+    : ColumnReference<ParseColumnDetails<T>>
+
+/**
+ * Utility type to parse column details
+ */
+export type ParseColumnDetails<T extends string> =
+  T extends `${infer Table}.${infer Column}`
+    ? TableColumnReference<Table, Column>
+    : UnboundColumnReference<T>
 
 /**
  * Parse a column reference from the given string

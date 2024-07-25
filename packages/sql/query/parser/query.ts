@@ -3,7 +3,7 @@ import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SQLDatabaseSchema } from "../../schema/database.js"
 import { createQueryBuilder, type QueryBuilder } from "../builder/query.js"
 import type { QueryContext } from "../context.js"
-import { parseInsertClause } from "./insert.js"
+import { parseInsertClause, type ParseInsert } from "./insert.js"
 import { normalizeQuery, type NormalizeQuery } from "./normalize.js"
 import { parseSelectClause, type ParseSelect } from "./select.js"
 
@@ -15,7 +15,14 @@ export type ParseSQL<T extends string> = CheckSQL<ParseQuery<T>>
 /**
  * Type to parse a query segment
  */
-export type ParseQuery<T extends string> = ParseSelect<NormalizeQuery<T>>
+export type ParseQuery<T extends string> =
+  NormalizeQuery<T> extends infer Q extends string
+    ? Q extends `SELECT ${string}`
+      ? ParseSelect<Q>
+      : Q extends `INSERT INTO ${string}`
+      ? ParseInsert<Q>
+      : Invalid<`Query is not valid or supported`>
+    : never
 
 /**
  * Validate the query structure or pass through the likely Invalid
