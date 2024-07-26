@@ -11,17 +11,18 @@ import {
   type SplitSQL,
   type StartsWith,
 } from "./normalize.js"
+import type { ParserOptions } from "./options.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
 import { tryParseNamedQuery } from "./utils.js"
 
 /**
  * Parse the next select statement from the string
  */
-export type ParseSelect<T extends string> = NextToken<T> extends [
-  "SELECT",
-  infer Right extends string
-]
-  ? CheckSelect<ExtractColumns<Right>>
+export type ParseSelect<
+  T extends string,
+  Options extends ParserOptions
+> = NextToken<T> extends ["SELECT", infer Right extends string]
+  ? CheckSelect<ExtractColumns<Right, Options>>
   : Invalid<"Corrupt SELECT syntax">
 
 /**
@@ -125,15 +126,18 @@ type CheckColumns<T extends string> = CheckColumnSyntax<SplitSQL<T>>
 /**
  * Parse out the columns and then process any from information
  */
-type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
+type ExtractColumns<
+  T extends string,
+  Options extends ParserOptions
+> = ExtractUntil<T, "FROM"> extends [
   infer Columns extends string,
   infer From extends string
 ]
   ? CheckColumns<Columns> extends true
     ? StartsWith<From, "FROM"> extends true
       ? {
-          columns: ParseSelectedColumns<Columns>
-        } & ExtractFrom<From>
+          columns: ParseSelectedColumns<Columns, Options>
+        } & ExtractFrom<From, Options>
       : Invalid<"Failed to parse columns">
     : CheckColumns<Columns>
   : Invalid<"Missing FROM">
@@ -141,18 +145,18 @@ type ExtractColumns<T extends string> = ExtractUntil<T, "FROM"> extends [
 /**
  * Extract the from information
  */
-type ExtractFrom<T extends string> = NextToken<T> extends [
-  "FROM",
-  infer Clause extends string
-]
+type ExtractFrom<
+  T extends string,
+  Options extends ParserOptions
+> = NextToken<T> extends ["FROM", infer Clause extends string]
   ? ExtractUntil<Clause, FromKeywords> extends [
       infer From extends string,
       infer _
     ]
     ? {
-        from: ParseTableReference<From>
+        from: ParseTableReference<From, Options>
       }
     : {
-        from: ParseTableReference<Clause>
+        from: ParseTableReference<Clause, Options>
       }
   : never

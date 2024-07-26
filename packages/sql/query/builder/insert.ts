@@ -15,19 +15,21 @@ import type {
   GetContextTableSchema,
   QueryContext,
 } from "../context.js"
+import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
 import { buildColumnReference, type VerifyColumnReferences } from "./columns.js"
 import { createReturningBuilder, type ReturningBuilder } from "./returning.js"
 import { buildTableReference } from "./table.js"
 
 export interface InsertIntoBuilder<
-  Context extends QueryContext = QueryContext
+  Context extends QueryContext,
+  Options extends ParserOptions
 > {
   into<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): ColumnValueBuilder<
     GetContextTableSchema<Context, Table>,
-    ParseTableReference<Table>
+    ParseTableReference<Table, Options>
   >
 }
 
@@ -65,27 +67,35 @@ type CheckValueTypes<
     : never
   : never
 
-export function createInsertIntoQueryBuilder<Context extends QueryContext>(
-  context: Context
-): InsertIntoBuilder<Context> {
-  return new DefaultInsertIntoBuilder(context)
+export function createInsertIntoQueryBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions
+>(context: Context, options: Options): InsertIntoBuilder<Context, Options> {
+  return new DefaultInsertIntoBuilder(context, options)
 }
 
-class DefaultInsertIntoBuilder<Context extends QueryContext>
-  implements InsertIntoBuilder<Context>
+class DefaultInsertIntoBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions
+> implements InsertIntoBuilder<Context, Options>
 {
   private _context: Context
-  constructor(context: Context) {
+  private _options: Options
+  constructor(context: Context, options: Options) {
     this._context = context
+    this._options = options
   }
 
   into<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table
   ): ColumnValueBuilder<
     GetContextTableSchema<Context, Table>,
-    ParseTableReference<Table>
+    ParseTableReference<Table, Options>
   > {
-    return new DefaultColumnValueBuilder(buildTableReference(table), [])
+    return new DefaultColumnValueBuilder(
+      buildTableReference(table, this._options),
+      []
+    )
   }
 }
 

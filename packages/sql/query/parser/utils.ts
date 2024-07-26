@@ -3,6 +3,7 @@ import type { NamedQuery } from "../../ast/named.js"
 import type { QueryClause, ReturningClause } from "../../ast/queries.js"
 import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
 import { extractParenthesis } from "./normalize.js"
+import type { ParserOptions } from "./options.js"
 import { parseQueryClause, type ParseQuery } from "./query.js"
 
 /**
@@ -23,16 +24,18 @@ export function tryParseAlias(tokens: string[]): string | undefined {
 /**
  * Parse an underlying named query
  */
-export type ParseNamedQuery<T extends string> =
-  T extends `( ${infer SubQuery} ) AS ${infer Alias}`
-    ? ParseQuery<SubQuery> extends infer Clause extends QueryClause
-      ? NamedQuery<Clause, Alias>
-      : ParseQuery<SubQuery>
-    : T extends `( ${infer SubQuery} )`
-    ? ParseQuery<SubQuery> extends infer Clause extends QueryClause
-      ? NamedQuery<Clause>
-      : ParseQuery<SubQuery>
-    : Invalid<"Failed to parse named query">
+export type ParseNamedQuery<
+  T extends string,
+  Options extends ParserOptions
+> = T extends `( ${infer SubQuery} ) AS ${infer Alias}`
+  ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
+    ? NamedQuery<Clause, Alias>
+    : ParseQuery<SubQuery, Options>
+  : T extends `( ${infer SubQuery} )`
+  ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
+    ? NamedQuery<Clause>
+    : ParseQuery<SubQuery, Options>
+  : Invalid<"Failed to parse named query">
 
 /**
  * Attempt to parse out a named query
@@ -68,10 +71,12 @@ export function tryParseNamedQuery(tokens: string[]): NamedQuery | undefined {
 /**
  * Parse the returning clause
  */
-export type ParseReturning<T extends string> =
-  T extends `RETURNING ${infer Columns extends string}`
-    ? ReturningClause<ParseSelectedColumns<Columns>>
-    : Invalid<"Not a valid RETURNING clause">
+export type ParseReturning<
+  T extends string,
+  Options extends ParserOptions
+> = T extends `RETURNING ${infer Columns extends string}`
+  ? ReturningClause<ParseSelectedColumns<Columns, Options>>
+  : Invalid<"Not a valid RETURNING clause">
 
 /**
  * Attempts to read a RETURNING clause from the stack

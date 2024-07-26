@@ -11,18 +11,19 @@ import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
 import { parseColumnReference, type ParseSelectedColumns } from "./columns.js"
 import { extractParenthesis, type SplitSQL } from "./normalize.js"
+import type { ParserOptions } from "./options.js"
 import { parseQueryClause } from "./query.js"
 import type { ParseSelect } from "./select.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
 import { tryParseReturning, type ParseReturning } from "./utils.js"
-import { parseValue, type CheckValueType, type ExtractValue } from "./values.js"
+import { parseValue, type ExtractValues } from "./values.js"
 
-export type ParseInsert<T extends string> =
-  T extends `INSERT INTO ${infer Remainder}`
-    ? CheckReturning<Remainder> extends infer I extends object
-      ? CheckInsert<I>
-      : CheckReturning<Remainder>
-    : Invalid<"Corrupt INSERT INTO syntax">
+export type ParseInsert<
+  InsertSQL extends string,
+  Options extends ParserOptions
+> = InsertSQL extends `INSERT INTO ${infer Remainder}`
+  ? CheckInsert<CheckReturning<Remainder, Options>>
+  : Invalid<"Corrupt INSERT INTO syntax">
 
 type CheckInsert<T> = T extends Partial<
   InsertClause<infer Table, infer Columns, infer Values>
@@ -33,71 +34,71 @@ type CheckInsert<T> = T extends Partial<
   : T
 
 // Retrive the returning portion
-type CheckReturning<T extends string> =
-  T extends `${infer Previous} RETURNING ${infer Returning}`
-    ? ParseReturning<`RETURNING ${Returning}`> extends infer R extends object
-      ? CheckValues<[R, Previous]>
-      : ParseReturning<`RETURNING ${Returning}`>
-    : CheckValues<[IgnoreEmpty, T]>
+type CheckReturning<
+  InsertSQL extends string,
+  Options extends ParserOptions
+> = InsertSQL extends `${infer Previous} RETURNING ${infer Returning}`
+  ? ParseReturning<
+      `RETURNING ${Returning}`,
+      Options
+    > extends infer R extends object
+    ? CheckValues<[R, Previous], Options>
+    : ParseReturning<`RETURNING ${Returning}`, Options>
+  : CheckValues<[IgnoreEmpty, InsertSQL], Options>
 
-type CheckValues<Current> = Current extends [
+type CheckValues<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
   infer Remainder extends string
 ]
   ? Remainder extends `${infer Previous} VALUES ( ${infer Values} )`
-    ? ExtractValuesArray<Values> extends infer V extends ValueTypes[]
-      ? CheckColumns<[Flatten<Returning & { values: V }>, Previous]>
-      : ExtractValuesArray<Values>
+    ? ExtractValuesArray<Values, Options> extends infer V extends ValueTypes[]
+      ? CheckColumns<[Flatten<Returning & { values: V }>, Previous], Options>
+      : ExtractValuesArray<Values, Options>
     : Remainder extends `${infer Previous} SELECT ${infer Select}`
-    ? ParseSelect<Select> extends infer S extends SelectClause
-      ? CheckColumns<[Flatten<Returning & { values: NamedQuery<S> }>, Previous]>
-      : ParseSelect<Select>
+    ? ParseSelect<Select, Options> extends infer S extends SelectClause
+      ? CheckColumns<
+          [Flatten<Returning & { values: NamedQuery<S> }>, Previous],
+          Options
+        >
+      : ParseSelect<Select, Options>
     : Invalid<`VALUES or SELECT are required for INSERT: ${Remainder}`>
   : Current
 
-type CheckColumns<Current> = Current extends [
+type CheckColumns<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
   infer Remainder extends string
 ]
   ? Remainder extends `${infer Previous} ( ${infer Columns} )`
-    ? ParseSelectedColumns<Columns> extends infer C extends SelectColumns | "*"
-      ? CheckTable<[Flatten<Returning & { columns: C }>, Previous]>
-      : ParseSelectedColumns<Columns>
-    : CheckTable<[Flatten<Returning & { columns: [] }>, Remainder]>
+    ? ParseSelectedColumns<Columns, Options> extends infer C extends
+        | SelectColumns
+        | "*"
+      ? CheckTable<[Flatten<Returning & { columns: C }>, Previous], Options>
+      : ParseSelectedColumns<Columns, Options>
+    : CheckTable<[Flatten<Returning & { columns: [] }>, Remainder], Options>
   : Current
 
-type CheckTable<Current> = Current extends [
+type CheckTable<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
   infer Remainder extends string
 ]
-  ? ParseTableReference<Remainder> extends TableReference<infer T>
+  ? ParseTableReference<Remainder, Options> extends TableReference<infer T>
     ? Flatten<
         {
           table: TableReference<T>
         } & Returning
       >
-    : ParseTableReference<Remainder>
+    : ParseTableReference<Remainder, Options>
   : Current
 
 /**
  * Extract the values
  */
-type ExtractValuesArray<T extends string> = ExtractValueArr<
-  SplitSQL<T>
-> extends infer V extends ValueTypes[]
+type ExtractValuesArray<
+  T extends string,
+  Options extends ParserOptions
+> = ExtractValues<SplitSQL<T>, Options> extends infer V extends ValueTypes[]
   ? V
   : Invalid<"Failed to extract values">
-
-type ExtractValueArr<Values> = Values extends [
-  infer NextValue extends string,
-  ...infer Rest
-]
-  ? ExtractValue<NextValue> extends [infer V extends string]
-    ? Rest extends never[]
-      ? [CheckValueType<V>]
-      : [CheckValueType<V>, ...ExtractValueArr<Rest>]
-    : never
-  : never
 
 export function parseInsertClause(
   tokens: string[]

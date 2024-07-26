@@ -1,4 +1,4 @@
-import { TEST_DATABASE, testDatabaseEngine } from "@telefrek/sql/testUtils"
+import { TEST_DATABASE, testDatabaseEngine } from "@telefrek/sql/test.utils"
 import { MySqlContainer, StartedMySqlContainer } from "@testcontainers/mysql"
 import mysql from "mysql2/promise"
 import { createMySQLEngine, initializeMySQL } from "./engine.js"
@@ -24,7 +24,7 @@ describe("All integration tests with postgres should pass", () => {
   let connection: mysql.Connection
   beforeAll(async () => {
     container = await new MySqlContainer(
-      "mysql@sha256:72a37ddc9f839cfd84f1f6815fb31ba26f37f4c200b90e49607797480e3be446",
+      "mysql@sha256:72a37ddc9f839cfd84f1f6815fb31ba26f37f4c200b90e49607797480e3be446"
     ).start()
 
     connection = await mysql.createConnection(container.getConnectionUri())

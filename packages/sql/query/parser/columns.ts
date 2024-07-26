@@ -5,22 +5,27 @@ import type {
 } from "../../ast/columns.js"
 import type { SelectColumns } from "../../ast/select.js"
 import type { SplitSQL } from "./normalize.js"
+import type { ParserOptions } from "./options.js"
 import { tryParseAlias } from "./utils.js"
 
 /**
  * Parse the selected columns
  */
-export type ParseSelectedColumns<Columns extends string> = Columns extends "*"
-  ? Columns
-  : ParseColumns<SplitSQL<Columns>>
+export type ParseSelectedColumns<
+  Columns extends string,
+  Options extends ParserOptions
+> = Columns extends "*" ? Columns : ParseColumns<SplitSQL<Columns>, Options>
 
 /**
  * Parse the columns that were extracted
  */
-type ParseColumns<T> = T extends [infer Column extends string, ...infer Rest]
+type ParseColumns<T, Options extends ParserOptions> = T extends [
+  infer Column extends string,
+  ...infer Rest
+]
   ? Rest extends never[]
     ? [ParseColumnReference<Column>]
-    : [ParseColumnReference<Column>, ...ParseColumns<Rest>]
+    : [ParseColumnReference<Column>, ...ParseColumns<Rest, Options>]
   : never
 
 /**
@@ -70,12 +75,13 @@ export function parseColumnReference(tokens: string[]): ColumnReference {
     throw new Error("Failed to parse column from empty token stack")
   }
 
+  const alias = tryParseAlias(tokens)
   const reference = parseReference(column)
 
   return {
     type: "ColumnReference",
     reference,
-    alias: tryParseAlias(tokens) ?? reference.column,
+    alias: alias ?? reference.column,
   }
 }
 
@@ -91,7 +97,7 @@ function parseReference(
   // Check for a table reference
   const idx = column.indexOf(".")
   if (idx >= 0) {
-    const table = column.substring(0, idx - 1)
+    const table = column.substring(0, idx)
     const name = column.substring(idx + 1)
     return {
       type: "TableColumnReference",

@@ -1,7 +1,8 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
+import { DefaultOptions } from "./query/parser/options.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
-import { TEST_DATABASE } from "./testUtils.js"
+import { TEST_DATABASE } from "./test.utils.js"
 
 describe("Schema building should create valid schemas", () => {
   // Test to verify that our schema actually matches what we defined as types
@@ -88,7 +89,10 @@ describe("Invalid queries should be rejected", () => {
 describe("Query visitors should produce equivalent SQL", () => {
   it("Should be able to return a simple select", () => {
     const queryString = "SELECT * FROM orders"
-    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const query = getDatabase(TEST_DATABASE).parseSQL(
+      queryString,
+      DefaultOptions
+    )
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -96,7 +100,10 @@ describe("Query visitors should produce equivalent SQL", () => {
 
   it("Should be able to return a select with columns", () => {
     const queryString = "SELECT id, user_id FROM orders"
-    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const query = getDatabase(TEST_DATABASE).parseSQL(
+      queryString,
+      DefaultOptions
+    )
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -104,7 +111,10 @@ describe("Query visitors should produce equivalent SQL", () => {
 
   it("Should be able to return a select with alias", () => {
     const queryString = "SELECT id AS order_id, user_id FROM orders AS o"
-    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const query = getDatabase(TEST_DATABASE).parseSQL(
+      queryString,
+      DefaultOptions
+    )
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -113,16 +123,20 @@ describe("Query visitors should produce equivalent SQL", () => {
 
 describe("Query building should match parsers", () => {
   it("Should identify a simple select statement", () => {
-    const query: ParseSQL<"SELECT * FROM orders"> =
-      createQueryBuilder(TEST_DATABASE).select.from("orders").ast
+    const query: ParseSQL<"SELECT * FROM orders"> = createQueryBuilder(
+      TEST_DATABASE,
+      DefaultOptions
+    ).select.from("orders").ast
     expect(query).not.toBeUndefined()
     expect(query.query.columns).toBe("*")
     expect(query.query.from.alias).toBe("orders")
   })
 
   it("Should allow a simple select statement with from alias", () => {
-    const query: ParseSQL<"SELECT * from products as p"> =
-      createQueryBuilder(TEST_DATABASE).select.from("products AS p").ast
+    const query: ParseSQL<"SELECT * from products as p"> = createQueryBuilder(
+      TEST_DATABASE,
+      DefaultOptions
+    ).select.from("products AS p").ast
     expect(query).not.toBeUndefined()
     expect(query.query.columns).toBe("*")
     expect(query.query.from.alias).toBe("p")
@@ -131,7 +145,7 @@ describe("Query building should match parsers", () => {
 
   it("Should allow a simple select statement with a column alias", () => {
     const query: ParseSQL<"SELECT id as user_id FROM users"> =
-      createQueryBuilder(TEST_DATABASE)
+      createQueryBuilder(TEST_DATABASE, DefaultOptions)
         .select.from("users")
         .columns("id AS user_id").ast
     expect(query).not.toBeUndefined()
@@ -142,7 +156,7 @@ describe("Query building should match parsers", () => {
 
   it("Should allow a simple insert statement without returning", () => {
     const query: ParseSQL<"INSERT INTO users(first_name, last_name, address, email) VALUES('firstName', 'lastName', '12345 make believe way', 'first@last.name')"> =
-      createQueryBuilder(TEST_DATABASE)
+      createQueryBuilder(TEST_DATABASE, DefaultOptions)
         .insert.into("users")
         .columns("first_name", "last_name", "address", "email")
         .values(
@@ -174,18 +188,25 @@ describe("SQL databases should validate queries", () => {
     expect(database).not.toBeUndefined()
 
     const query = database.parseSQL(
-      "SELECT id as product_id FROM products AS o"
+      "SELECT o.id as product_id FROM products AS o",
+      DefaultOptions
     )
     expect(
       query.query.columns.find((c) => c.alias === "product_id")!.reference
         .column
     ).toBe("id")
+    expect(
+      query.query.columns.find((c) => c.alias === "product_id")?.reference.table
+    ).toBe("o")
     expect(query.query.from.table).toBe("products")
     expect(query.query.from.alias).toBe("o")
   })
 
   it("Should allow creating a simple query from a raw string", () => {
-    const query = getDatabase(TEST_DATABASE).parseSQL("SELECT * FROM orders")
+    const query = getDatabase(TEST_DATABASE).parseSQL(
+      "SELECT * FROM orders",
+      DefaultOptions
+    )
     expect(query.query.type).toBe("SelectClause")
     expect(query.query.from.table).toBe("orders")
   })

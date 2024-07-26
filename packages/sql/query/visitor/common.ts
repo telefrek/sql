@@ -3,7 +3,6 @@ import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
-
 /**
  * Reference implementation of the QueryAstVisitor and QueryProvider
  */

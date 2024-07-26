@@ -1,10 +1,27 @@
 import type { TableReference } from "../../ast/tables.js"
+import type { ParserOptions } from "./options.js"
 import { tryParseAlias } from "./utils.js"
 
 /**
  * Parse the string as a table reference
  */
-export type ParseTableReference<Value extends string> =
+export type ParseTableReference<
+  Value extends string,
+  Options extends ParserOptions
+> = ExtractTableReference<Value> extends TableReference<
+  infer Table,
+  infer Alias
+>
+  ? Options["quoteTables"] extends true
+    ? Options["quote"] extends infer Quote extends string
+      ? Table extends `${Quote}${infer Name}${Quote}`
+        ? TableReference<Name, Alias>
+        : never
+      : never
+    : TableReference<Table, Alias>
+  : never
+
+type ExtractTableReference<Value extends string> =
   Value extends `${infer Table} AS ${infer Alias}`
     ? TableReference<Table, Alias>
     : TableReference<Value>

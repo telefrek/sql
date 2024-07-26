@@ -18,5 +18,5 @@ export type AllowAliasing<Value extends string> = Value | AliasedValue<Value>
  */
 export type AliasedValue<Value extends string> = `${Value} AS ${string}`
 
-export const ALIAS_REGEX = /(.)+ AS (.)+/
+export const ALIAS_REGEX = /.+ AS .+/
 export const TABLE_BOUND_REGEX = /([^.])+\.([^.])+/

@@ -1,4 +1,8 @@
-import type { Flatten, IgnoreEmpty } from "@telefrek/type-utils/common.js"
+import type {
+  AddKVToType,
+  Flatten,
+  IgnoreEmpty,
+} from "@telefrek/type-utils/common.js"
 import type {
   CheckDuplicateKey,
   RequiredLiteralKeys,
@@ -48,11 +52,6 @@ type FinalColumnDefinition<
 >
 
 /**
- * Verify the type is a valid SQLColumnSchema
- */
-type CheckColumnSchema<T> = T extends SQLColumnSchema ? T : never
-
-/**
  * Utility type to add a column to a schema
  */
 type AddColumnToSchema<
@@ -60,13 +59,13 @@ type AddColumnToSchema<
   Column extends string,
   ColumnType extends SQLBuiltinTypes,
   Options extends keyof SQLColumnOptions<ColumnType>
-> = CheckColumnSchema<
-  Flatten<
-    Columns & {
-      [key in Column]: FinalColumnDefinition<ColumnType, Options>
-    }
-  >
->
+> = AddKVToType<
+  Columns,
+  Column,
+  FinalColumnDefinition<ColumnType, Options>
+> extends infer S extends SQLColumnSchema
+  ? S
+  : never
 
 /**
  * Utility type to add a column to a SQLTableSchema by successively inferring

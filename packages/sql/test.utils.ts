@@ -4,6 +4,7 @@
 
 import { getDatabase } from "./database.js"
 import type { DatabaseEngine } from "./engines/common.js"
+import { DefaultOptions } from "./query/parser/options.js"
 import { createDatabaseSchema } from "./schema/builder/database.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -62,7 +63,7 @@ export async function testDatabaseEngine(
   expect(engine).not.toBeUndefined()
 
   const queryString = "SELECT * FROM orders"
-  const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+  const query = getDatabase(TEST_DATABASE).parseSQL(queryString, DefaultOptions)
   const submittable = engine.translateQuery("test", query)
   const res = await engine.execute(submittable)
 
@@ -73,7 +74,8 @@ export async function testDatabaseEngine(
   expect(res[0].user_id).toBe(1)
 
   const query2 = getDatabase(TEST_DATABASE).parseSQL(
-    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o"
+    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o",
+    DefaultOptions
   )
 
   const submittable2 = engine.translateQuery("test2", query2)
