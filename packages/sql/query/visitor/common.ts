@@ -67,7 +67,7 @@ export class DefaultQueryVisitor
     // TODO: Lots here and defaults:
     // https://stackoverflow.com/a/2148101/23595914
     this.append(`INSERT INTO ${insert.table.table}`)
-    this.enterSubquery(true)
+    this.enterSubquery()
 
     if (insert.columns.length > 0) {
       for (let n = 0; n < insert.columns.length; ++n) {
@@ -88,7 +88,7 @@ export class DefaultQueryVisitor
 
     if (Array.isArray(insert.values)) {
       this.append("VALUES")
-      this.enterSubquery(true)
+      this.enterSubquery()
       for (let n = 0; n < insert.values.length; ++n) {
         const value = insert.values[n]
         this.visitValueType(value)

@@ -94,7 +94,7 @@ export abstract class DefaultQueryProvider implements QueryProvider {
    * Append a comma and remove invalid spacing
    */
   protected comma(): void {
-    this._sql = this._sql.trim() + ", "
+    this._sql += ", "
   }
 
   /**
@@ -110,9 +110,9 @@ export abstract class DefaultQueryProvider implements QueryProvider {
   /**
    * Enter a new subquery
    */
-  protected enterSubquery(trim: boolean = false): void {
+  protected enterSubquery(): void {
     this.depth++
-    this._sql = trim ? this._sql.trim() + "(" : this._sql + "("
+    this._sql += "( "
   }
 
   /**
@@ -120,6 +120,6 @@ export abstract class DefaultQueryProvider implements QueryProvider {
    */
   protected exitSubquery(): void {
     this.depth--
-    this._sql = this._sql.trim() + ") "
+    this._sql += ") "
   }
 }

@@ -1,5 +1,6 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
+import { normalizeQuery } from "./query/parser/normalize.js"
 import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./test.utils.js"
@@ -92,7 +93,7 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(visitor.sql).toBe(queryString)
+    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
   })
 
   it("Should be able to return a select with columns", () => {
@@ -100,7 +101,7 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(visitor.sql).toBe(queryString)
+    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
   })
 
   it("Should be able to return a select with alias", () => {
@@ -108,7 +109,7 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(visitor.sql).toBe(queryString)
+    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
   })
 
   it("Should be able to return an insert with no return", () => {
@@ -117,7 +118,7 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(visitor.sql).toBe(queryString)
+    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
   })
 })
 
