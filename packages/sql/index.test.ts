@@ -110,6 +110,15 @@ describe("Query visitors should produce equivalent SQL", () => {
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
   })
+
+  it("Should be able to return an insert with no return", () => {
+    const queryString =
+      "INSERT INTO users(first_name, last_name) VALUES('firstName', 'lastName')"
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    const visitor = new DefaultQueryVisitor()
+    visitor.visitQuery(query)
+    expect(visitor.sql).toBe(queryString)
+  })
 })
 
 describe("Query building should match parsers", () => {

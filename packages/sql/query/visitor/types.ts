@@ -2,6 +2,7 @@ import type { ColumnReference } from "../../ast/columns.js"
 import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
+import type { ValueTypes } from "../../ast/values.js"
 
 /**
  * A visitor for exploring the SQL AST
@@ -48,6 +49,13 @@ export interface QueryAstVisitor {
    * @param column The {@link ColumnReference} to visit
    */
   visitColumnReference<T extends ColumnReference>(column: Readonly<T>): void
+
+  /**
+   * Visit the value
+   *
+   * @param value The {@link ValueTypes} to visit
+   */
+  visitValueType<T extends ValueTypes>(value: T): void
 }
 
 /**
@@ -102,9 +110,9 @@ export abstract class DefaultQueryProvider implements QueryProvider {
   /**
    * Enter a new subquery
    */
-  protected enterSubquery(): void {
+  protected enterSubquery(trim: boolean = false): void {
     this.depth++
-    this._sql += "( "
+    this._sql = trim ? this._sql.trim() + "(" : this._sql + "("
   }
 
   /**
@@ -112,6 +120,6 @@ export abstract class DefaultQueryProvider implements QueryProvider {
    */
   protected exitSubquery(): void {
     this.depth--
-    this._sql += ") "
+    this._sql = this._sql.trim() + ") "
   }
 }

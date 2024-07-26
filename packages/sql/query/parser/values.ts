@@ -18,7 +18,10 @@ import { type ParseColumnReference } from "./columns.js"
 import type { NextToken } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 
-export function parseValue(value: string): ValueTypes | ColumnReference {
+export function parseValue(
+  value: string,
+  quote: string = "'"
+): ValueTypes | ColumnReference {
   if (value.startsWith(":")) {
     return {
       type: "ParameterValue",
@@ -59,7 +62,7 @@ export function parseValue(value: string): ValueTypes | ColumnReference {
   } else {
     return {
       type: "StringValue",
-      value: value,
+      value: value.replaceAll(quote, ""),
     }
   }
 }

@@ -2,6 +2,7 @@ import type { ColumnReference } from "../../ast/columns.js"
 import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
+import type { ValueTypes } from "../../ast/values.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
 /**
  * Reference implementation of the QueryAstVisitor and QueryProvider
@@ -22,6 +23,9 @@ export class DefaultQueryVisitor
     switch (clause.type) {
       case "SelectClause":
         this.visitSelectClause(clause as Readonly<SelectClause>)
+        break
+      case "InsertClause":
+        this.visitInsertClause(clause as Readonly<InsertClause>)
         break
       default:
         throw new Error(`Unsupported QueryClause: ${clause.type}`)
@@ -59,8 +63,72 @@ export class DefaultQueryVisitor
     }
   }
 
-  visitInsertClause<T extends InsertClause>(_insert: Readonly<T>): void {
-    // TODO: Lots here and defaults: https://stackoverflow.com/a/2148101/23595914
+  visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void {
+    // TODO: Lots here and defaults:
+    // https://stackoverflow.com/a/2148101/23595914
+    this.append(`INSERT INTO ${insert.table.table}`)
+    this.enterSubquery(true)
+
+    if (insert.columns.length > 0) {
+      for (let n = 0; n < insert.columns.length; ++n) {
+        const column = insert.columns[n]
+        switch (column.type) {
+          case "ColumnReference":
+            this.visitColumnReference(column)
+            break
+          default:
+            throw new Error(`Unsupported column type: ${column.type}`)
+        }
+        if (n < insert.columns.length - 1) {
+          this.comma()
+        }
+      }
+    }
+    this.exitSubquery()
+
+    if (Array.isArray(insert.values)) {
+      this.append("VALUES")
+      this.enterSubquery(true)
+      for (let n = 0; n < insert.values.length; ++n) {
+        const value = insert.values[n]
+        this.visitValueType(value)
+        if (n < insert.values.length - 1) {
+          this.comma()
+        }
+      }
+      this.exitSubquery()
+    } else if (
+      typeof insert.values === "object" &&
+      insert.values !== null &&
+      "type" in insert.values
+    ) {
+      if (insert.values.type === "SelectClause") {
+        this.enterSubquery()
+        this.visitSelectClause(insert.values)
+        this.exitSubquery()
+      }
+    }
+
+    if ("returning" in insert) {
+      this.append("RETURNING")
+      if (Array.isArray(insert.returning)) {
+        for (let n = 0; n < insert.returning.length; ++n) {
+          const column = insert.returning[n] as ColumnReference
+          switch (column.type) {
+            case "ColumnReference":
+              this.visitColumnReference(column)
+              break
+            default:
+              throw new Error(`Unsupported column type: ${column.type}`)
+          }
+          if (n < insert.returning.length - 1) {
+            this.comma()
+          }
+        }
+      } else {
+        this.append("*")
+      }
+    }
   }
 
   visitTableReference<T extends TableReference>(table: Readonly<T>): void {
@@ -86,6 +154,27 @@ export class DefaultQueryVisitor
           ? `${column.reference.table}.${column.reference.column}`
           : column.reference.column
       )
+    }
+  }
+
+  visitValueType<T extends ValueTypes>(value: T): void {
+    switch (value.type) {
+      case "StringValue":
+        this.appendQuoted(String(value.value))
+        break
+      case "ArrayValue":
+      case "JsonValue":
+        this.append(JSON.stringify(value.value))
+        break
+      case "BufferValue":
+        this.append(`0x${value.value!.toString()}`)
+        break
+      case "NullValue":
+        this.append("null")
+        break
+      default:
+        this.append(String(value.value))
+        break
     }
   }
 }

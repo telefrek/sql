@@ -1,5 +1,5 @@
 import type { IgnoreEmpty, Invalid } from "@telefrek/type-utils/common.js"
-import type { SQLQuery } from "../../ast/queries.js"
+import type { InsertClause, SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type {
@@ -50,5 +50,7 @@ export type VerifyQuery<
 > = Query extends SQLQuery<infer Clause>
   ? Clause extends infer Select extends SelectClause
     ? ValidateSelectClause<Database["tables"], Select>
+    : Clause extends infer _Insert extends InsertClause
+    ? true // TODO: Fix this
     : Invalid<`Unsupported query type`>
   : Invalid<`Corrupt or invalid SQL query`>
