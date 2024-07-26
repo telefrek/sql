@@ -31,11 +31,14 @@ export type ParseSelect<
  * @param tokens The tokens to parse
  * @returns A {@link SelectClause}
  */
-export function parseSelectClause(tokens: string[]): SelectClause {
+export function parseSelectClause(
+  tokens: string[],
+  options: ParserOptions
+): SelectClause {
   return {
     type: "SelectClause",
     columns: parseSelectedColumns(takeUntil(tokens, ["FROM"])),
-    ...parseFrom(takeUntil(tokens, FROM_KEYS)),
+    ...parseFrom(takeUntil(tokens, FROM_KEYS), options),
   }
 }
 
@@ -45,7 +48,10 @@ export function parseSelectClause(tokens: string[]): SelectClause {
  * @param tokens The tokens of the from clause
  * @returns A from clause
  */
-function parseFrom(tokens: string[]): {
+function parseFrom(
+  tokens: string[],
+  options: ParserOptions
+): {
   from: TableReference | NamedQuery
 } {
   // We need to remove the from which is still part of the query
@@ -62,7 +68,7 @@ function parseFrom(tokens: string[]): {
   }
 
   // Check for a subquery
-  const subquery = tryParseNamedQuery(tokens)
+  const subquery = tryParseNamedQuery(tokens, options)
   if (subquery !== undefined) {
     return {
       from: subquery,
@@ -71,7 +77,7 @@ function parseFrom(tokens: string[]): {
 
   // Just parse the table reference
   return {
-    from: parseTableReference(tokens),
+    from: parseTableReference(tokens, options),
   }
 }
 

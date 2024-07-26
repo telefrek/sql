@@ -43,14 +43,17 @@ export type ParseNamedQuery<
  * @param tokens The token stack to process
  * @returns The next {@link NamedQuery} if one exists
  */
-export function tryParseNamedQuery(tokens: string[]): NamedQuery | undefined {
+export function tryParseNamedQuery(
+  tokens: string[],
+  options: ParserOptions
+): NamedQuery | undefined {
   // Check for a named query segment
   if (tokens.length > 0 && tokens[0] === "(") {
     // Read everything between the ()
     const queryTokens = extractParenthesis(tokens)
 
     // Extract the query clause and validate it was consumed
-    const clause = parseQueryClause(queryTokens)
+    const clause = parseQueryClause(queryTokens, options)
     if (queryTokens.length > 0) {
       throw new Error(
         `Failed to fully parse subquery remainder: ${queryTokens.join(" ")}`

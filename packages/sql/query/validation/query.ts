@@ -1,16 +1,13 @@
 import type { IgnoreEmpty, Invalid } from "@telefrek/type-utils/common.js"
-import type { QueryClause, SQLQuery } from "../../ast/queries.js"
+import type { SQLQuery } from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type {
   SQLDatabaseSchema,
   SQLDatabaseTables,
 } from "../../schema/database.js"
-import type {
-  DEFAULT_PARSER_OPTIONS,
-  ParserOptions,
-} from "../parser/options.js"
-import type { ParseQuery, ParseSQL } from "../parser/query.js"
+import type { ParserOptions } from "../parser/options.js"
+import type { ParseSQL } from "../parser/query.js"
 import type { ValidateSelectClause } from "./select.js"
 
 /**
@@ -19,11 +16,9 @@ import type { ValidateSelectClause } from "./select.js"
 export type VerifyQueryString<
   Database extends SQLDatabaseSchema,
   T extends string,
-  Options extends ParserOptions = DEFAULT_PARSER_OPTIONS
-> = ParseSQL<T, Options> extends SQLQuery<infer Query>
-  ? CheckInvalid<VerifyQuery<Database, SQLQuery<Query>>, T>
-  : ParseQuery<T, Options> extends QueryClause
-  ? CheckInvalid<VerifyQuery<Database, SQLQuery<ParseQuery<T, Options>>>, T>
+  Options extends ParserOptions
+> = ParseSQL<T, Options> extends infer Q extends SQLQuery
+  ? CheckInvalid<VerifyQuery<Database, Q>, T>
   : Invalid<"Not a valid query string">
 
 /**
@@ -53,7 +48,7 @@ export type VerifyQuery<
   Database extends SQLDatabaseSchema,
   Query extends SQLQuery
 > = Query extends SQLQuery<infer Clause>
-  ? Clause extends SelectClause<infer _Columns, infer _From>
-    ? ValidateSelectClause<Database["tables"], Clause>
+  ? Clause extends infer Select extends SelectClause
+    ? ValidateSelectClause<Database["tables"], Select>
     : Invalid<`Unsupported query type`>
   : Invalid<`Corrupt or invalid SQL query`>

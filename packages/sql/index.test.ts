@@ -1,6 +1,6 @@
 import type { ParseSQL } from "./index.js"
 import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
-import { DefaultOptions } from "./query/parser/options.js"
+import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./test.utils.js"
 
@@ -179,6 +179,27 @@ describe("Query building should match parsers", () => {
     // We won't run this test for now since it only applies to non-unique
     // columns when we join.  We want to limit the number of combinations of table.column or
     // column types for the select clause since it causes a LOT of type explosion
+  })
+})
+
+describe("SQL parsing logic should be customizable", () => {
+  it("Should be able to change quotes", () => {
+    const q1 = getDatabase(TEST_DATABASE).parseSQL(
+      "SELECT * FROM users",
+      DefaultOptions
+    )
+
+    const options: ParserOptions<"`", true> = {
+      quote: "`",
+      quoteTables: true,
+    }
+
+    const q2 = getDatabase(TEST_DATABASE).parseSQL(
+      "SELECT * FROM `users`",
+      options
+    )
+
+    expect(q1).toStrictEqual(q2)
   })
 })
 

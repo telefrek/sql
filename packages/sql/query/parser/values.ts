@@ -13,7 +13,7 @@ import type {
 } from "../../ast/values.js"
 import { parseColumnReference, type ParseColumnReference } from "./columns.js"
 import type { NextToken } from "./normalize.js"
-import type { ParserOptions } from "./options.js"
+import type { GetQuote, ParserOptions } from "./options.js"
 
 export function parseValue(
   value: string,
@@ -121,7 +121,9 @@ type ExtractValueType<
   T extends string,
   Options extends ParserOptions
 > = ExtractValue<T, Options> extends [infer V extends string]
-  ? CheckValueType<V, Options["quote"]>
+  ? GetQuote<Options> extends infer Quote extends string
+    ? CheckValueType<V, Quote>
+    : never
   : Invalid<`Failed to extract value type`>
 
 /**
@@ -166,7 +168,7 @@ export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   ? ParameterValueType<Name>
   : T extends `$${infer _}`
   ? Invalid<`index position not supported`>
-  : T extends `${Quote}${string}${Quote}`
+  : T extends `${Quote}${infer _}${Quote}`
   ? StringValueType
   : T extends `0x${infer _}`
   ? BufferValueType<Uint8Array>

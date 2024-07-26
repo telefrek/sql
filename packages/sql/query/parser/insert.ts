@@ -101,16 +101,17 @@ type ExtractValuesArray<
   : Invalid<"Failed to extract values">
 
 export function parseInsertClause(
-  tokens: string[]
+  tokens: string[],
+  options: ParserOptions
 ): InsertClause & Partial<ReturningClause> {
   // Parse the table reference first
-  const table = parseTableReference(tokens)
+  const table = parseTableReference(tokens, options)
 
   // Extract the columns if they are specified
   const columns = parseColumns(tokens)
 
   // Parse the values or starting clause
-  const values = parseValuesOrSelect(tokens)
+  const values = parseValuesOrSelect(tokens, options)
 
   return {
     type: "InsertClause",
@@ -133,7 +134,8 @@ function parseColumns(tokens: string[]): ColumnReference[] {
 }
 
 function parseValuesOrSelect(
-  tokens: string[]
+  tokens: string[],
+  options: ParserOptions
 ): ValueTypes[] | RowGeneratingClause {
   if (tokens[0] === "VALUES") {
     return extractParenthesis(tokens.slice(1))
@@ -142,7 +144,7 @@ function parseValuesOrSelect(
       .map((v) => parseValue(v.trim())) as ValueTypes[]
   }
 
-  const subquery = parseQueryClause(tokens)
+  const subquery = parseQueryClause(tokens, options)
   if (subquery.type === "SelectClause") {
     return subquery
   }

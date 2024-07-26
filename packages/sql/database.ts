@@ -15,9 +15,9 @@ export interface SQLDatabase<Schema extends SQLDatabaseSchema> {
    * @param query The query to parse
    */
   parseSQL<T extends string, Options extends ParserOptions>(
-    query: VerifyQueryString<Schema, T>,
+    query: VerifyQueryString<Schema, T, Options>,
     options: Options
-  ): ParseSQL<T>
+  ): ParseSQL<T, Options>
 }
 
 /**
@@ -30,12 +30,13 @@ export function getDatabase<Schema extends SQLDatabaseSchema>(
   schema: Schema
 ): SQLDatabase<Schema> {
   const parseSQL = <T extends string, Options extends ParserOptions>(
-    query: VerifyQueryString<Schema, T>,
+    query: VerifyQueryString<Schema, T, Options>,
     options: Options
-  ): ParseSQL<T> => {
-    return new QueryParser(schema, options).parse(
-      query as string
-    ) as ParseSQL<T>
+  ): ParseSQL<T, Options> => {
+    return new QueryParser(schema, options).parse(query as string) as ParseSQL<
+      T,
+      Options
+    >
   }
 
   return {

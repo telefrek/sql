@@ -70,7 +70,7 @@ export class QueryParser<
   parse<T extends string>(query: T): ParseSQL<T> {
     return {
       type: "SQLQuery",
-      query: parseQueryClause(normalizeQuery(query).split(" ")),
+      query: parseQueryClause(normalizeQuery(query).split(" "), this._options),
     } as ParseSQL<T>
   }
 }
@@ -85,7 +85,10 @@ export class QueryParser<
  * @returns A generic SQLQuery
  */
 
-export function parseQueryClause(tokens: string[]): QueryClause {
+export function parseQueryClause(
+  tokens: string[],
+  options: ParserOptions
+): QueryClause {
   const check = tokens.shift()
   if (check === undefined) {
     throw new Error("Cannot parse empty string as query")
@@ -93,9 +96,9 @@ export function parseQueryClause(tokens: string[]): QueryClause {
 
   switch (check) {
     case "SELECT":
-      return parseSelectClause(tokens)
+      return parseSelectClause(tokens, options)
     case "INSERT":
-      return parseInsertClause(tokens.slice(1))
+      return parseInsertClause(tokens.slice(1), options)
     default:
       throw new Error(`Cannot parse ${check}`)
   }

@@ -1,5 +1,5 @@
 import type { TableReference } from "../../ast/tables.js"
-import type { ParserOptions } from "./options.js"
+import type { CheckQuoteTables, GetQuote, ParserOptions } from "./options.js"
 import { tryParseAlias } from "./utils.js"
 
 /**
@@ -12,10 +12,12 @@ export type ParseTableReference<
   infer Table,
   infer Alias
 >
-  ? Options["quoteTables"] extends true
-    ? Options["quote"] extends infer Quote extends string
+  ? CheckQuoteTables<Options> extends true
+    ? GetQuote<Options> extends infer Quote extends string
       ? Table extends `${Quote}${infer Name}${Quote}`
-        ? TableReference<Name, Alias>
+        ? Alias extends `${Quote}${infer Updated}${Quote}`
+          ? TableReference<Name, Updated>
+          : TableReference<Name, Alias>
         : never
       : never
     : TableReference<Table, Alias>
@@ -32,11 +34,20 @@ type ExtractTableReference<Value extends string> =
  * @param table the table string to parse
  * @returns A {@link TableReference}
  */
-export function parseTableReference(tokens: string[]): TableReference {
+export function parseTableReference(
+  tokens: string[],
+  options: ParserOptions
+): TableReference {
   // Get the table name
-  const table = tokens.shift()
+  let table = tokens.shift()
   if (table === undefined) {
     throw new Error("Not enough tokens left to parse table reference!")
+  }
+
+  if (options.quoteTables) {
+    if (table.startsWith(options.quote) && table.startsWith(options.quote)) {
+      table = table.slice(1, -1)
+    }
   }
 
   // Return the reference with a potential alias
