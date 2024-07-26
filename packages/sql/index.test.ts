@@ -89,10 +89,7 @@ describe("Invalid queries should be rejected", () => {
 describe("Query visitors should produce equivalent SQL", () => {
   it("Should be able to return a simple select", () => {
     const queryString = "SELECT * FROM orders"
-    const query = getDatabase(TEST_DATABASE).parseSQL(
-      queryString,
-      DefaultOptions
-    )
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -100,10 +97,7 @@ describe("Query visitors should produce equivalent SQL", () => {
 
   it("Should be able to return a select with columns", () => {
     const queryString = "SELECT id, user_id FROM orders"
-    const query = getDatabase(TEST_DATABASE).parseSQL(
-      queryString,
-      DefaultOptions
-    )
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -111,10 +105,7 @@ describe("Query visitors should produce equivalent SQL", () => {
 
   it("Should be able to return a select with alias", () => {
     const queryString = "SELECT id AS order_id, user_id FROM orders AS o"
-    const query = getDatabase(TEST_DATABASE).parseSQL(
-      queryString,
-      DefaultOptions
-    )
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(visitor.sql).toBe(queryString)
@@ -184,9 +175,8 @@ describe("Query building should match parsers", () => {
 
 describe("SQL parsing logic should be customizable", () => {
   it("Should be able to change quotes", () => {
-    const q1 = getDatabase(TEST_DATABASE).parseSQL(
-      "SELECT * FROM users",
-      DefaultOptions
+    const q1 = getDatabase(TEST_DATABASE, DefaultOptions).parseSQL(
+      "SELECT * FROM users"
     )
 
     const options: ParserOptions<"`", true> = {
@@ -194,9 +184,8 @@ describe("SQL parsing logic should be customizable", () => {
       quoteTables: true,
     }
 
-    const q2 = getDatabase(TEST_DATABASE).parseSQL(
-      "SELECT * FROM `users`",
-      options
+    const q2 = getDatabase(TEST_DATABASE, options).parseSQL(
+      "SELECT * FROM `users`"
     )
 
     expect(q1).toStrictEqual(q2)
@@ -205,12 +194,11 @@ describe("SQL parsing logic should be customizable", () => {
 
 describe("SQL databases should validate queries", () => {
   it("Should allow creating a query from a raw string with aliasing", () => {
-    const database = getDatabase(TEST_DATABASE)
+    const database = getDatabase(TEST_DATABASE, DefaultOptions)
     expect(database).not.toBeUndefined()
 
     const query = database.parseSQL(
-      "SELECT o.id as product_id FROM products AS o",
-      DefaultOptions
+      "SELECT o.id as product_id FROM products AS o"
     )
     expect(
       query.query.columns.find((c) => c.alias === "product_id")!.reference
@@ -224,9 +212,8 @@ describe("SQL databases should validate queries", () => {
   })
 
   it("Should allow creating a simple query from a raw string", () => {
-    const query = getDatabase(TEST_DATABASE).parseSQL(
-      "SELECT * FROM orders",
-      DefaultOptions
+    const query = getDatabase(TEST_DATABASE, DefaultOptions).parseSQL(
+      "SELECT * FROM orders"
     )
     expect(query.query.type).toBe("SelectClause")
     expect(query.query.from.table).toBe("orders")
