@@ -145,25 +145,46 @@ describe("Query building should match parsers", () => {
     ).toBe("id")
   })
 
+  it("Should allow a simple insert statement with returning all columns", () => {
+    const query: ParseSQL<`INSERT INTO users(first_name, last_name) VALUES('firstName', 'lastName') RETURNING *`> =
+      createQueryBuilder(TEST_DATABASE, DefaultOptions)
+        .insert.into("users")
+        .columns("first_name", "last_name")
+        .values("firstName", "lastName").returningRow
+
+    expect(query.query.type).toBe("InsertClause")
+    expect(query.query.returning).toBe("*")
+  })
+
+  it("Should allow a simple insert statement with returning a subset of columns", () => {
+    const query: ParseSQL<`INSERT INTO users(first_name, last_name) VALUES('firstName', 'lastName') RETURNING id, first_name as firstName, created_at`> =
+      createQueryBuilder(TEST_DATABASE, DefaultOptions)
+        .insert.into("users")
+        .columns("first_name", "last_name")
+        .values("firstName", "lastName")
+        .returning("id", "first_name AS firstName", "created_at")
+
+    expect(query.query.type).toBe("InsertClause")
+    expect(query.query.returning.length).toBe(3)
+    expect(query.query.returning[0].reference.column).toBe("id")
+    expect(query.query.returning[1].alias).toBe("firstName")
+  })
+
   it("Should allow a simple insert statement without returning", () => {
     const query: ParseSQL<"INSERT INTO users(first_name, last_name, address, email) VALUES('firstName', 'lastName', '12345 make believe way', 'first@last.name')"> =
       createQueryBuilder(TEST_DATABASE, DefaultOptions)
         .insert.into("users")
         .columns("first_name", "last_name", "address", "email")
         .values(
-          { type: "StringValue", value: "firstName" },
-          { type: "StringValue", value: "lastName" },
-          { type: "StringValue", value: "12345 make believe way" },
-          { type: "StringValue", value: "first@last.name" }
+          "firstName",
+          "lastName",
+          "12345 make believe way",
+          "first@last.name"
         ).ast
 
     expect(query).not.toBeUndefined()
-    expect(
-      query.query.columns.find((c) => c.alias === "first_name")
-    ).not.toBeUndefined()
-    expect(
-      query.query.values.find((v) => v.value === "firstName")
-    ).not.toBeUndefined()
+    expect(query.query.columns[0].alias).toBe("first_name")
+    expect(query.query.values[0]).toBe("firstName")
   })
 
   it.skip("Should allow a simple select statement with a column and table alias that is joined", () => {

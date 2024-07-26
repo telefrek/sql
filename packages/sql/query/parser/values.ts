@@ -3,8 +3,11 @@ import type { Decrement, Increment } from "@telefrek/type-utils/math"
 import type { Trim } from "@telefrek/type-utils/strings"
 import type { ColumnReference } from "../../ast/columns.js"
 import type {
+  ArrayValueType,
+  BigIntValueType,
   BooleanValueType,
   BufferValueType,
+  JsonValueType,
   NullValueType,
   NumberValueType,
   ParameterValueType,
@@ -100,6 +103,33 @@ function isBigInt(value: string): boolean {
     return true
   }
 }
+
+export type ExtractTSValueTypes<Values> = Values extends [
+  infer NextValue extends ValueTypes,
+  ...infer Rest
+]
+  ? Rest extends never[]
+    ? [TSValueType<NextValue>]
+    : [TSValueType<NextValue>, ...ExtractTSValueTypes<Rest>]
+  : never
+
+type TSValueType<Value extends ValueTypes> = Value extends BooleanValueType
+  ? boolean
+  : Value extends BigIntValueType
+  ? bigint | number
+  : Value extends StringValueType
+  ? string
+  : Value extends NumberValueType
+  ? number
+  : Value extends NullValueType
+  ? null
+  : Value extends JsonValueType<infer _>
+  ? object
+  : Value extends ArrayValueType<infer T>
+  ? T
+  : Value extends BufferValueType
+  ? Uint8Array
+  : never
 
 /**
  * Extract values types from an array of strings

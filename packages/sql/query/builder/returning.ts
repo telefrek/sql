@@ -7,7 +7,7 @@ import type {
 } from "../../ast/queries.js"
 import type { SQLColumnSchema } from "../../schema/columns.js"
 import type { AllowAliasing, QueryAST } from "../common.js"
-import type { VerifySelectColumns } from "./columns.js"
+import { buildColumnReference, type VerifySelectColumns } from "./columns.js"
 
 export interface ReturningBuilder<
   Schema extends SQLColumnSchema,
@@ -38,9 +38,17 @@ class DefaultReturningBuilder<
   }
 
   returning<Columns extends AllowAliasing<Extract<Keys<Schema>, string>>[]>(
-    ..._columns: AtLeastOne<Columns>
+    ...columns: AtLeastOne<Columns>
   ): SQLQuery<Query & ReturningClause<VerifySelectColumns<Columns>>> {
-    throw new Error("Method not implemented.")
+    return {
+      type: "SQLQuery",
+      query: {
+        ...this._query,
+        returning: [
+          ...columns.map((r) => buildColumnReference(r as unknown as string)),
+        ] as VerifySelectColumns<Columns>,
+      },
+    }
   }
 
   get returningRow(): SQLQuery<Query & ReturningClause<"*">> {

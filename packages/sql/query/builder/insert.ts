@@ -17,6 +17,7 @@ import type {
 } from "../context.js"
 import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
+import type { ExtractTSValueTypes } from "../parser/values.js"
 import { buildColumnReference, type VerifyColumnReferences } from "./columns.js"
 import { createReturningBuilder, type ReturningBuilder } from "./returning.js"
 import { buildTableReference } from "./table.js"
@@ -46,7 +47,7 @@ export interface ColumnValueBuilder<
   >
 
   values<Values extends CheckValueTypes<Schema, Columns>>(
-    ...values: Values
+    ...values: ExtractTSValueTypes<Values>
   ): ReturningBuilder<Schema, InsertClause<Table, Columns, Values>>
 }
 
