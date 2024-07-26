@@ -14,14 +14,11 @@ import type {
   StringValueType,
   ValueTypes,
 } from "../../ast/values.js"
-import { parseColumnReference, type ParseColumnReference } from "./columns.js"
+import { type ParseColumnReference } from "./columns.js"
 import type { NextToken } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 
-export function parseValue(
-  value: string,
-  quote: string = `'`
-): ValueTypes | ColumnReference {
+export function parseValue(value: string): ValueTypes | ColumnReference {
   if (value.startsWith(":")) {
     return {
       type: "ParameterValue",
@@ -59,25 +56,23 @@ export function parseValue(
       type: "ArrayValue",
       value: JSON.parse(value),
     }
-  } else if (value.startsWith(quote) && value.endsWith(quote)) {
+  } else {
     return {
       type: "StringValue",
-      value: value.slice(1, -1),
+      value: value,
     }
-  } else {
-    return parseColumnReference(value.split(" "))
   }
 }
 
 /**
  * Regex to test for valid numbers
  */
-const NUMERIC_REGEX = /NaN|-?((\d*\.\d+|\d+)([Ee][+-]?\d+)?|Infinity)/
+const NUMERIC_REGEX = /^NaN|-?((\d*\.\d+|\d+)([Ee][+-]?\d+)?|Infinity)$/
 
 /**
  * Regex to test for simple integers that are positive/negative
  */
-const INT_REGEX = /-?[0-9]+/
+const INT_REGEX = /^-?[0-9]+$/
 
 /**
  * Test for values that are less than MAX_SAFE_INTEGER for int

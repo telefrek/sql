@@ -184,7 +184,7 @@ describe("Query building should match parsers", () => {
 
     expect(query).not.toBeUndefined()
     expect(query.query.columns[0].alias).toBe("first_name")
-    expect(query.query.values[0]).toBe("firstName")
+    expect(query.query.values[0].value).toBe("firstName")
   })
 
   it.skip("Should allow a simple select statement with a column and table alias that is joined", () => {
