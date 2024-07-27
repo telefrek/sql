@@ -13,7 +13,7 @@ import { tryParseAlias } from "./utils.js"
  */
 export type ParseSelectedColumns<
   Columns extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = Columns extends "*" ? Columns : ParseColumns<SplitSQL<Columns>, Options>
 
 /**
@@ -21,7 +21,7 @@ export type ParseSelectedColumns<
  */
 type ParseColumns<T, Options extends ParserOptions> = T extends [
   infer Column extends string,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? [ParseColumnReference<Column>]
@@ -92,7 +92,7 @@ export function parseColumnReference(tokens: string[]): ColumnReference {
  * @returns the correct table or unbound reference
  */
 function parseReference(
-  column: string
+  column: string,
 ): TableColumnReference | UnboundColumnReference {
   // Check for a table reference
   const idx = column.indexOf(".")

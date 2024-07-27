@@ -16,14 +16,13 @@ import {
 } from "../common.js"
 import type { GetSelectableColumns, QueryContext } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
-import type { SelectBuilder } from "./select.js"
 
 /**
  * Interface that can provide the columns for a select builder
  */
 export interface SelectedColumnsBuilder<
   Context extends QueryContext = QueryContext,
-  Table extends TableReference = TableReference
+  Table extends TableReference = TableReference,
 > extends QueryAST<SelectClause<"*", Table>> {
   /**
    * Choose the columns that we want to include in the select
@@ -32,7 +31,7 @@ export interface SelectedColumnsBuilder<
    */
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): SelectBuilder<Context, VerifySelectColumns<Columns>, Table>
+  ): QueryAST<SelectClause<VerifySelectColumns<Columns>, Table>>
 }
 
 /**
@@ -43,7 +42,7 @@ export interface SelectedColumnsBuilder<
  */
 export function createSelectedColumnsBuilder<
   Context extends QueryContext,
-  Table extends TableReference
+  Table extends TableReference,
 >(context: Context, from: Table): SelectedColumnsBuilder<Context, Table> {
   return new DefaultSelectedColumnsBuilder(context, from)
 }
@@ -54,7 +53,7 @@ export function createSelectedColumnsBuilder<
 class DefaultSelectedColumnsBuilder<
   Database extends SQLDatabaseSchema = SQLDatabaseSchema,
   Context extends QueryContext<Database> = QueryContext<Database>,
-  Table extends TableReference = TableReference
+  Table extends TableReference = TableReference,
 > implements SelectedColumnsBuilder<Context, Table>
 {
   private _context: Context
@@ -78,7 +77,7 @@ class DefaultSelectedColumnsBuilder<
 
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): SelectBuilder<Context, VerifySelectColumns<Columns>, Table> {
+  ): QueryAST<SelectClause<VerifySelectColumns<Columns>, Table>> {
     return {
       ast: {
         type: "SQLQuery",
@@ -113,17 +112,17 @@ export type VerifySelectColumns<Columns extends string[] | "*"> =
 
 type BuildSelectColumns<Columns extends string[]> = Columns extends [
   infer Next extends string,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? [ParseColumnReference<Next>]
     : Rest extends string[]
-    ? [ParseColumnReference<Next>, ...BuildSelectColumns<Rest>]
-    : never
+      ? [ParseColumnReference<Next>, ...BuildSelectColumns<Rest>]
+      : never
   : never
 
 export function buildColumnReference<T extends string>(
-  value: T
+  value: T,
 ): ParseColumnReference<T> {
   if (ALIAS_REGEX.test(value)) {
     const data = value.split(" AS ")
@@ -143,7 +142,7 @@ export function buildColumnReference<T extends string>(
     : (unboundColumnReference(value) as unknown as ParseColumnReference<T>)
 }
 function unboundColumnReference<T extends string>(
-  column: T
+  column: T,
 ): ColumnReference<UnboundColumnReference<T>> {
   return {
     type: "ColumnReference",
@@ -156,7 +155,7 @@ function unboundColumnReference<T extends string>(
 }
 
 function tableColumnReference<T extends string>(
-  column: T
+  column: T,
 ): TableColumnReferenceType<T> {
   const data = column.split(".")
   return {

@@ -10,7 +10,7 @@ import type { ParseTableReference } from "../parser/table.js"
  */
 export function buildTableReference<
   Table extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 >(table: Table, options: Options): ParseTableReference<Table, Options> {
   let name: string = table
   if (options.quoteTables) {

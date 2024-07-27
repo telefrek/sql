@@ -7,21 +7,19 @@ import { tryParseAlias } from "./utils.js"
  */
 export type ParseTableReference<
   Value extends string,
-  Options extends ParserOptions
-> = ExtractTableReference<Value> extends TableReference<
-  infer Table,
-  infer Alias
->
-  ? CheckQuoteTables<Options> extends true
-    ? GetQuote<Options> extends infer Quote extends string
-      ? Table extends `${Quote}${infer Name}${Quote}`
-        ? Alias extends `${Quote}${infer Updated}${Quote}`
-          ? TableReference<Name, Updated>
-          : TableReference<Name, Alias>
+  Options extends ParserOptions,
+> =
+  ExtractTableReference<Value> extends TableReference<infer Table, infer Alias>
+    ? CheckQuoteTables<Options> extends true
+      ? GetQuote<Options> extends infer Quote extends string
+        ? Table extends `${Quote}${infer Name}${Quote}`
+          ? Alias extends `${Quote}${infer Updated}${Quote}`
+            ? TableReference<Name, Updated>
+            : TableReference<Name, Alias>
+          : never
         : never
-      : never
-    : TableReference<Table, Alias>
-  : never
+      : TableReference<Table, Alias>
+    : never
 
 type ExtractTableReference<Value extends string> =
   Value extends `${infer Table} AS ${infer Alias}`
@@ -36,7 +34,7 @@ type ExtractTableReference<Value extends string> =
  */
 export function parseTableReference(
   tokens: string[],
-  options: ParserOptions
+  options: ParserOptions,
 ): TableReference {
   // Get the table name
   let table = tokens.shift()

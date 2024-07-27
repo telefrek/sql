@@ -20,7 +20,7 @@ import type { GetQuote, ParserOptions } from "./options.js"
 
 export function parseValue(
   value: string,
-  quote: string = "'"
+  quote: string = "'",
 ): ValueTypes | ColumnReference {
   if (value.startsWith(":")) {
     return {
@@ -104,7 +104,7 @@ function isBigInt(value: string): boolean {
 
 export type ExtractTSValueTypes<Values> = Values extends [
   infer NextValue extends ValueTypes,
-  ...infer Rest
+  ...infer Rest,
 ]
   ? Rest extends never[]
     ? [TSValueType<NextValue>]
@@ -114,45 +114,43 @@ export type ExtractTSValueTypes<Values> = Values extends [
 type TSValueType<Value extends ValueTypes> = Value extends BooleanValueType
   ? boolean
   : Value extends BigIntValueType
-  ? bigint | number
-  : Value extends StringValueType
-  ? string
-  : Value extends NumberValueType
-  ? number
-  : Value extends NullValueType
-  ? null
-  : Value extends JsonValueType<infer _>
-  ? object
-  : Value extends ArrayValueType<infer T>
-  ? T
-  : Value extends BufferValueType
-  ? Uint8Array
-  : never
+    ? bigint | number
+    : Value extends StringValueType
+      ? string
+      : Value extends NumberValueType
+        ? number
+        : Value extends NullValueType
+          ? null
+          : Value extends JsonValueType<infer _>
+            ? object
+            : Value extends ArrayValueType<infer T>
+              ? T
+              : Value extends BufferValueType
+                ? Uint8Array
+                : never
 
 /**
  * Extract values types from an array of strings
  */
 export type ExtractValues<
   Values,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = Values extends [infer Value extends string, ...infer Rest]
   ? ExtractValueType<Value, Options> extends infer V extends ValueTypes
     ? Rest extends never[]
       ? [V]
       : ExtractValues<Rest, Options> extends infer V1 extends ValueTypes[]
-      ? [V, ...V1]
-      : ExtractValues<Rest, Options>
+        ? [V, ...V1]
+        : ExtractValues<Rest, Options>
     : ExtractValueType<Value, Options>
   : never
 
-type ExtractValueType<
-  T extends string,
-  Options extends ParserOptions
-> = ExtractValue<T, Options> extends [infer V extends string]
-  ? GetQuote<Options> extends infer Quote extends string
-    ? CheckValueType<V, Quote>
-    : never
-  : Invalid<`Failed to extract value type`>
+type ExtractValueType<T extends string, Options extends ParserOptions> =
+  ExtractValue<T, Options> extends [infer V extends string]
+    ? GetQuote<Options> extends infer Quote extends string
+      ? CheckValueType<V, Quote>
+      : never
+    : Invalid<`Failed to extract value type`>
 
 /**
  * Parse out the entire value string (may be quoted)
@@ -161,26 +159,42 @@ export type ExtractValue<
   T extends string,
   Options extends ParserOptions,
   N extends number = 0,
-  S extends string = ""
-> = NextToken<T> extends [infer Left extends string, infer Right extends string]
-  ? Right extends ""
-    ? [Trim<`${S} ${Left & string}`>]
-    : Left extends `${Options["quote"]}${infer _}'`
-    ? ExtractValue<Right, Options, N, `${S} ${Left}`>
-    : Left extends `'${infer Rest}`
-    ? N extends 0
-      ? ExtractValue<Right, Options, Increment<N>, `${S} '${Rest & string}`>
-      : ExtractValue<Right, Options, Increment<N>, `${S} ${Left & string}`>
-    : Left extends `${infer _}${Options["quote"]}`
-    ? ExtractValue<Right, Options, N, `${S} ${Left & string}`>
-    : Left extends `${infer Rest}'`
-    ? N extends 1
-      ? [Trim<`${S} ${Rest & string}`>, Right]
-      : ExtractValue<Right, Options, Decrement<N>, `${S} ${Left & string}`>
-    : S extends ""
-    ? [Left, Right]
-    : ExtractValue<Right, Options, N, `${S} ${Left & string}`>
-  : Invalid<`Failed to extract value from: ${T & string}`>
+  S extends string = "",
+> =
+  NextToken<T> extends [infer Left extends string, infer Right extends string]
+    ? Right extends ""
+      ? [Trim<`${S} ${Left & string}`>]
+      : Left extends `${Options["quote"]}${infer _}'`
+        ? ExtractValue<Right, Options, N, `${S} ${Left}`>
+        : Left extends `'${infer Rest}`
+          ? N extends 0
+            ? ExtractValue<
+                Right,
+                Options,
+                Increment<N>,
+                `${S} '${Rest & string}`
+              >
+            : ExtractValue<
+                Right,
+                Options,
+                Increment<N>,
+                `${S} ${Left & string}`
+              >
+          : Left extends `${infer _}${Options["quote"]}`
+            ? ExtractValue<Right, Options, N, `${S} ${Left & string}`>
+            : Left extends `${infer Rest}'`
+              ? N extends 1
+                ? [Trim<`${S} ${Rest & string}`>, Right]
+                : ExtractValue<
+                    Right,
+                    Options,
+                    Decrement<N>,
+                    `${S} ${Left & string}`
+                  >
+              : S extends ""
+                ? [Left, Right]
+                : ExtractValue<Right, Options, N, `${S} ${Left & string}`>
+    : Invalid<`Failed to extract value from: ${T & string}`>
 
 /**
  * Set of valid digits
@@ -195,19 +209,19 @@ type Digits = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   ? ParameterValueType<Name>
   : T extends `$${infer _}`
-  ? Invalid<`index position not supported`>
-  : T extends `${Quote}${infer _}${Quote}`
-  ? StringValueType
-  : T extends `0x${infer _}`
-  ? BufferValueType<Uint8Array>
-  : Lowercase<T & string> extends "null"
-  ? NullValueType
-  : Lowercase<T & string> extends "true"
-  ? BooleanValueType
-  : Lowercase<T & string> extends "false"
-  ? BooleanValueType
-  : T extends `${infer First}${infer _}`
-  ? [First] extends [Digits]
-    ? NumberValueType
-    : ParseColumnReference<T & string>
-  : ParseColumnReference<T & string>
+    ? Invalid<`index position not supported`>
+    : T extends `${Quote}${infer _}${Quote}`
+      ? StringValueType
+      : T extends `0x${infer _}`
+        ? BufferValueType<Uint8Array>
+        : Lowercase<T & string> extends "null"
+          ? NullValueType
+          : Lowercase<T & string> extends "true"
+            ? BooleanValueType
+            : Lowercase<T & string> extends "false"
+              ? BooleanValueType
+              : T extends `${infer First}${infer _}`
+                ? [First] extends [Digits]
+                  ? NumberValueType
+                  : ParseColumnReference<T & string>
+                : ParseColumnReference<T & string>

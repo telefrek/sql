@@ -24,8 +24,8 @@ export type IgnoreAny = any
 /**
  * Utility type to track all places where are are intentionally using an empty definition
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type IgnoreEmpty = {}
+
+export type IgnoreEmpty = NonNullable<unknown>
 
 /**
  * Utility type to carry some invalid type information

@@ -26,16 +26,16 @@ export function tryParseAlias(tokens: string[]): string | undefined {
  */
 export type ParseNamedQuery<
   T extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = T extends `( ${infer SubQuery} ) AS ${infer Alias}`
   ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
     ? NamedQuery<Clause, Alias>
     : ParseQuery<SubQuery, Options>
   : T extends `( ${infer SubQuery} )`
-  ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
-    ? NamedQuery<Clause>
-    : ParseQuery<SubQuery, Options>
-  : Invalid<"Failed to parse named query">
+    ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
+      ? NamedQuery<Clause>
+      : ParseQuery<SubQuery, Options>
+    : Invalid<"Failed to parse named query">
 
 /**
  * Attempt to parse out a named query
@@ -45,7 +45,7 @@ export type ParseNamedQuery<
  */
 export function tryParseNamedQuery(
   tokens: string[],
-  options: ParserOptions
+  options: ParserOptions,
 ): NamedQuery | undefined {
   // Check for a named query segment
   if (tokens.length > 0 && tokens[0] === "(") {
@@ -56,7 +56,7 @@ export function tryParseNamedQuery(
     const clause = parseQueryClause(queryTokens, options)
     if (queryTokens.length > 0) {
       throw new Error(
-        `Failed to fully parse subquery remainder: ${queryTokens.join(" ")}`
+        `Failed to fully parse subquery remainder: ${queryTokens.join(" ")}`,
       )
     }
 
@@ -76,7 +76,7 @@ export function tryParseNamedQuery(
  */
 export type ParseReturning<
   T extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = T extends `RETURNING ${infer Columns extends string}`
   ? ReturningClause<ParseSelectedColumns<Columns, Options>>
   : Invalid<"Not a valid RETURNING clause">
@@ -88,7 +88,7 @@ export type ParseReturning<
  * @returns The next {@link ReturningClause} if one exists
  */
 export function tryParseReturning(
-  tokens: string[]
+  tokens: string[],
 ): Partial<ReturningClause> | undefined {
   // Skip anything that isn't a returning
   if (tokens.length == 0 || tokens[0] !== "RETURNING") {

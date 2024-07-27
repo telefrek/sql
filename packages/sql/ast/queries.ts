@@ -43,7 +43,7 @@ export type SubQuery<Query extends QueryClause = QueryClause> = {
  * Structure for a returning clause
  */
 export type ReturningClause<
-  Returning extends SelectColumns | "*" = SelectColumns | "*"
+  Returning extends SelectColumns | "*" = SelectColumns | "*",
 > = {
   returning: Returning
 }
@@ -64,7 +64,7 @@ export type InsertClause<
   Columns extends ColumnReference[] = ColumnReference[],
   Values extends ValueTypes[] | RowGeneratingClause =
     | ValueTypes[]
-    | RowGeneratingClause
+    | RowGeneratingClause,
 > = {
   type: "InsertClause"
   table: Table

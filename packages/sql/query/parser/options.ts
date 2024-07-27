@@ -3,7 +3,7 @@
  */
 export type ParserOptions<
   Quote extends string = string,
-  QT extends boolean = boolean
+  QT extends boolean = boolean,
 > = {
   quote: Quote
   quoteTables: QT

@@ -109,7 +109,7 @@ export function parseColumnReference(tokens: string[]): ColumnReference {
  * @returns the correct table or unbound reference
  */
 function parseReference(
-  column: string
+  column: string,
 ): TableColumnReference | UnboundColumnReference {
   // Check for a table reference
   const idx = column.indexOf(".")

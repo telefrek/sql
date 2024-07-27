@@ -1,5 +1,10 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
+import type {
+  InsertClause,
+  QueryClause,
+  ReturningClause,
+  SQLQuery,
+} from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
@@ -49,6 +54,13 @@ export interface QueryAstVisitor {
    * @param column The {@link ColumnReference} to visit
    */
   visitColumnReference<T extends ColumnReference>(column: Readonly<T>): void
+
+  /**
+   * Visit the returning clause
+   *
+   * @param returning The {@link ReturningClause} to visit
+   */
+  visitReturning<T extends ReturningClause>(returning: T): void
 
   /**
    * Visit the value

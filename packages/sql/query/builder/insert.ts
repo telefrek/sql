@@ -24,10 +24,10 @@ import { buildTableReference } from "./table.js"
 
 export interface InsertIntoBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > {
   into<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): ColumnValueBuilder<
     GetContextTableSchema<Context, Table>,
     ParseTableReference<Table, Options>
@@ -37,7 +37,7 @@ export interface InsertIntoBuilder<
 export interface ColumnValueBuilder<
   Schema extends SQLColumnSchema,
   Table extends TableReference,
-  Columns extends ColumnReference[] = ColumnReference[]
+  Columns extends ColumnReference[] = ColumnReference[],
 > {
   columns<Column extends AllowAliasing<StringKeys<Schema>>[]>(
     ...columns: AtLeastOne<Column>
@@ -53,7 +53,7 @@ export interface ColumnValueBuilder<
 
 type CheckValueTypes<
   Schema extends SQLColumnSchema,
-  Columns
+  Columns,
 > = Columns extends [infer Column extends ColumnReference, ...infer Rest]
   ? Column extends ColumnReference<infer Reference, infer _>
     ? Reference["column"] extends StringKeys<Schema>
@@ -61,8 +61,8 @@ type CheckValueTypes<
         ? Rest extends never[]
           ? [GetValueType<C>]
           : CheckValueTypes<Schema, Rest> extends infer V extends ValueTypes[]
-          ? [GetValueType<C>, ...V]
-          : CheckValueTypes<Schema, Rest>
+            ? [GetValueType<C>, ...V]
+            : CheckValueTypes<Schema, Rest>
         : never
       : never
     : never
@@ -70,14 +70,14 @@ type CheckValueTypes<
 
 export function createInsertIntoQueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 >(context: Context, options: Options): InsertIntoBuilder<Context, Options> {
   return new DefaultInsertIntoBuilder(context, options)
 }
 
 class DefaultInsertIntoBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > implements InsertIntoBuilder<Context, Options>
 {
   private _context: Context
@@ -88,14 +88,14 @@ class DefaultInsertIntoBuilder<
   }
 
   into<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): ColumnValueBuilder<
     GetContextTableSchema<Context, Table>,
     ParseTableReference<Table, Options>
   > {
     return new DefaultColumnValueBuilder(
       buildTableReference(table, this._options),
-      []
+      [],
     )
   }
 }
@@ -103,7 +103,7 @@ class DefaultInsertIntoBuilder<
 class DefaultColumnValueBuilder<
   Schema extends SQLColumnSchema,
   Table extends TableReference,
-  Columns extends ColumnReference[] = ColumnReference[]
+  Columns extends ColumnReference[] = ColumnReference[],
 > implements ColumnValueBuilder<Schema, Table, Columns>
 {
   private _table: Table
@@ -121,7 +121,7 @@ class DefaultColumnValueBuilder<
     "columns"
   > {
     const verified = columns.map((c) =>
-      buildColumnReference(c)
+      buildColumnReference(c),
     ) as unknown as VerifyColumnReferences<Column>
 
     return new DefaultColumnValueBuilder(this._table, verified)

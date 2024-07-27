@@ -21,7 +21,7 @@ import { buildTableReference } from "./table.js"
  */
 export interface FromQueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > {
   /**
    * Choose a table to select data from and optionally alias it
@@ -29,7 +29,7 @@ export interface FromQueryBuilder<
    * @param table The table or table alias to select from
    */
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): SelectedColumnsBuilder<
     ActivateTableContext<Context, ParseTableReference<Table, Options>>,
     ParseTableReference<Table, Options>
@@ -44,7 +44,7 @@ export interface FromQueryBuilder<
  */
 export function createFromQueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 >(context: Context, options: Options): FromQueryBuilder<Context, Options> {
   return new DefaultFromQueryBuilder(context, options)
 }
@@ -52,7 +52,7 @@ export function createFromQueryBuilder<
 class DefaultFromQueryBuilder<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database>,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > implements FromQueryBuilder<Context, Options>
 {
   private _context: Context
@@ -64,7 +64,7 @@ class DefaultFromQueryBuilder<
   }
 
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
-    table: Table
+    table: Table,
   ): SelectedColumnsBuilder<
     ActivateTableContext<
       Context,

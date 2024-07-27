@@ -1,9 +1,15 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type { InsertClause, QueryClause, SQLQuery } from "../../ast/queries.js"
+import type {
+  InsertClause,
+  QueryClause,
+  ReturningClause,
+  SQLQuery,
+} from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
+
 /**
  * Reference implementation of the QueryAstVisitor and QueryProvider
  */
@@ -64,8 +70,6 @@ export class DefaultQueryVisitor
   }
 
   visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void {
-    // TODO: Lots here and defaults:
-    // https://stackoverflow.com/a/2148101/23595914
     this.append(`INSERT INTO ${insert.table.table}`)
     this.enterSubquery()
 
@@ -86,17 +90,23 @@ export class DefaultQueryVisitor
     }
     this.exitSubquery()
 
+    // Check for array vs subquery
     if (Array.isArray(insert.values)) {
-      this.append("VALUES")
-      this.enterSubquery()
-      for (let n = 0; n < insert.values.length; ++n) {
-        const value = insert.values[n]
-        this.visitValueType(value)
-        if (n < insert.values.length - 1) {
-          this.comma()
+      // If no values, use default
+      if (insert.values.length === 0) {
+        this.append("DEFAULT VALUES")
+      } else {
+        this.append("VALUES")
+        this.enterSubquery()
+        for (let n = 0; n < insert.values.length; ++n) {
+          const value = insert.values[n]
+          this.visitValueType(value)
+          if (n < insert.values.length - 1) {
+            this.comma()
+          }
         }
+        this.exitSubquery()
       }
-      this.exitSubquery()
     } else if (
       typeof insert.values === "object" &&
       insert.values !== null &&
@@ -107,27 +117,33 @@ export class DefaultQueryVisitor
         this.visitSelectClause(insert.values)
         this.exitSubquery()
       }
+    } else {
+      throw new Error("Invalid values on insert")
     }
 
     if ("returning" in insert) {
-      this.append("RETURNING")
-      if (Array.isArray(insert.returning)) {
-        for (let n = 0; n < insert.returning.length; ++n) {
-          const column = insert.returning[n] as ColumnReference
-          switch (column.type) {
-            case "ColumnReference":
-              this.visitColumnReference(column)
-              break
-            default:
-              throw new Error(`Unsupported column type: ${column.type}`)
-          }
-          if (n < insert.returning.length - 1) {
-            this.comma()
-          }
+      this.visitReturning(insert as Readonly<ReturningClause>)
+    }
+  }
+
+  visitReturning(clause: Readonly<ReturningClause>): void {
+    this.append("RETURNING")
+    if (Array.isArray(clause.returning)) {
+      for (let n = 0; n < clause.returning.length; ++n) {
+        const column = clause.returning[n] as ColumnReference
+        switch (column.type) {
+          case "ColumnReference":
+            this.visitColumnReference(column)
+            break
+          default:
+            throw new Error(`Unsupported column type: ${column.type}`)
         }
-      } else {
-        this.append("*")
+        if (n < clause.returning.length - 1) {
+          this.comma()
+        }
       }
+    } else {
+      this.append("*")
     }
   }
 
@@ -146,15 +162,19 @@ export class DefaultQueryVisitor
           column.reference.type === "TableColumnReference"
             ? `${column.reference.table}.${column.reference.column}`
             : column.reference.column
-        } AS ${column.alias}`
+        } AS ${column.alias}`,
       )
     } else {
       super.append(
         column.reference.type === "TableColumnReference"
           ? `${column.reference.table}.${column.reference.column}`
-          : column.reference.column
+          : column.reference.column,
       )
     }
+  }
+
+  visitInsertDefaultValues(): void {
+    this.append("DEFAULT VALUES")
   }
 
   visitValueType<T extends ValueTypes>(value: T): void {
@@ -167,7 +187,7 @@ export class DefaultQueryVisitor
         this.append(JSON.stringify(value.value))
         break
       case "BufferValue":
-        this.append(`0x${value.value!.toString()}`)
+        this.append(value.value.reduce((s, b) => s + b.toString(16), "0x"))
         break
       case "NullValue":
         this.append("null")

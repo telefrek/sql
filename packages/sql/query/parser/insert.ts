@@ -20,53 +20,52 @@ import { parseValue, type ExtractValues } from "./values.js"
 
 export type ParseInsert<
   InsertSQL extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = InsertSQL extends `INSERT INTO ${infer Remainder}`
   ? CheckInsert<CheckReturning<Remainder, Options>>
   : Invalid<"Corrupt INSERT INTO syntax">
 
-type CheckInsert<T> = T extends Partial<
-  InsertClause<infer Table, infer Columns, infer Values>
->
-  ? T extends ReturningClause<infer Returning>
-    ? Flatten<InsertClause<Table, Columns, Values> & ReturningClause<Returning>>
-    : InsertClause<Table, Columns, Values>
-  : T
+type CheckInsert<T> =
+  T extends Partial<InsertClause<infer Table, infer Columns, infer Values>>
+    ? T extends ReturningClause<infer Returning>
+      ? Flatten<
+          InsertClause<Table, Columns, Values> & ReturningClause<Returning>
+        >
+      : InsertClause<Table, Columns, Values>
+    : T
 
 // Retrive the returning portion
 type CheckReturning<
   InsertSQL extends string,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > = InsertSQL extends `${infer Previous} RETURNING ${infer Returning}`
-  ? ParseReturning<
-      `RETURNING ${Returning}`,
-      Options
-    > extends infer R extends object
+  ? ParseReturning<`RETURNING ${Returning}`, Options> extends infer R extends
+      object
     ? CheckValues<[R, Previous], Options>
     : ParseReturning<`RETURNING ${Returning}`, Options>
   : CheckValues<[IgnoreEmpty, InsertSQL], Options>
 
 type CheckValues<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
-  infer Remainder extends string
+  infer Remainder extends string,
 ]
   ? Remainder extends `${infer Previous} VALUES ( ${infer Values} )`
     ? ExtractValuesArray<Values, Options> extends infer V extends ValueTypes[]
       ? CheckColumns<[Flatten<Returning & { values: V }>, Previous], Options>
       : ExtractValuesArray<Values, Options>
     : Remainder extends `${infer Previous} SELECT ${infer Select}`
-    ? ParseSelect<Select, Options> extends infer S extends SelectClause
-      ? CheckColumns<
-          [Flatten<Returning & { values: NamedQuery<S> }>, Previous],
-          Options
-        >
-      : ParseSelect<Select, Options>
-    : Invalid<`VALUES or SELECT are required for INSERT: ${Remainder}`>
+      ? ParseSelect<Select, Options> extends infer S extends SelectClause
+        ? CheckColumns<
+            [Flatten<Returning & { values: NamedQuery<S> }>, Previous],
+            Options
+          >
+        : ParseSelect<Select, Options>
+      : Invalid<`VALUES or SELECT are required for INSERT: ${Remainder}`>
   : Current
 
 type CheckColumns<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
-  infer Remainder extends string
+  infer Remainder extends string,
 ]
   ? Remainder extends `${infer Previous} ( ${infer Columns} )`
     ? ParseSelectedColumns<Columns, Options> extends infer C extends
@@ -79,7 +78,7 @@ type CheckColumns<Current, Options extends ParserOptions> = Current extends [
 
 type CheckTable<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,
-  infer Remainder extends string
+  infer Remainder extends string,
 ]
   ? ParseTableReference<Remainder, Options> extends TableReference<infer T>
     ? Flatten<
@@ -93,16 +92,14 @@ type CheckTable<Current, Options extends ParserOptions> = Current extends [
 /**
  * Extract the values
  */
-type ExtractValuesArray<
-  T extends string,
-  Options extends ParserOptions
-> = ExtractValues<SplitSQL<T>, Options> extends infer V extends ValueTypes[]
-  ? V
-  : Invalid<"Failed to extract values">
+type ExtractValuesArray<T extends string, Options extends ParserOptions> =
+  ExtractValues<SplitSQL<T>, Options> extends infer V extends ValueTypes[]
+    ? V
+    : Invalid<"Failed to extract values">
 
 export function parseInsertClause(
   tokens: string[],
-  options: ParserOptions
+  options: ParserOptions,
 ): InsertClause & Partial<ReturningClause> {
   // Parse the table reference first
   const table = parseTableReference(tokens, options)
@@ -135,7 +132,7 @@ function parseColumns(tokens: string[]): ColumnReference[] {
 
 function parseValuesOrSelect(
   tokens: string[],
-  options: ParserOptions
+  options: ParserOptions,
 ): ValueTypes[] | RowGeneratingClause {
   if (tokens[0] === "VALUES") {
     return extractParenthesis(tokens.slice(1))

@@ -12,7 +12,7 @@ import {
  */
 export interface QueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > {
   /** Creates a {@link FromQueryBuilder} to start a select query */
   select: FromQueryBuilder<Context, Options>
@@ -29,10 +29,10 @@ export interface QueryBuilder<
  */
 export function createQueryBuilder<
   Database extends SQLDatabaseSchema,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 >(
   database: Database,
-  options: Options
+  options: Options,
 ): QueryBuilder<QueryContext<Database>, Options> {
   return new DefaultQueryBuilder(createContext(database).context, options)
 }
@@ -45,7 +45,7 @@ export function createQueryBuilder<
  */
 export function createSubQueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 >(context: Context, options: Options): QueryBuilder<Context, Options> {
   return new DefaultQueryBuilder(context, options)
 }
@@ -55,7 +55,7 @@ export function createSubQueryBuilder<
  */
 class DefaultQueryBuilder<
   Context extends QueryContext,
-  Options extends ParserOptions
+  Options extends ParserOptions,
 > implements QueryBuilder<Context, Options>
 {
   private _context: Context
