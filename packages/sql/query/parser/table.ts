@@ -1,4 +1,3 @@
-import type { Invalid } from "@telefrek/type-utils/common"
 import type { Trim } from "@telefrek/type-utils/strings"
 import type { TableReference } from "../../ast/tables.js"
 import type { CheckQuoteTables, GetQuote, ParserOptions } from "./options.js"
@@ -9,27 +8,26 @@ import { tryParseAlias } from "./utils.js"
  */
 export type ParseTableReference<
   Value extends string,
-  Options extends ParserOptions
-> = ExtractTableReference<Value> extends TableReference<
-  infer Table,
-  infer Alias
->
-  ? CheckQuoteTables<Options> extends true
-    ? GetQuote<Options> extends infer Quote extends string
-      ? Table extends `${Quote}${infer Name}${Quote}`
-        ? Alias extends `${Quote}${infer Updated}${Quote}`
-          ? TableReference<Name, Updated>
-          : TableReference<Name, Alias>
+  Options extends ParserOptions,
+> =
+  ExtractTableReference<Value> extends TableReference<infer Table, infer Alias>
+    ? CheckQuoteTables<Options> extends true
+      ? GetQuote<Options> extends infer Quote extends string
+        ? Table extends `${Quote}${infer Name}${Quote}`
+          ? Alias extends `${Quote}${infer Updated}${Quote}`
+            ? TableReference<Name, Updated>
+            : TableReference<Name, Alias>
+          : never
         : never
-      : never
-    : TableReference<Table, Alias>
-  : ExtractTableReference<Value>
+      : TableReference<Table, Alias>
+    : ExtractTableReference<Value>
 
-type ExtractTableReference<Value extends string> = Trim<Value> extends ""
-  ? Invalid<"Cannot parse empty string as table">
-  : Trim<Value> extends `${infer Table} AS ${infer Alias}`
-  ? TableReference<Table, Alias>
-  : TableReference<Trim<Value>>
+type ExtractTableReference<Value extends string> =
+  Trim<Value> extends ""
+    ? never
+    : Trim<Value> extends `${infer Table} AS ${infer Alias}`
+      ? TableReference<Table, Alias>
+      : TableReference<Trim<Value>>
 
 /**
  * Parse the table string as a reference
@@ -39,7 +37,7 @@ type ExtractTableReference<Value extends string> = Trim<Value> extends ""
  */
 export function parseTableReference(
   tokens: string[],
-  options: ParserOptions
+  options: ParserOptions,
 ): TableReference {
   // Get the table name
   let table = tokens.shift()

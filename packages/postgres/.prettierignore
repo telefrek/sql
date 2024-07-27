@@ -1,8 +1,8 @@
-pnpm-lock.yaml
-package-lock.json
-
 # Ignore directories ignored by gitignore
 **/node_modules
 **/dist
 **/coverage
 **/traces
+
+# Don't format json files
+**/*.json
