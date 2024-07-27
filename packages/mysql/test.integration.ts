@@ -15,23 +15,18 @@ const CREATE_TABLE = `
     )
 `
 
-const INSERT_ROW = `
-    INSERT INTO orders(user_id, product_id, amount) VALUES (1, 1, 10.0000)
-`
-
 describe("All integration tests with postgres should pass", () => {
   let container: StartedMySqlContainer
   let connection: mysql.Connection
   beforeAll(async () => {
     container = await new MySqlContainer(
-      "mysql@sha256:72a37ddc9f839cfd84f1f6815fb31ba26f37f4c200b90e49607797480e3be446",
+      "mysql@sha256:72a37ddc9f839cfd84f1f6815fb31ba26f37f4c200b90e49607797480e3be446"
     ).start()
 
     connection = await mysql.createConnection(container.getConnectionUri())
     initializeMySQL(connection)
 
     await connection.query(CREATE_TABLE)
-    await connection.query(INSERT_ROW)
   }, 30_000)
 
   afterAll(async () => {

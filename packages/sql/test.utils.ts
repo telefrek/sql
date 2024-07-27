@@ -4,6 +4,7 @@
 
 import { getDatabase } from "./database.js"
 import type { DatabaseEngine } from "./engines/common.js"
+import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
 import { createDatabaseSchema } from "./schema/builder/database.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -23,7 +24,7 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("email", SQLBuiltinTypes.TEXT)
-      .withKey("id"),
+      .withKey("id")
   )
   .addTable("orders", (table) =>
     table
@@ -35,14 +36,14 @@ export const TEST_DATABASE = createDatabaseSchema()
         default: () => Date.now(),
       })
       .addColumn("amount", SQLBuiltinTypes.DECIMAL)
-      .withKey("user_id", "product_id"),
+      .withKey("user_id", "product_id")
   )
   .addTable("products", (table) =>
     table
       .addColumn("id", SQLBuiltinTypes.BIGINT, { autoIncrement: true })
       .addColumn("name", SQLBuiltinTypes.TEXT)
       .addColumn("description", SQLBuiltinTypes.TEXT)
-      .withKey("id"),
+      .withKey("id")
   )
   .addForeignKey("orders_product_fk", "products", "orders", "product_id").schema
 
@@ -58,11 +59,23 @@ export type DB_TYPE = typeof TEST_DATABASE
  */
 export async function testDatabaseEngine(
   engine: DatabaseEngine<DB_TYPE>,
+  options: ParserOptions = DefaultOptions
 ): Promise<void> {
   expect(engine).not.toBeUndefined()
 
+  const database = getDatabase(TEST_DATABASE, options)
+
+  const insertOrderStr =
+    "INSERT INTO orders(user_id, product_id, amount) VALUES (1, 1, 10.0000)"
+
+  const insertQuery = database.parseSQL(insertOrderStr)
+
+  const insertSubmit = engine.translateQuery("createOrder", insertQuery)
+  const res1 = await engine.execute(insertSubmit)
+  expect(res1).toBe(1)
+
   const queryString = "SELECT * FROM orders"
-  const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+  const query = database.parseSQL(queryString)
   const submittable = engine.translateQuery("test", query)
   const res = await engine.execute(submittable)
 
@@ -72,8 +85,8 @@ export async function testDatabaseEngine(
   expect(res[0].product_id).toBe(1)
   expect(res[0].user_id).toBe(1)
 
-  const query2 = getDatabase(TEST_DATABASE).parseSQL(
-    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o",
+  const query2 = database.parseSQL(
+    "SELECT o.id, o.user_id AS userId, product_id AS productId FROM orders AS o"
   )
 
   const submittable2 = engine.translateQuery("test2", query2)

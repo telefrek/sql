@@ -17,16 +17,12 @@ const CREATE_TABLE = `
     )
 `
 
-const INSERT_ROW = `
-    INSERT INTO orders(user_id, product_id, amount) VALUES (1, 1, 10.0000)
-`
-
 describe("All integration tests with postgres should pass", () => {
   let container: StartedPostgreSqlContainer
   let client: pg.Client
   beforeAll(async () => {
     container = await new PostgreSqlContainer(
-      "postgres@sha256:0aafd2ae7e6c391f39fb6b7621632d79f54068faebc726caf469e87bd1d301c0",
+      "postgres@sha256:0aafd2ae7e6c391f39fb6b7621632d79f54068faebc726caf469e87bd1d301c0"
     ).start()
 
     client = new pg.Client({
@@ -40,7 +36,6 @@ describe("All integration tests with postgres should pass", () => {
     initializePostgres(client)
 
     await client.query(CREATE_TABLE)
-    await client.query(INSERT_ROW)
   }, 15_000)
 
   afterAll(async () => {

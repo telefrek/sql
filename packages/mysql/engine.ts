@@ -7,7 +7,7 @@ import {
 import { parseQuery, type GetReturnType } from "@telefrek/sql/engines/utils"
 import type { SQLDatabaseSchema } from "@telefrek/sql/schema/database.js"
 import { parseDateToSafeBigInt } from "@telefrek/sql/types"
-import mysql from "mysql2/promise"
+import mysql, { ResultSetHeader } from "mysql2/promise"
 import { DRIVER_ID } from "./index.js"
 import { MySQLQueryVisitor } from "./visitor.js"
 
@@ -52,7 +52,7 @@ export function initializeMySQL(conn: mysql.Connection): void {
  * @returns A {@link DatabaseEngine} for MySQL
  */
 export function createMySQLEngine<Database extends SQLDatabaseSchema>(
-  database: Database,
+  database: Database
 ): DatabaseEngine<Database> {
   if (MYSQL_CONN === undefined) {
     throw new Error("Need to initialize MySQL")
@@ -73,7 +73,7 @@ export function createMySQLEngine<Database extends SQLDatabaseSchema>(
  * @returns The results of the query execution
  */
 async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
-  query: Query,
+  query: Query
 ): Promise<GetReturnType<Query>> {
   if (
     QUERY_PROVIDER_SYMBOL in query &&
@@ -83,8 +83,30 @@ async function executeQuery<Query extends SubmittableQuery | BoundQuery>(
       sql: query.queryString,
       typeCast: TYPE_CAST,
     })
+
+    // If the result set is passed this should just be a numeric response
+    if (isResultSetHeader(rows)) {
+      return rows.affectedRows as GetReturnType<Query>
+    }
+
     return rows as GetReturnType<Query>
   }
 
   throw new Error(`Invalid query supplied to engine`)
+}
+
+const isResultSetHeader = (data: unknown): data is ResultSetHeader => {
+  if (!data || typeof data !== "object") return false
+
+  const keys = [
+    "fieldCount",
+    "affectedRows",
+    "insertId",
+    "info",
+    "serverStatus",
+    "warningStatus",
+    "changedRows",
+  ]
+
+  return keys.every((key) => key in data)
 }
