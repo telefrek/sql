@@ -3,7 +3,7 @@ import { MySqlContainer, StartedMySqlContainer } from "@testcontainers/mysql"
 import mysql from "mysql2/promise"
 import { createMySQLEngine, initializeMySQL } from "./engine.js"
 
-const CREATE_TABLE = `
+const CREATE_ORDERS = `
     CREATE TABLE orders (
         id BIGINT NOT NULL AUTO_INCREMENT,
         user_id BIGINT NOT NULL,
@@ -12,6 +12,25 @@ const CREATE_TABLE = `
         amount DECIMAL(10, 4) NOT NULL,
         PRIMARY KEY (user_id, product_id),
         KEY \`idInc\` (\`id\`)
+    )`
+
+const CREATE_USERS = `
+    CREATE TABLE users (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      address TEXT NOT NULL,
+      email TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    )`
+
+const CREATE_PRODUCTS = `
+    CREATE TABLE products (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      PRIMARY KEY (id)
     )
 `
 
@@ -26,7 +45,9 @@ describe("All integration tests with postgres should pass", () => {
     connection = await mysql.createConnection(container.getConnectionUri())
     initializeMySQL(connection)
 
-    await connection.query(CREATE_TABLE)
+    await connection.query(CREATE_ORDERS)
+    await connection.query(CREATE_USERS)
+    await connection.query(CREATE_PRODUCTS)
   }, 30_000)
 
   afterAll(async () => {

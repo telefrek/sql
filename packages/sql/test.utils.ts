@@ -2,7 +2,7 @@
  * This is a helper for our future testing
  */
 
-import { getDatabase } from "./database.js"
+import { getDatabase, type SQLDatabase } from "./database.js"
 import type { DatabaseEngine } from "./engines/common.js"
 import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
 import { createDatabaseSchema } from "./schema/builder/database.js"
@@ -19,11 +19,11 @@ export const TEST_DATABASE = createDatabaseSchema()
       .addColumn("first_name", SQLBuiltinTypes.TEXT)
       .addColumn("last_name", SQLBuiltinTypes.TEXT)
       .addColumn("address", SQLBuiltinTypes.TEXT, { nullable: true })
+      .addColumn("email", SQLBuiltinTypes.TEXT)
       .addColumn("created_at", SQLBuiltinTypes.TIMESTAMP, {
         nullable: true,
         default: () => Date.now(),
       })
-      .addColumn("email", SQLBuiltinTypes.TEXT)
       .withKey("id")
   )
   .addTable("orders", (table) =>
@@ -65,14 +65,8 @@ export async function testDatabaseEngine(
 
   const database = getDatabase(TEST_DATABASE, options)
 
-  const insertOrderStr =
-    "INSERT INTO orders(user_id, product_id, amount) VALUES (1, 1, 10.0000)"
-
-  const insertQuery = database.parseSQL(insertOrderStr)
-
-  const insertSubmit = engine.translateQuery("createOrder", insertQuery)
-  const res1 = await engine.execute(insertSubmit)
-  expect(res1).toBe(1)
+  // Create the primitives
+  await createOrders(engine, database)
 
   const queryString = "SELECT * FROM orders"
   const query = database.parseSQL(queryString)
@@ -95,4 +89,50 @@ export async function testDatabaseEngine(
   expect(res2[0].id).toBe(1)
   expect(res2[0].userId).toBe(1)
   expect(res2[0].productId).toBe(1)
+}
+
+async function createOrders<
+  Engine extends DatabaseEngine<DB_TYPE>,
+  Database extends SQLDatabase<DB_TYPE>
+>(engine: Engine, database: Database): Promise<void> {
+  const userId = await createUser(engine, database)
+  expect(userId).toBe(1)
+
+  // TODO: In the future, use parameterized values to drive this
+  const insertOrder = database.parseSQL(
+    "INSERT INTO orders(user_id, product_id, amount) VALUES (1, 1, 10.0000)"
+  )
+
+  const insertRes = await engine.execute(
+    engine.translateQuery("insertOrder", insertOrder)
+  )
+  expect(insertRes).toBe(1)
+}
+
+async function createUser<
+  Engine extends DatabaseEngine<DB_TYPE>,
+  Database extends SQLDatabase<DB_TYPE>
+>(engine: Engine, database: Database): Promise<number | bigint> {
+  try {
+    const insertUser = database.parseSQL(
+      "INSERT INTO users(first_name, last_name, address, email) VALUES('firstName', 'lastName', 'address', 'email') RETURNING id"
+    )
+    const userRes = await engine.execute(
+      engine.translateQuery("insertUser", insertUser)
+    )
+    expect(userRes).not.toBeUndefined()
+    expect(userRes.length).toBe(1)
+    expect(userRes[0].id).toBe(1)
+  } catch {
+    const insertUser = database.parseSQL(
+      "INSERT INTO users(first_name, last_name, address, email) VALUES('firstName', 'lastName', 'address', 'email')"
+    )
+    const userRes = await engine.execute(
+      engine.translateQuery("insertUser", insertUser)
+    )
+
+    expect(userRes).toBe(1)
+  }
+
+  return 1
 }

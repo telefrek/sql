@@ -33,8 +33,8 @@ type AddKeyToTable<Table extends SQLTableSchema, Column> = SQLTableSchema<
       ? SingleKey<Table["columns"], T>
       : CompositeKey<Table["columns"], Column>
     : Column extends StringKeys<Table["columns"]>
-      ? SingleKey<Table["columns"], Column>
-      : never
+    ? SingleKey<Table["columns"], Column>
+    : never
 >
 
 /**
@@ -45,7 +45,7 @@ type AddKeyToTable<Table extends SQLTableSchema, Column> = SQLTableSchema<
  */
 type FinalColumnDefinition<
   T extends SQLBuiltinTypes,
-  K extends keyof SQLColumnOptions<T>,
+  K extends keyof SQLColumnOptions<T>
 > = Flatten<
   RequiredLiteralKeys<ColumnTypeDefinition<T>> &
     RequiredSubset<SQLColumnOptions<T>, K>
@@ -58,15 +58,14 @@ type AddColumnToSchema<
   Columns extends SQLColumnSchema,
   Column extends string,
   ColumnType extends SQLBuiltinTypes,
-  Options extends keyof SQLColumnOptions<ColumnType>,
-> =
-  AddKVToType<
-    Columns,
-    Column,
-    FinalColumnDefinition<ColumnType, Options>
-  > extends infer S extends SQLColumnSchema
-    ? S
-    : never
+  Options extends keyof SQLColumnOptions<ColumnType>
+> = AddKVToType<
+  Columns,
+  Column,
+  FinalColumnDefinition<ColumnType, Options>
+> extends infer S extends SQLColumnSchema
+  ? S
+  : never
 
 /**
  * Utility type to add a column to a SQLTableSchema by successively inferring
@@ -76,29 +75,28 @@ type AddColumnToTableSchema<
   Schema extends SQLTableSchema,
   Column extends string,
   ColumnType extends SQLBuiltinTypes,
-  Options extends keyof SQLColumnOptions<ColumnType>,
-> =
-  Schema extends SQLTableSchema<infer Columns>
-    ? Schema extends SQLTableSchema<Columns, infer Key>
-      ? AddColumnToSchema<
-          Columns,
-          Column,
-          ColumnType,
-          Options
-        > extends infer S extends SQLColumnSchema
-        ? Key extends PrimaryKey<S>
-          ? SQLTableSchema<S, Key>
-          : never
+  Options extends keyof SQLColumnOptions<ColumnType>
+> = Schema extends SQLTableSchema<infer Columns>
+  ? Schema extends SQLTableSchema<Columns, infer Key>
+    ? AddColumnToSchema<
+        Columns,
+        Column,
+        ColumnType,
+        Options
+      > extends infer S extends SQLColumnSchema
+      ? Key extends PrimaryKey<S>
+        ? SQLTableSchema<S, Key>
         : never
-      : AddColumnToSchema<
-            Columns,
-            Column,
-            ColumnType,
-            Options
-          > extends infer S extends SQLColumnSchema
-        ? SQLTableSchema<S>
-        : never
+      : never
+    : AddColumnToSchema<
+        Columns,
+        Column,
+        ColumnType,
+        Options
+      > extends infer S extends SQLColumnSchema
+    ? SQLTableSchema<S>
     : never
+  : never
 
 /**
  * Define a SQLColumn definition
@@ -109,10 +107,10 @@ type AddColumnToTableSchema<
  */
 function SQLColumn<
   ColumnType extends SQLBuiltinTypes,
-  Options extends keyof SQLColumnOptions<ColumnType> = never,
+  Options extends keyof SQLColumnOptions<ColumnType> = never
 >(
   type: ColumnType,
-  options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>,
+  options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>
 ): FinalColumnDefinition<ColumnType, Options> {
   return {
     ...options,
@@ -128,7 +126,7 @@ function SQLColumn<
  * @returns A {@link ColumnSchemaBuilder} to manipulate the schema
  */
 export function createColumnSchemaBuilder<
-  Schema extends SQLColumnSchema = IgnoreEmpty,
+  Schema extends SQLColumnSchema = IgnoreEmpty
 >(current?: Schema): ColumnSchemaBuilder<Schema> {
   return new SQLColumnSchemaBuilder<Schema>(current ?? ({} as Schema))
 }
@@ -138,7 +136,7 @@ export function createColumnSchemaBuilder<
  */
 export type ColumnSchemaBuilderFn<
   Schema extends SQLColumnSchema,
-  Result extends SQLColumnSchema,
+  Result extends SQLColumnSchema
 > = (original: ColumnSchemaBuilder<Schema>) => ColumnSchemaBuilder<Result>
 
 /**
@@ -149,7 +147,7 @@ export type ColumnSchemaBuilderFn<
  * @returns A {@link TableSchemaBuilder} to manipulate the table
  */
 export function createTableSchemaBuilder<
-  Schema extends SQLTableSchema = EmptyTableSchema,
+  Schema extends SQLTableSchema = EmptyTableSchema
 >(current?: Schema): TableSchemaBuilder<Schema> {
   if (current !== undefined) {
     return "primaryKey" in current
@@ -176,11 +174,11 @@ export interface ColumnSchemaBuilder<Schema extends SQLColumnSchema> {
   addColumn<
     Column extends string,
     ColumnType extends SQLBuiltinTypes,
-    Options extends keyof SQLColumnOptions<ColumnType> = never,
+    Options extends keyof SQLColumnOptions<ColumnType> = never
   >(
     column: CheckDuplicateKey<Column, Schema>,
     type: ColumnType,
-    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>,
+    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>
   ): ColumnSchemaBuilder<AddColumnToSchema<Schema, Column, ColumnType, Options>>
 }
 
@@ -188,7 +186,7 @@ export interface ColumnSchemaBuilder<Schema extends SQLColumnSchema> {
  * An object that provides a SQLTableSchema
  */
 export interface TableSchemaBuilder<
-  Schema extends SQLTableSchema = EmptyTableSchema,
+  Schema extends SQLTableSchema = EmptyTableSchema
 > {
   readonly table: Schema
 
@@ -211,11 +209,11 @@ export interface TableSchemaBuilder<
   addColumn<
     Column extends string,
     ColumnType extends SQLBuiltinTypes,
-    Options extends keyof SQLColumnOptions<ColumnType> = never,
+    Options extends keyof SQLColumnOptions<ColumnType> = never
   >(
     column: CheckDuplicateKey<Column, Schema["columns"]>,
     type: ColumnType,
-    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>,
+    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>
   ): TableSchemaBuilder<
     AddColumnToTableSchema<Schema, Column, ColumnType, Options>
   >
@@ -240,11 +238,11 @@ class SQLColumnSchemaBuilder<Schema extends SQLColumnSchema>
   addColumn<
     Column extends string,
     ColumnType extends SQLBuiltinTypes,
-    Options extends keyof SQLColumnOptions<ColumnType> = never,
+    Options extends keyof SQLColumnOptions<ColumnType> = never
   >(
     column: CheckDuplicateKey<Column, Schema>,
     type: ColumnType,
-    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>,
+    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>
   ): ColumnSchemaBuilder<
     AddColumnToSchema<Schema, Column, ColumnType, Options>
   > {
@@ -297,11 +295,11 @@ class SQLTableSchemaBuilder<Schema extends SQLTableSchema>
   addColumn<
     Column extends string,
     ColumnType extends SQLBuiltinTypes,
-    Options extends keyof SQLColumnOptions<ColumnType> = never,
+    Options extends keyof SQLColumnOptions<ColumnType> = never
   >(
     column: CheckDuplicateKey<Column, Schema["columns"]>,
     type: ColumnType,
-    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>,
+    options?: RequiredSubset<SQLColumnOptions<ColumnType>, Options>
   ): TableSchemaBuilder<
     AddColumnToTableSchema<Schema, Column, ColumnType, Options>
   > {

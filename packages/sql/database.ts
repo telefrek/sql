@@ -11,8 +11,8 @@ import type { SQLDatabaseSchema } from "./schema/database.js"
  * Starting point for a SQL Database
  */
 export interface SQLDatabase<
-  Schema extends SQLDatabaseSchema,
-  Options extends ParserOptions = DEFAULT_PARSER_OPTIONS,
+  Schema extends SQLDatabaseSchema = SQLDatabaseSchema,
+  Options extends ParserOptions = DEFAULT_PARSER_OPTIONS
 > {
   readonly schema: Schema
 
@@ -22,7 +22,7 @@ export interface SQLDatabase<
    * @param query The query to parse
    */
   parseSQL<T extends string>(
-    query: VerifyQueryString<Schema, T, Options>,
+    query: VerifyQueryString<Schema, T, Options>
   ): ParseSQL<T, Options>
 }
 
@@ -33,21 +33,21 @@ export interface SQLDatabase<
  * @returns A {@link SQLDatabase} for the given schema
  */
 export function getDatabase<Schema extends SQLDatabaseSchema>(
-  schema: Schema,
+  schema: Schema
 ): SQLDatabase<Schema, DEFAULT_PARSER_OPTIONS>
 export function getDatabase<
   Schema extends SQLDatabaseSchema,
-  Options extends ParserOptions,
+  Options extends ParserOptions
 >(schema: Schema, options: Options): SQLDatabase<Schema, Options>
 export function getDatabase<
   Schema extends SQLDatabaseSchema,
-  Options extends ParserOptions,
+  Options extends ParserOptions
 >(schema: Schema, options?: Options) {
   const parseSQL = <T extends string>(
-    query: VerifyQueryString<Schema, T, Options>,
+    query: VerifyQueryString<Schema, T, Options>
   ): ParseSQL<T, Options> => {
     return new QueryParser(schema, options ?? DefaultOptions).parse(
-      query as string,
+      query as string
     ) as ParseSQL<T, Options>
   }
 

@@ -6,7 +6,7 @@ import {
 import pg from "pg"
 import { createPostgresEngine, initializePostgres } from "./engine.js"
 
-const CREATE_TABLE = `
+const CREATE_ORDERS = `
     CREATE TABLE orders (
         id BIGSERIAL NOT NULL,
         user_id BIGINT NOT NULL,
@@ -14,8 +14,26 @@ const CREATE_TABLE = `
         order_timestamp TIMESTAMP DEFAULT now(),
         amount DECIMAL(10, 4) NOT NULL,
         PRIMARY KEY (user_id, product_id)
-    )
-`
+    )`
+
+const CREATE_USERS = `
+    CREATE TABLE users (
+      id BIGSERIAL NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      address TEXT NOT NULL,
+      email TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT now(),
+      PRIMARY KEY (id)
+    )`
+
+const CREATE_PRODUCTS = `
+    CREATE TABLE products (
+      id BIGSERIAL NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      PRIMARY KEY (id)
+    )`
 
 describe("All integration tests with postgres should pass", () => {
   let container: StartedPostgreSqlContainer
@@ -35,7 +53,9 @@ describe("All integration tests with postgres should pass", () => {
     await client.connect()
     initializePostgres(client)
 
-    await client.query(CREATE_TABLE)
+    await client.query(CREATE_ORDERS)
+    await client.query(CREATE_PRODUCTS)
+    await client.query(CREATE_USERS)
   }, 15_000)
 
   afterAll(async () => {

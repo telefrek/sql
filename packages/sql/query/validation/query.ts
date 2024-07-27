@@ -17,11 +17,10 @@ import type { ValidateSelectClause } from "./select.js"
 export type VerifyQueryString<
   Database extends SQLDatabaseSchema,
   T extends string,
-  Options extends ParserOptions,
-> =
-  ParseSQL<T, Options> extends infer Q extends SQLQuery
-    ? CheckInvalid<VerifyQuery<Database, Q>, T>
-    : Invalid<"Not a valid query string">
+  Options extends ParserOptions
+> = ParseSQL<T, Options> extends infer Q extends SQLQuery
+  ? CheckInvalid<VerifyQuery<Database, Q>, T>
+  : Invalid<"Not a valid query string">
 
 /**
  * Utility type to see if the result is true or an invalid so we don't have to
@@ -34,27 +33,33 @@ type CheckInvalid<T, R> = T extends true ? R : T
  */
 export type BuildActive<
   Database extends SQLDatabaseTables,
-  Query extends SQLQuery,
-> =
-  Query extends SQLQuery<infer QueryType>
-    ? QueryType extends SelectClause<infer _, infer From extends TableReference>
-      ? {
-          [Key in From["alias"]]: Database[From["table"]]
-        }
-      : IgnoreEmpty
-    : IgnoreEmpty
+  Query extends SQLQuery
+> = Query extends SQLQuery<infer QueryType>
+  ? QueryType extends SelectClause<infer _, infer From extends TableReference>
+    ? {
+        [Key in From["alias"]]: Database[From["table"]]
+      }
+    : QueryType extends InsertClause<
+        infer Into extends TableReference,
+        infer _,
+        infer _
+      >
+    ? {
+        [Key in Into["table"]]: Database[Into["table"]]
+      }
+    : never
+  : IgnoreEmpty
 
 /**
  * Entrypoint for verifying a query statement
  */
 export type VerifyQuery<
   Database extends SQLDatabaseSchema,
-  Query extends SQLQuery,
-> =
-  Query extends SQLQuery<infer Clause>
-    ? Clause extends infer Select extends SelectClause
-      ? ValidateSelectClause<Database["tables"], Select>
-      : Clause extends infer Insert extends InsertClause
-        ? ValidateInsertClause<Database["tables"], Insert>
-        : Invalid<`Unsupported query type`>
-    : Invalid<`Corrupt or invalid SQL query`>
+  Query extends SQLQuery
+> = Query extends SQLQuery<infer Clause>
+  ? Clause extends infer Select extends SelectClause
+    ? ValidateSelectClause<Database["tables"], Select>
+    : Clause extends infer Insert extends InsertClause
+    ? ValidateInsertClause<Database["tables"], Insert>
+    : Invalid<`Unsupported query type`>
+  : Invalid<`Corrupt or invalid SQL query`>

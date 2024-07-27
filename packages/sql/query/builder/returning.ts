@@ -11,7 +11,7 @@ import { buildColumnReference, type VerifySelectColumns } from "./columns.js"
 
 export interface ReturningBuilder<
   Schema extends SQLColumnSchema,
-  Query extends QueryClause,
+  Query extends QueryClause
 > extends QueryAST<Query> {
   returning<Columns extends AllowAliasing<StringKeys<Schema>>[]>(
     ...columns: AtLeastOne<Columns>
@@ -22,14 +22,14 @@ export interface ReturningBuilder<
 
 export function createReturningBuilder<
   Schema extends SQLColumnSchema,
-  Query extends QueryClause,
+  Query extends QueryClause
 >(query: Query): ReturningBuilder<Schema, Query> {
   return new DefaultReturningBuilder(query)
 }
 
 class DefaultReturningBuilder<
   Schema extends SQLColumnSchema,
-  Query extends QueryClause,
+  Query extends QueryClause
 > implements ReturningBuilder<Schema, Query>
 {
   private _query: Query
