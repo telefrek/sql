@@ -4,7 +4,7 @@
 
 import { getDatabase, type SQLDatabase } from "./database.js"
 import type { DatabaseEngine } from "./engines/common.js"
-import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
+import { DefaultOptions } from "./query/parser/options.js"
 import { createDatabaseSchema } from "./schema/builder/database.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -57,13 +57,12 @@ export type DB_TYPE = typeof TEST_DATABASE
  *
  * @param engine The {@link DatabaseEngine} to test against
  */
-export async function testDatabaseEngine(
-  engine: DatabaseEngine<DB_TYPE>,
-  options: ParserOptions = DefaultOptions
-): Promise<void> {
+export async function testDatabaseEngine<
+  Engine extends DatabaseEngine<DB_TYPE>
+>(engine: Engine): Promise<void> {
   expect(engine).not.toBeUndefined()
 
-  const database = getDatabase(TEST_DATABASE, options)
+  const database = getDatabase(TEST_DATABASE, DefaultOptions)
 
   // Create the primitives
   await createOrders(engine, database)

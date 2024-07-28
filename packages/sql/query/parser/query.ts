@@ -13,20 +13,22 @@ import { parseSelectClause, type ParseSelect } from "./select.js"
  */
 export type ParseSQL<
   T extends string,
-  Options extends ParserOptions = DEFAULT_PARSER_OPTIONS,
+  Options extends ParserOptions = DEFAULT_PARSER_OPTIONS
 > = CheckSQL<ParseQuery<T, Options>>
 
 /**
  * Type to parse a query segment
  */
-export type ParseQuery<T extends string, Options extends ParserOptions> =
-  NormalizeQuery<T> extends infer Q extends string
-    ? Q extends `SELECT ${string}`
-      ? ParseSelect<Q, Options>
-      : Q extends `INSERT INTO ${string}`
-        ? ParseInsert<Q, Options>
-        : Invalid<`Query is not valid or supported`>
-    : never
+export type ParseQuery<
+  T extends string,
+  Options extends ParserOptions
+> = NormalizeQuery<T> extends infer Q extends string
+  ? Q extends `SELECT ${string}`
+    ? ParseSelect<Q, Options>
+    : Q extends `INSERT INTO ${string}`
+    ? ParseInsert<Q, Options>
+    : Invalid<`Query is not valid or supported`>
+  : never
 
 /**
  * Validate the query structure or pass through the likely Invalid
@@ -34,15 +36,15 @@ export type ParseQuery<T extends string, Options extends ParserOptions> =
 type CheckSQL<Query> = [Query] extends [never]
   ? Invalid<"not a parsable query">
   : Query extends QueryClause
-    ? SQLQuery<Query>
-    : Query
+  ? SQLQuery<Query>
+  : Query
 
 /**
  * Class to help with Query parsing
  */
 export class QueryParser<
   Database extends SQLDatabaseSchema,
-  Options extends ParserOptions,
+  Options extends ParserOptions
 > {
   private _database: Database
   private _options: Options
@@ -85,7 +87,7 @@ export class QueryParser<
 
 export function parseQueryClause(
   tokens: string[],
-  options: ParserOptions,
+  options: ParserOptions
 ): QueryClause {
   const check = tokens.shift()
   if (check === undefined) {
@@ -96,7 +98,7 @@ export function parseQueryClause(
     case "SELECT":
       return parseSelectClause(tokens, options)
     case "INSERT":
-      return parseInsertClause(tokens.slice(1), options)
+      return parseInsertClause(tokens, options)
     default:
       throw new Error(`Cannot parse ${check}`)
   }

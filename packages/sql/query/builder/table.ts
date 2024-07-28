@@ -10,11 +10,14 @@ import type { ParseTableReference } from "../parser/table.js"
  */
 export function buildTableReference<
   Table extends string,
-  Options extends ParserOptions,
+  Options extends ParserOptions
 >(table: Table, options: Options): ParseTableReference<Table, Options> {
   let name: string = table
-  if (options.quoteTables) {
-    if (table.startsWith(options.quote) && table.endsWith(options.quote)) {
+  if (options.features.indexOf("QUOTED_TABLES") >= 0) {
+    if (
+      table.startsWith(options.tokens.quote) &&
+      table.endsWith(options.tokens.quote)
+    ) {
       name = table.slice(1, -1)
     }
   }
@@ -29,10 +32,10 @@ export function buildTableReference<
     const data = table.split(" AS ")
 
     name = data[0]
-    if (options.quoteTables) {
+    if (options.features.indexOf("QUOTED_TABLES") >= 0) {
       if (
-        data[0].startsWith(options.quote) &&
-        data[0].endsWith(options.quote)
+        data[0].startsWith(options.tokens.quote) &&
+        data[0].endsWith(options.tokens.quote)
       ) {
         name = data[0].slice(1, -1)
       }

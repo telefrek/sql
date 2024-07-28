@@ -1,7 +1,7 @@
 import type { ParseSQL } from "./index.js"
-import { SQLBuiltinTypes, createQueryBuilder, getDatabase } from "./index.js"
+import { createQueryBuilder, getDatabase, SQLBuiltinTypes } from "./index.js"
 import { normalizeQuery } from "./query/parser/normalize.js"
-import { DefaultOptions, type ParserOptions } from "./query/parser/options.js"
+import { createParsingOptions, DefaultOptions } from "./query/parser/options.js"
 import { DefaultQueryVisitor } from "./query/visitor/common.js"
 import { TEST_DATABASE } from "./test.utils.js"
 
@@ -229,10 +229,7 @@ describe("SQL parsing logic should be customizable", () => {
       "SELECT * FROM users"
     )
 
-    const options: ParserOptions<"`", true> = {
-      quote: "`",
-      quoteTables: true,
-    }
+    const options = createParsingOptions({ quote: "`" }, "QUOTED_TABLES")
 
     const q2 = getDatabase(TEST_DATABASE, options).parseSQL(
       "SELECT * FROM `users`"

@@ -12,7 +12,7 @@ import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
 import { parseColumnReference, type ParseSelectedColumns } from "./columns.js"
 import { extractParenthesis, type SplitSQL } from "./normalize.js"
-import type { ParserOptions } from "./options.js"
+import type { GetQuote, ParserOptions } from "./options.js"
 import { parseQueryClause } from "./query.js"
 import type { ParseSelect } from "./select.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
@@ -102,7 +102,10 @@ type CheckTable<Current, Options extends ParserOptions> = Current extends [
 type ExtractValuesArray<
   T extends string,
   Options extends ParserOptions
-> = ExtractValues<SplitSQL<T>, Options> extends infer V extends ValueTypes[]
+> = ExtractValues<
+  SplitSQL<T>,
+  GetQuote<Options>
+> extends infer V extends ValueTypes[]
   ? V
   : Invalid<"Failed to extract values">
 
@@ -110,6 +113,10 @@ export function parseInsertClause(
   tokens: string[],
   options: ParserOptions
 ): InsertClause & Partial<ReturningClause> {
+  if (tokens.shift() !== "INTO") {
+    throw new Error("Insert must start with INSERT INTO")
+  }
+
   // Parse the table reference first
   const table = parseTableReference(tokens, options)
 
