@@ -15,7 +15,8 @@ import type {
   ValueTypes,
 } from "../../ast/values.js"
 import { type ParseColumnReference } from "./columns.js"
-import type { NextToken } from "./normalize.js"
+import type { NextToken, SplitSQL } from "./normalize.js"
+import type { GetQuote, ParserOptions } from "./options.js"
 
 export function parseValue(
   value: string,
@@ -113,6 +114,18 @@ function isBigInt(value: string): boolean {
   }
 }
 
+/**
+ * Utility type to parse an array of values from a string
+ *
+ * ex: ParseValues<`true , false , 'hello world' , 1 ,  '{ key: "value"}'`>
+ *
+ * gives [BooleanValueType, BooleanValueType, StringValueType, NumberValueType, JsonValueType]
+ */
+export type ParseValues<
+  ValuesSQL extends string,
+  Options extends ParserOptions
+> = ExtractValues<SplitSQL<ValuesSQL>, GetQuote<Options>>
+
 export type ExtractTSValueTypes<Values> = Values extends [
   infer NextValue extends ValueTypes,
   ...infer Rest
@@ -132,10 +145,10 @@ type TSValueType<Value extends ValueTypes> = Value extends BooleanValueType
   ? number
   : Value extends NullValueType
   ? null
-  : Value extends JsonValueType<infer _>
+  : Value extends JsonValueType
   ? object
-  : Value extends ArrayValueType<infer T>
-  ? T
+  : Value extends ArrayValueType
+  ? unknown[]
   : Value extends BufferValueType
   ? Uint8Array
   : never
@@ -208,7 +221,7 @@ export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   : T extends `${Quote}${infer _}${Quote}`
   ? StringValueType
   : T extends `0x${infer _}`
-  ? BufferValueType<Uint8Array>
+  ? BufferValueType
   : Lowercase<T & string> extends "null"
   ? NullValueType
   : Lowercase<T & string> extends "true"

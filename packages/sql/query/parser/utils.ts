@@ -1,7 +1,7 @@
 import type { Invalid } from "@telefrek/type-utils/common"
 import type { NamedQuery } from "../../ast/named.js"
 import type { QueryClause, ReturningClause } from "../../ast/queries.js"
-import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
+import { parseSelectedColumns } from "./columns.js"
 import { extractParenthesis } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 import { parseQueryClause, type ParseQuery } from "./query.js"
@@ -88,16 +88,6 @@ export type IsQuoted<
     ? true
     : false
   : false
-
-/**
- * Parse the returning clause
- */
-export type ParseReturning<
-  T extends string,
-  Options extends ParserOptions
-> = T extends `RETURNING ${infer Columns extends string}`
-  ? ReturningClause<ParseSelectedColumns<Columns, Options>>
-  : Invalid<"Not a valid RETURNING clause">
 
 /**
  * Attempts to read a RETURNING clause from the stack

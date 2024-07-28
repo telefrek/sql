@@ -14,9 +14,10 @@ import { parseColumnReference, type ParseSelectedColumns } from "./columns.js"
 import { extractParenthesis, type SplitSQL } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 import { parseQueryClause } from "./query.js"
+import type { ExtractReturning } from "./returning.js"
 import type { ParseSelect } from "./select.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
-import { tryParseReturning, type ParseReturning } from "./utils.js"
+import { tryParseReturning } from "./utils.js"
 import { parseValue, type ExtractValues } from "./values.js"
 
 export type ParseInsert<
@@ -36,16 +37,16 @@ type CheckInsert<T> = T extends Partial<
 
 // Retrive the returning portion
 type CheckReturning<
-  InsertSQL extends string,
+  SQL extends string,
   Options extends ParserOptions
-> = InsertSQL extends `${infer Previous} RETURNING ${infer Returning}`
-  ? ParseReturning<
-      `RETURNING ${Returning}`,
-      Options
-    > extends infer R extends object
-    ? CheckValues<[R, Previous], Options>
-    : ParseReturning<`RETURNING ${Returning}`, Options>
-  : CheckValues<[IgnoreEmpty, InsertSQL], Options>
+> = ExtractReturning<SQL, Options> extends [
+  infer InsertSQL extends string,
+  infer Returning extends ReturningClause
+]
+  ? CheckValues<[Returning, InsertSQL], Options>
+  : ExtractReturning<SQL, Options> extends SQL
+  ? CheckValues<[IgnoreEmpty, SQL], Options>
+  : ExtractReturning<SQL, Options>
 
 type CheckValues<Current, Options extends ParserOptions> = Current extends [
   infer Returning extends object,

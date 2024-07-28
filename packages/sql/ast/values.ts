@@ -39,17 +39,17 @@ export type NumberValueType = {
 /**
  * A {@link bigint} value
  */
-export type BigIntValueType<B extends number | bigint = bigint> = {
+export type BigIntValueType = {
   type: "BigIntValue"
-  value: B
+  value: bigint
 }
 
 /**
  * A {@link Uint8Array} value
  */
-export type BufferValueType<B extends Uint8Array = Uint8Array> = {
+export type BufferValueType = {
   type: "BufferValue"
-  value: B
+  value: Uint8Array
 }
 
 /**
@@ -71,15 +71,15 @@ export type NullValueType = {
 /**
  * A JSON value
  */
-export type JsonValueType<J extends object = object> = {
+export type JsonValueType = {
   type: "JsonValue"
-  value: J
+  value: object
 }
 
 /**
  * An array value
  */
-export type ArrayValueType<A extends unknown[] = unknown[]> = {
+export type ArrayValueType = {
   type: "ArrayValue"
-  value: A
+  value: unknown[]
 }

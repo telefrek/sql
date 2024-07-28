@@ -45,22 +45,22 @@ export type ColumnTypeDefinition<T extends SQLBuiltinTypes = SQLBuiltinTypes> =
 
 export type GetValueType<Column extends ColumnTypeDefinition> =
   Column["array"] extends true
-    ? ArrayValueType<TSSQLType<Column["type"]>[]>
+    ? ArrayValueType
     : GetColumnValueType<Column["type"]>
 
 type GetColumnValueType<T extends SQLBuiltinTypes> = [T] extends [
-  BigIntSQLTypes,
+  BigIntSQLTypes
 ]
   ? NumberValueType | BigIntValueType
   : [T] extends [BinarySQLTypes]
-    ? BufferValueType
-    : [T] extends [NumericSQLTypes]
-      ? NumberValueType
-      : [T] extends [SQLBuiltinTypes.BIT]
-        ? BooleanValueType
-        : [T] extends [SQLBuiltinTypes.JSON]
-          ? JsonValueType<IgnoreAny>
-          : StringValueType
+  ? BufferValueType
+  : [T] extends [NumericSQLTypes]
+  ? NumberValueType
+  : [T] extends [SQLBuiltinTypes.BIT]
+  ? BooleanValueType
+  : [T] extends [SQLBuiltinTypes.JSON]
+  ? JsonValueType
+  : StringValueType
 
 /**
  * A value or provider of a value
@@ -84,7 +84,7 @@ type BaseColumnDefinition<T extends SQLBuiltinTypes> = {
  * Extended information for incremental column types
  */
 type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
-  IncrementalSQLTypes,
+  IncrementalSQLTypes
 ]
   ? { autoIncrement?: true }
   : object
@@ -93,7 +93,7 @@ type IncrementalType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable size column types
  */
 type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableLengthSQLTypes,
+  VariableLengthSQLTypes
 ]
   ? { size?: number }
   : object
@@ -102,7 +102,7 @@ type VariableLengthType<T extends SQLBuiltinTypes> = [T] extends [
  * Extended information for variable numeric precision types
  */
 type VariableNumericType<T extends SQLBuiltinTypes> = [T] extends [
-  VariableNumericTypes,
+  VariableNumericTypes
 ]
   ? { precision?: number; scale?: number }
   : object
