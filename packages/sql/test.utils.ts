@@ -4,7 +4,7 @@
 
 import { getDatabase, type SQLDatabase } from "./database.js"
 import type { DatabaseEngine } from "./engines/common.js"
-import { DefaultOptions } from "./query/parser/options.js"
+import { createParsingOptions, DefaultOptions } from "./query/parser/options.js"
 import { createDatabaseSchema } from "./schema/builder/database.js"
 import { SQLBuiltinTypes } from "./types.js"
 
@@ -51,6 +51,14 @@ export const TEST_DATABASE = createDatabaseSchema()
  * The type of our TEST_DATABASE object
  */
 export type DB_TYPE = typeof TEST_DATABASE
+
+/**
+ * Options for MYSQL to test for our parsing changes
+ */
+export const MYSQL_OPTIONS = createParsingOptions(
+  { quote: "`" },
+  "QUOTED_TABLES"
+)
 
 /**
  * Run a query test against an engine to validate it works

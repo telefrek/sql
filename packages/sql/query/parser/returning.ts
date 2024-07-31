@@ -19,4 +19,6 @@ export type ExtractReturning<
       ? PartialParserResult<QuerySegment, ReturningClause<Columns>>
       : Invalid<"Failed to extract returning clause">
     : PartialParserResult<SQL>
+  : SQL extends `${infer _} RETURNING ${infer _}`
+  ? Invalid<"RETURNING is not supported">
   : PartialParserResult<SQL>

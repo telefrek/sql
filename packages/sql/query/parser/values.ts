@@ -245,5 +245,5 @@ export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   : T extends `${infer First}${infer _}`
   ? [First] extends [Digits]
     ? NumberValueType
-    : never
-  : never
+    : Invalid<"Not a valid value type">
+  : Invalid<"Not a valid value type">

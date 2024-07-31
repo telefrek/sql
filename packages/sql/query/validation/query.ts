@@ -20,7 +20,7 @@ export type VerifyQueryString<
   Options extends ParserOptions
 > = ParseSQL<T, Options> extends infer Q extends SQLQuery
   ? CheckInvalid<VerifyQuery<Database, Q>, T>
-  : Invalid<"Not a valid query string">
+  : ParseSQL<T, Options>
 
 /**
  * Utility type to see if the result is true or an invalid so we don't have to
