@@ -9,17 +9,34 @@ import type { SQLColumnSchema } from "../../schema/columns.js"
 import type { AllowAliasing, QueryAST } from "../common.js"
 import { buildColumnReference, type VerifySelectColumns } from "./columns.js"
 
+/**
+ * An interface for specifying optional RETURNING clauses
+ */
 export interface ReturningBuilder<
   Schema extends SQLColumnSchema,
   Query extends QueryClause
 > extends QueryAST<Query> {
+  /**
+   * Choose a subset of the columns to return
+   *
+   * @param columns The columns to return
+   */
   returning<Columns extends AllowAliasing<StringKeys<Schema>>[]>(
     ...columns: AtLeastOne<Columns>
   ): SQLQuery<Query & ReturningClause<VerifySelectColumns<Columns>>>
 
+  /**
+   * Return all columns in the row
+   */
   returningRow: SQLQuery<Query & ReturningClause<"*">>
 }
 
+/**
+ * Create a new returning clause builder
+ *
+ * @param query The query to return from
+ * @returns A new {@link ReturningBuilder}
+ */
 export function createReturningBuilder<
   Schema extends SQLColumnSchema,
   Query extends QueryClause
@@ -27,6 +44,9 @@ export function createReturningBuilder<
   return new DefaultReturningBuilder(query)
 }
 
+/**
+ * The default {@link ReturningBuilder} implementation
+ */
 class DefaultReturningBuilder<
   Schema extends SQLColumnSchema,
   Query extends QueryClause

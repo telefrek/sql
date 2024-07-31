@@ -2,12 +2,11 @@ import type { Invalid } from "@telefrek/type-utils/common"
 import type { ReturningClause } from "../../ast/queries.js"
 import type { SelectColumns } from "../../ast/select.js"
 import type { ParseSelectedColumns } from "./columns.js"
+import type { PartialParserResult } from "./common.js"
 import type { CheckFeature, ParserOptions } from "./options.js"
 
 /**
  * Extract the Returning clause if it's present and the feature is enabled
- *
- * [sql: {@link string}, returning: {@link ReturningClause}] else {@link string}
  */
 export type ExtractReturning<
   SQL extends string,
@@ -17,7 +16,7 @@ export type ExtractReturning<
     ? ParseSelectedColumns<Returning, Options> extends infer Columns extends
         | SelectColumns
         | "*"
-      ? [sql: QuerySegment, returning: ReturningClause<Columns>]
+      ? PartialParserResult<QuerySegment, ReturningClause<Columns>>
       : Invalid<"Failed to extract returning clause">
-    : SQL
-  : SQL
+    : PartialParserResult<SQL>
+  : PartialParserResult<SQL>

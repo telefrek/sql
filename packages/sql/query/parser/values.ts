@@ -1,7 +1,6 @@
 import type { Invalid } from "@telefrek/type-utils/common"
 import type { Decrement, Increment } from "@telefrek/type-utils/math"
 import type { Trim } from "@telefrek/type-utils/strings"
-import type { ColumnReference } from "../../ast/columns.js"
 import type {
   ArrayValueType,
   BigIntValueType,
@@ -14,14 +13,17 @@ import type {
   StringValueType,
   ValueTypes,
 } from "../../ast/values.js"
-import { type ParseColumnReference } from "./columns.js"
 import type { NextToken, SplitSQL } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 
-export function parseValue(
-  value: string,
-  quote: string = "'"
-): ValueTypes | ColumnReference {
+/**
+ * Parse out the value
+ *
+ * @param value The value to parse
+ * @param quote The quoted character
+ * @returns The next value or column reference identified
+ */
+export function parseValue(value: string, quote: string = "'"): ValueTypes {
   if (value.startsWith(":")) {
     return {
       type: "ParameterValue",
@@ -126,6 +128,9 @@ export type ParseValues<
   Options extends ParserOptions
 > = ExtractValues<SplitSQL<ValuesSQL>, GetQuote<Options>>
 
+/**
+ * Match the Values passed through to their TypeScript types
+ */
 export type ExtractTSValueTypes<Values> = Values extends [
   infer NextValue extends ValueTypes,
   ...infer Rest
@@ -135,6 +140,9 @@ export type ExtractTSValueTypes<Values> = Values extends [
     : [TSValueType<NextValue>, ...ExtractTSValueTypes<Rest>]
   : never
 
+/**
+ * Internal type mapping
+ */
 type TSValueType<Value extends ValueTypes> = Value extends BooleanValueType
   ? boolean
   : Value extends BigIntValueType
@@ -169,6 +177,9 @@ export type ExtractValues<Values, Quote extends string> = Values extends [
     : ExtractValueType<Value, Quote>
   : never
 
+/**
+ * Extract the value type of the string
+ */
 type ExtractValueType<T extends string, Quote extends string> = ExtractValue<
   T,
   Quote
@@ -176,10 +187,11 @@ type ExtractValueType<T extends string, Quote extends string> = ExtractValue<
   ? CheckValueType<V, Quote>
   : Invalid<`Failed to extract value type`>
 
+// TODO: Need to support array values like ['apple', 'banana', 'pear']
 /**
  * Parse out the entire value string (may be quoted)
  */
-export type ExtractValue<
+type ExtractValue<
   T extends string,
   Quote extends string,
   N extends number = 0,
@@ -218,8 +230,10 @@ export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   ? ParameterValueType<Name>
   : T extends `$${infer _}`
   ? Invalid<`index position not supported`>
-  : T extends `${Quote}${infer _}${Quote}`
-  ? StringValueType
+  : T extends `${Quote}${infer Contents}${Quote}`
+  ? Contents extends `{${string}}`
+    ? JsonValueType
+    : StringValueType
   : T extends `0x${infer _}`
   ? BufferValueType
   : Lowercase<T & string> extends "null"
@@ -231,5 +245,5 @@ export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
   : T extends `${infer First}${infer _}`
   ? [First] extends [Digits]
     ? NumberValueType
-    : ParseColumnReference<T & string>
-  : ParseColumnReference<T & string>
+    : never
+  : never

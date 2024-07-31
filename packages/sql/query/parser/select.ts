@@ -12,8 +12,8 @@ import {
   type StartsWith,
 } from "./normalize.js"
 import type { ParserOptions } from "./options.js"
+import { tryParseNamedQuery } from "./query.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
-import { tryParseNamedQuery } from "./utils.js"
 
 /**
  * Parse the next select statement from the string

@@ -91,7 +91,7 @@ describe("Invalid queries should be rejected", () => {
 
     it("Should reject an insert without a table", () => {
       const bad: ParseSQL<"INSERT INTO (id) VALUES (1)"> =
-        "Table name required for INSERT"
+        "Table is required for INSERT"
       expect(bad).not.toBeUndefined()
     })
   })

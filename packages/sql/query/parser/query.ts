@@ -1,12 +1,18 @@
 import type { Invalid } from "@telefrek/type-utils/common.js"
+import type { NamedQuery } from "../../ast/named.js"
 import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { SQLDatabaseSchema } from "../../schema/database.js"
 import { createQueryBuilder, type QueryBuilder } from "../builder/query.js"
 import type { QueryContext } from "../context.js"
 import { parseInsertClause, type ParseInsert } from "./insert.js"
-import { normalizeQuery, type NormalizeQuery } from "./normalize.js"
+import {
+  extractParenthesis,
+  normalizeQuery,
+  type NormalizeQuery,
+} from "./normalize.js"
 import type { DEFAULT_PARSER_OPTIONS, ParserOptions } from "./options.js"
 import { parseSelectClause, type ParseSelect } from "./select.js"
+import { tryParseAlias } from "./utils.js"
 
 /**
  * Type to parse a SQL string into an AST
@@ -102,4 +108,54 @@ export function parseQueryClause(
     default:
       throw new Error(`Cannot parse ${check}`)
   }
+}
+
+/**
+ * Parse an underlying named query
+ */
+export type ParseNamedQuery<
+  T extends string,
+  Options extends ParserOptions
+> = T extends `( ${infer SubQuery} ) AS ${infer Alias}`
+  ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
+    ? NamedQuery<Clause, Alias>
+    : ParseQuery<SubQuery, Options>
+  : T extends `( ${infer SubQuery} )`
+  ? ParseQuery<SubQuery, Options> extends infer Clause extends QueryClause
+    ? NamedQuery<Clause>
+    : ParseQuery<SubQuery, Options>
+  : Invalid<"Failed to parse named query">
+
+/**
+ * Attempt to parse out a named query
+ *
+ * @param tokens The token stack to process
+ * @returns The next {@link NamedQuery} if one exists
+ */
+export function tryParseNamedQuery(
+  tokens: string[],
+  options: ParserOptions
+): NamedQuery | undefined {
+  // Check for a named query segment
+  if (tokens.length > 0 && tokens[0] === "(") {
+    // Read everything between the ()
+    const queryTokens = extractParenthesis(tokens)
+
+    // Extract the query clause and validate it was consumed
+    const clause = parseQueryClause(queryTokens, options)
+    if (queryTokens.length > 0) {
+      throw new Error(
+        `Failed to fully parse subquery remainder: ${queryTokens.join(" ")}`
+      )
+    }
+
+    // Return the named query segment
+    return {
+      type: "NamedQuery",
+      query: clause,
+      alias: tryParseAlias(tokens),
+    }
+  }
+
+  return
 }

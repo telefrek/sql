@@ -109,7 +109,7 @@ export function parseColumnReference(tokens: string[]): ColumnReference {
  * @returns the correct table or unbound reference
  */
 function parseReference(
-  column: string,
+  column: string
 ): TableColumnReference | UnboundColumnReference {
   // Check for a table reference
   const idx = column.indexOf(".")
@@ -153,4 +153,64 @@ export type ParseColumnDetails<T extends string> =
   T extends `${infer Table}.${infer Column}`
     ? TableColumnReference<Table, Column>
     : UnboundColumnReference<T>
+```
+
+## Extraction Ordering
+
+When extracting values in our type system, we process the values from right to
+left returning the current result so far as well as the remainder of the SQL
+string to continue processing.
+
+```typescript
+/**
+ * The type passed by all SQL Parsers responsible for extracting query components
+ */
+export type PartialParserResult<
+  SQL extends string = string,
+  Result extends object = IgnoreEmpty
+> = {
+  sql: SQL
+  result: Result
+}
+```
+
+As an example, since RETURNING is always the last clause to be present for
+insert/update/delete, it should be the first called. The returning extractor
+looks like the following:
+
+```typescript
+/**
+ * Extract the Returning clause if it's present and the feature is enabled
+ */
+export type ExtractReturning<
+  SQL extends string,
+  Options extends ParserOptions
+> = CheckFeature<Options, "RETURNING"> extends true
+  ? SQL extends `${infer QuerySegment} RETURNING ${infer Returning}`
+    ? ParseSelectedColumns<Returning, Options> extends infer Columns extends
+        | SelectColumns
+        | "*"
+      ? PartialParserResult<QuerySegment, ReturningClause<Columns>>
+      : Invalid<"Failed to extract returning clause">
+    : PartialParserResult<SQL>
+  : PartialParserResult<SQL>
+```
+
+It is the top level chain in inserts as you can see in the definition below.
+
+```typescript
+/**
+ * Extract the insert clause
+ */
+type ExtractInsert<
+  InsertSQL extends string,
+  Options extends ParserOptions
+> = ExtractReturning<InsertSQL, Options> extends PartialParserResult<
+  infer SQL extends string,
+  infer Returning
+>
+  ? Returning extends ReturningClause
+    ? ExtractInsertValues<PartialParserResult<SQL, Returning>, Options>
+    : ExtractInsertValues<PartialParserResult<SQL>, Options>
+  : ExtractReturning<InsertSQL, Options>
 ```
