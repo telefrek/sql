@@ -19,5 +19,5 @@ export type NamedQuery<
 > = {
   type: "NamedQuery"
   query: Query
-  alias: Alias
+  alias?: Alias
 }

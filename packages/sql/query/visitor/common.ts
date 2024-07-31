@@ -1,7 +1,13 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type { QueryClause, SQLQuery } from "../../ast/queries.js"
+import type {
+  InsertClause,
+  QueryClause,
+  ReturningClause,
+  SQLQuery,
+} from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
+import type { ValueTypes } from "../../ast/values.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
 
 /**
@@ -23,6 +29,9 @@ export class DefaultQueryVisitor
     switch (clause.type) {
       case "SelectClause":
         this.visitSelectClause(clause as Readonly<SelectClause>)
+        break
+      case "InsertClause":
+        this.visitInsertClause(clause as Readonly<InsertClause>)
         break
       default:
         throw new Error(`Unsupported QueryClause: ${clause.type}`)
@@ -60,6 +69,84 @@ export class DefaultQueryVisitor
     }
   }
 
+  visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void {
+    this.append(`INSERT INTO ${insert.table.table}`)
+    this.enterSubquery()
+
+    if (insert.columns.length > 0) {
+      for (let n = 0; n < insert.columns.length; ++n) {
+        const column = insert.columns[n]
+        switch (column.type) {
+          case "ColumnReference":
+            this.visitColumnReference(column)
+            break
+          default:
+            throw new Error(`Unsupported column type: ${column.type}`)
+        }
+        if (n < insert.columns.length - 1) {
+          this.comma()
+        }
+      }
+    }
+    this.exitSubquery()
+
+    // Check for array vs subquery
+    if (Array.isArray(insert.values)) {
+      // If no values, use default
+      if (insert.values.length === 0) {
+        this.append("DEFAULT VALUES")
+      } else {
+        this.append("VALUES")
+        this.enterSubquery()
+        for (let n = 0; n < insert.values.length; ++n) {
+          const value = insert.values[n]
+          this.visitValueType(value)
+          if (n < insert.values.length - 1) {
+            this.comma()
+          }
+        }
+        this.exitSubquery()
+      }
+    } else if (
+      typeof insert.values === "object" &&
+      insert.values !== null &&
+      "type" in insert.values
+    ) {
+      if (insert.values.type === "SelectClause") {
+        this.enterSubquery()
+        this.visitSelectClause(insert.values)
+        this.exitSubquery()
+      }
+    } else {
+      throw new Error("Invalid values on insert")
+    }
+
+    if ("returning" in insert) {
+      this.visitReturning(insert as Readonly<ReturningClause>)
+    }
+  }
+
+  visitReturning(clause: Readonly<ReturningClause>): void {
+    this.append("RETURNING")
+    if (Array.isArray(clause.returning)) {
+      for (let n = 0; n < clause.returning.length; ++n) {
+        const column = clause.returning[n] as ColumnReference
+        switch (column.type) {
+          case "ColumnReference":
+            this.visitColumnReference(column)
+            break
+          default:
+            throw new Error(`Unsupported column type: ${column.type}`)
+        }
+        if (n < clause.returning.length - 1) {
+          this.comma()
+        }
+      }
+    } else {
+      this.append("*")
+    }
+  }
+
   visitTableReference<T extends TableReference>(table: Readonly<T>): void {
     if (table.alias !== table.table) {
       this.append(`${table.table} AS ${table.alias}`)
@@ -83,6 +170,27 @@ export class DefaultQueryVisitor
           ? `${column.reference.table}.${column.reference.column}`
           : column.reference.column
       )
+    }
+  }
+
+  visitValueType<T extends ValueTypes>(value: T): void {
+    switch (value.type) {
+      case "StringValue":
+        this.appendQuoted(String(value.value))
+        break
+      case "ArrayValue":
+      case "JsonValue":
+        this.append(JSON.stringify(value.value))
+        break
+      case "BufferValue":
+        this.append(value.value.reduce((s, b) => s + b.toString(16), "0x"))
+        break
+      case "NullValue":
+        this.append("null")
+        break
+      default:
+        this.append(String(value.value))
+        break
     }
   }
 }

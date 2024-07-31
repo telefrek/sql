@@ -13,18 +13,13 @@ export type ValidateSelectClause<
   Database extends SQLDatabaseTables,
   Select extends SelectClause,
   Active extends SQLDatabaseTables = IgnoreEmpty
-> = Select extends SelectClause<
-  infer Columns,
-  infer From extends TableReference
->
-  ? [From["table"]] extends [StringKeys<Database>]
-    ? ValidateSelectColumns<
-        AddTableToSchema<
-          From["alias"],
-          Database[From["table"]]["columns"],
-          Active
-        >,
-        Columns
-      >
-    : Invalid<`${From["table"]} is not a table in the referenced schema`>
+> = Select extends SelectClause<infer Columns, infer From>
+  ? From extends TableReference<infer Table, infer Alias>
+    ? [Table] extends [StringKeys<Database>]
+      ? ValidateSelectColumns<
+          AddTableToSchema<Alias, Database[Table]["columns"], Active>,
+          Columns
+        >
+      : Invalid<`${Table} is not a table in the referenced schema`>
+    : Invalid<"Invalid table reference">
   : Invalid<"Invalid select clause">

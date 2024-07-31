@@ -1,4 +1,4 @@
-import type { Flatten } from "@telefrek/type-utils/common.js"
+import type { AddKVToType } from "@telefrek/type-utils/common.js"
 import type { SQLColumnSchema } from "./columns.js"
 import type { SQLDatabaseTables, SQLTableSchema } from "./database.js"
 
@@ -9,15 +9,8 @@ export type AddTableToSchema<
   Table extends string,
   Schema extends SQLColumnSchema,
   Tables extends SQLDatabaseTables,
-> = CheckSQLTables<
-  Flatten<
-    Tables & {
-      [Key in Table]: SQLTableSchema<Schema>
-    }
-  >
->
-
-/**
- * Utility type to verify T is a SQLDatabaseTables object
- */
-export type CheckSQLTables<T> = T extends SQLDatabaseTables ? T : never
+> =
+  AddKVToType<Tables, Table, SQLTableSchema<Schema>> extends infer T extends
+    SQLDatabaseTables
+    ? T
+    : never

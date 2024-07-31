@@ -16,7 +16,6 @@ import {
 } from "../common.js"
 import type { GetSelectableColumns, QueryContext } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
-import type { SelectBuilder } from "./select.js"
 
 /**
  * Interface that can provide the columns for a select builder
@@ -32,7 +31,7 @@ export interface SelectedColumnsBuilder<
    */
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): SelectBuilder<Context, VerifyColumns<Columns>, Table>
+  ): QueryAST<SelectClause<VerifySelectColumns<Columns>, Table>>
 }
 
 /**
@@ -78,7 +77,7 @@ class DefaultSelectedColumnsBuilder<
 
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): SelectBuilder<Context, VerifyColumns<Columns>, Table> {
+  ): QueryAST<SelectClause<VerifySelectColumns<Columns>, Table>> {
     return {
       ast: {
         type: "SQLQuery",
@@ -87,7 +86,7 @@ class DefaultSelectedColumnsBuilder<
           from: this._from,
           columns: [
             ...columns.map((r) => buildColumnReference(r as unknown as string)),
-          ] as VerifyColumns<Columns>,
+          ] as VerifySelectColumns<Columns>,
         },
       },
     }
@@ -99,11 +98,17 @@ type TableColumnReferenceType<T extends string> =
     ? ColumnReference<TableColumnReference<Table, Column>>
     : never
 
-type VerifyColumns<Columns extends string[] | "*"> = Columns extends string[]
-  ? BuildSelectColumns<Columns> extends SelectColumns
-    ? BuildSelectColumns<Columns>
+export type VerifyColumnReferences<Columns extends string[]> =
+  BuildSelectColumns<Columns> extends infer R extends ColumnReference[]
+    ? R
     : never
-  : "*"
+
+export type VerifySelectColumns<Columns extends string[] | "*"> =
+  Columns extends string[]
+    ? BuildSelectColumns<Columns> extends SelectColumns
+      ? BuildSelectColumns<Columns>
+      : never
+    : "*"
 
 type BuildSelectColumns<Columns extends string[]> = Columns extends [
   infer Next extends string,
@@ -116,7 +121,7 @@ type BuildSelectColumns<Columns extends string[]> = Columns extends [
       : never
   : never
 
-function buildColumnReference<T extends string>(
+export function buildColumnReference<T extends string>(
   value: T,
 ): ParseColumnReference<T> {
   if (ALIAS_REGEX.test(value)) {

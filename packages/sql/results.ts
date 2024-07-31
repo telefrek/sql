@@ -5,8 +5,13 @@ import type {
   TableColumnReference,
   UnboundColumnReference,
 } from "./ast/columns.js"
-import type { QueryClause } from "./ast/queries.js"
-import type { SelectClause } from "./ast/select.js"
+import type {
+  InsertClause,
+  QueryClause,
+  ReturningClause,
+} from "./ast/queries.js"
+import type { SelectClause, SelectedColumn } from "./ast/select.js"
+import type { TableReference } from "./ast/tables.js"
 import type { ColumnTypeDefinition } from "./schema/columns.js"
 import type { SQLDatabaseTables } from "./schema/database.js"
 import type { TSSQLType } from "./types.js"
@@ -15,7 +20,7 @@ import type { TSSQLType } from "./types.js"
  * Extract the typescript type for a column
  */
 type ColumnTSType<T extends ColumnTypeDefinition<IgnoreAny>> =
-  T["array"] extends true ? TSSQLType<T["type"]>[] : TSSQLType<T["type"]>
+  T["array"] extends [true] ? TSSQLType<T["type"]>[] : TSSQLType<T["type"]>
 
 /**
  * Extract the column reference data
@@ -93,4 +98,39 @@ export type SQLReturnRowType<
         }
       : never
     : GetColumnReferences<Tables, Columns>
+  : Query extends ReturningClause<infer Returning>
+  ? GetReturningTable<Query> extends TableReference<infer Table, infer _>
+    ? [Table] extends [StringKeys<Tables>]
+      ? Returning extends "*"
+        ? {
+            [Column in StringKeys<Tables[Table]["columns"]>]: ColumnTSType<
+              Tables[Table]["columns"][Column]
+            >
+          }
+        : {
+            [Column in GetColumnNames<Returning>]: ColumnTSType<
+              Tables[Table]["columns"][Column]
+            >
+          }
+      : never
+    : never
+  : Query extends InsertClause
+  ? number
+  : never
+
+type GetReturningTable<Query extends QueryClause> = Query extends InsertClause<
+  infer Info,
+  infer _,
+  infer _
+>
+  ? Info
+  : never
+
+type GetColumnNames<Columns> = Columns extends [
+  infer Next extends SelectedColumn,
+  ...infer Rest
+]
+  ? Rest extends never[]
+    ? Next["alias"]
+    : Next["alias"] | GetColumnNames<Rest>
   : never

@@ -1,4 +1,4 @@
-import type { Flatten, IgnoreEmpty } from "@telefrek/type-utils/common.js"
+import type { AddKVToType, IgnoreEmpty } from "@telefrek/type-utils/common.js"
 import type {
   CheckDuplicateKey,
   StringKeys,
@@ -47,11 +47,9 @@ type AddTableToSchema<
   TableSchema extends SQLTableSchema,
 > =
   Database extends SQLDatabaseSchema<infer Tables, infer Relations>
-    ? Relations extends ForeignKeys
-      ? CheckSQLDatabaseSchema<
-          Flatten<Tables & { [key in Table]: TableSchema }>,
-          Relations
-        >
+    ? AddKVToType<Tables, Table, TableSchema> extends infer T extends
+        SQLDatabaseTables
+      ? SQLDatabaseSchema<T, Relations>
       : never
     : never
 
@@ -61,38 +59,11 @@ type AddTableToSchema<
 type AddForeignKeyToSchema<
   Database extends SQLDatabaseSchema,
   Name extends string,
-  FK,
+  FK extends ForeignKey,
 > =
   Database extends SQLDatabaseSchema<infer Tables, infer Keys>
-    ? FK extends ForeignKey<
-        infer Reference,
-        infer ReferenceColumns,
-        infer Target,
-        infer Columns
-      >
-      ? SQLDatabaseSchema<
-          Tables,
-          Flatten<
-            Keys & {
-              [key in Name]: ForeignKey<
-                Reference,
-                ReferenceColumns,
-                Target,
-                Columns
-              >
-            }
-          >
-        >
-      : never
-    : never
-
-/**
- * Type to narrow types to SQLDatabaseSchemas
- */
-type CheckSQLDatabaseSchema<Tables, Relations> =
-  Tables extends SQLDatabaseTables
-    ? Relations extends ForeignKeys
-      ? SQLDatabaseSchema<Tables, Relations>
+    ? AddKVToType<Keys, Name, FK> extends infer R extends ForeignKeys
+      ? SQLDatabaseSchema<Tables, R>
       : never
     : never
 

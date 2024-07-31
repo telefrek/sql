@@ -23,7 +23,7 @@ export class PostgresQueryVisitor extends DefaultQueryVisitor {
   }
 
   override visitColumnReference<T extends ColumnReference>(
-    column: Readonly<T>
+    column: Readonly<T>,
   ): void {
     if (column.alias !== column.reference.column) {
       super.append(
@@ -31,13 +31,13 @@ export class PostgresQueryVisitor extends DefaultQueryVisitor {
           column.reference.type === "TableColumnReference"
             ? `${column.reference.table}.${column.reference.column}`
             : column.reference.column
-        } AS "${column.alias}"`
+        } AS "${column.alias}"`,
       )
     } else {
       super.append(
         column.reference.type === "TableColumnReference"
           ? `${column.reference.table}.${column.reference.column}`
-          : column.reference.column
+          : column.reference.column,
       )
     }
   }

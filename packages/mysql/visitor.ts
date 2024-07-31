@@ -1,3 +1,4 @@
+import type { ReturningClause } from "@telefrek/sql/ast/queries"
 import type { TableReference } from "@telefrek/sql/ast/tables"
 import { DefaultQueryVisitor } from "@telefrek/sql/query/visitor/common"
 
@@ -15,5 +16,9 @@ export class MySQLQueryVisitor extends DefaultQueryVisitor {
     } else {
       super.appendQuoted(table.table, "`")
     }
+  }
+
+  override visitReturning(_clause: Readonly<ReturningClause>): void {
+    throw new Error("RETURNING is not supported in MySQL")
   }
 }

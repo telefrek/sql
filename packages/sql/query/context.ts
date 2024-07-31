@@ -20,6 +20,7 @@ import type {
   SQLTableSchema,
 } from "../schema/database.js"
 import type { AddTableToSchema } from "../schema/utils.js"
+import type { DEFAULT_PARSER_OPTIONS } from "./parser/options.js"
 import type { ParseTableReference } from "./parser/table.js"
 
 /**
@@ -112,7 +113,11 @@ class QueryContextBuilder<
     builder: ColumnSchemaBuilderFn<IgnoreEmpty, Updated> | Updated,
   ): QueryContextBuilder<
     Database,
-    ActivateTableContext<Context, ParseTableReference<Table>, Updated>
+    ActivateTableContext<
+      Context,
+      ParseTableReference<Table, DEFAULT_PARSER_OPTIONS>,
+      Updated
+    >
   > {
     // Modify the schema
     const schema =
@@ -130,7 +135,11 @@ class QueryContextBuilder<
     // Ignore the typing we know it is correct here
     return this as unknown as QueryContextBuilder<
       Database,
-      ActivateTableContext<Context, ParseTableReference<Table>, Updated>
+      ActivateTableContext<
+        Context,
+        ParseTableReference<Table, DEFAULT_PARSER_OPTIONS>,
+        Updated
+      >
     >
   }
 

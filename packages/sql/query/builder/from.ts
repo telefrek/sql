@@ -1,6 +1,6 @@
 import type { IgnoreAny } from "@telefrek/type-utils/common.js"
 import type { SQLDatabaseSchema } from "../../schema/database.js"
-import { ALIAS_REGEX, type AllowAliasing } from "../common.js"
+import { type AllowAliasing } from "../common.js"
 import {
   modifyContext,
   type ActivateTableContext,
@@ -8,16 +8,21 @@ import {
   type GetContextTables,
   type QueryContext,
 } from "../context.js"
+import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
 import {
   createSelectedColumnsBuilder,
   type SelectedColumnsBuilder,
 } from "./columns.js"
+import { buildTableReference } from "./table.js"
 
 /**
  * Start selection from a table in the context
  */
-export interface FromQueryBuilder<Context extends QueryContext> {
+export interface FromQueryBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions,
+> {
   /**
    * Choose a table to select data from and optionally alias it
    *
@@ -26,8 +31,8 @@ export interface FromQueryBuilder<Context extends QueryContext> {
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
     table: Table,
   ): SelectedColumnsBuilder<
-    ActivateTableContext<Context, ParseTableReference<Table>>,
-    ParseTableReference<Table>
+    ActivateTableContext<Context, ParseTableReference<Table, Options>>,
+    ParseTableReference<Table, Options>
   >
 }
 
@@ -37,21 +42,25 @@ export interface FromQueryBuilder<Context extends QueryContext> {
  * @param context The {@link QueryContext} to use for the builder
  * @returns A {@link FromQureyBuilder} for the given context
  */
-export function createFromQueryBuilder<Context extends QueryContext>(
-  context: Context,
-): FromQueryBuilder<Context> {
-  return new DefaultFromQueryBuilder(context)
+export function createFromQueryBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions,
+>(context: Context, options: Options): FromQueryBuilder<Context, Options> {
+  return new DefaultFromQueryBuilder(context, options)
 }
 
 class DefaultFromQueryBuilder<
   Database extends SQLDatabaseSchema,
   Context extends QueryContext<Database>,
-> implements FromQueryBuilder<Context>
+  Options extends ParserOptions,
+> implements FromQueryBuilder<Context, Options>
 {
   private _context: Context
+  private _options: Options
 
-  constructor(context: Context) {
+  constructor(context: Context, options: Options) {
     this._context = context
+    this._options = options
   }
 
   from<Table extends AllowAliasing<GetContextTables<Context>>>(
@@ -59,18 +68,18 @@ class DefaultFromQueryBuilder<
   ): SelectedColumnsBuilder<
     ActivateTableContext<
       Context,
-      ParseTableReference<Table>,
+      ParseTableReference<Table, Options>,
       GetContextTableSchema<Context, Table>
     >,
-    ParseTableReference<Table>
+    ParseTableReference<Table, Options>
   > {
     let context = this._context as unknown as ActivateTableContext<
       Context,
-      ParseTableReference<Table>,
+      ParseTableReference<Table, Options>,
       GetContextTableSchema<Context, Table>
     >
 
-    const reference = buildTableReference(table)
+    const reference = buildTableReference(table, this._options)
 
     if (
       context.active &&
@@ -80,29 +89,11 @@ class DefaultFromQueryBuilder<
       context = modifyContext(context).copy(reference as IgnoreAny)
         .context as unknown as ActivateTableContext<
         Context,
-        ParseTableReference<Table>,
+        ParseTableReference<Table, Options>,
         GetContextTableSchema<Context, Table>
       >
     }
 
     return createSelectedColumnsBuilder(context, reference)
   }
-}
-
-function buildTableReference<Table extends string>(
-  table: Table,
-): ParseTableReference<Table> {
-  const ref = {
-    type: "TableReference",
-    table,
-    alias: table,
-  } as unknown as ParseTableReference<Table>
-
-  if (ALIAS_REGEX.test(table)) {
-    const data = table.split(" AS ")
-    ref.table = data[0]
-    ref.alias = data[1]
-  }
-
-  return ref
 }

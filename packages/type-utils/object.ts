@@ -1,4 +1,4 @@
-import type { Flatten, Invalid } from "./common.js"
+import type { Invalid } from "./common.js"
 
 /**
  * Clone the object
@@ -39,21 +39,19 @@ export function clone<T, U = T extends Array<infer V> ? V : never>(
 /**
  * Get all the keys of type T
  */
-export type Keys<T> = {
-  [K in keyof T]: K
-}[keyof T]
+export type Keys<T> = keyof T
 
 /**
  * Get all of the keys that are strings
  */
-export type StringKeys<T> = Extract<Keys<T>, string>
+export type StringKeys<T> = Extract<keyof T, string>
 
 /**
  * Creates a type that has the required subset properties of T
  */
-export type RequiredSubset<T, K extends keyof T> = Flatten<{
+export type RequiredSubset<T, K extends keyof T> = {
   [k in K]-?: T[k]
-}>
+}
 
 /**
  * All of the literal required keys from a type
@@ -84,6 +82,6 @@ export type OptionalLiteralKeys<T> = {
 /**
  * Type guard to prevent duplicate keys
  */
-export type CheckDuplicateKey<K extends string, T> = [K] extends [StringKeys<T>]
+export type CheckDuplicateKey<K, T> = [K] extends [keyof T]
   ? Invalid<"Duplicate keys are not allowed">
   : K

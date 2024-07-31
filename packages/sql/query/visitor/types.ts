@@ -1,7 +1,13 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type { QueryClause, SQLQuery } from "../../ast/queries.js"
+import type {
+  InsertClause,
+  QueryClause,
+  ReturningClause,
+  SQLQuery,
+} from "../../ast/queries.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
+import type { ValueTypes } from "../../ast/values.js"
 
 /**
  * A visitor for exploring the SQL AST
@@ -29,6 +35,13 @@ export interface QueryAstVisitor {
   visitSelectClause<T extends SelectClause>(select: Readonly<T>): void
 
   /**
+   * Visit the insert clause
+   *
+   * @param insert The {@link InsertClause} to visit
+   */
+  visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void
+
+  /**
    * Visit the table reference
    *
    * @param table the {@link TableReference} to visit
@@ -41,6 +54,20 @@ export interface QueryAstVisitor {
    * @param column The {@link ColumnReference} to visit
    */
   visitColumnReference<T extends ColumnReference>(column: Readonly<T>): void
+
+  /**
+   * Visit the returning clause
+   *
+   * @param returning The {@link ReturningClause} to visit
+   */
+  visitReturning<T extends ReturningClause>(returning: T): void
+
+  /**
+   * Visit the value
+   *
+   * @param value The {@link ValueTypes} to visit
+   */
+  visitValueType<T extends ValueTypes>(value: T): void
 }
 
 /**
@@ -79,7 +106,7 @@ export abstract class DefaultQueryProvider implements QueryProvider {
    * Append a comma and remove invalid spacing
    */
   protected comma(): void {
-    this._sql = this._sql.trim() + ", "
+    this._sql += ", "
   }
 
   /**
