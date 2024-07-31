@@ -173,10 +173,6 @@ export class DefaultQueryVisitor
     }
   }
 
-  visitInsertDefaultValues(): void {
-    this.append("DEFAULT VALUES")
-  }
-
   visitValueType<T extends ValueTypes>(value: T): void {
     switch (value.type) {
       case "StringValue":

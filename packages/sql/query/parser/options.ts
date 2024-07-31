@@ -81,10 +81,10 @@ type MergeTokens<Tokens extends Partial<SyntaxTokens>> = Flatten<
  * @returns A new set of {@link ParserOptions} to use
  */
 export function createParsingOptions<
-  Tokens extends Partial<SyntaxTokens>,
+  const Tokens extends Partial<SyntaxTokens>,
   Features extends ParsingFeatures
 >(
-  tokens: Readonly<Tokens>,
+  tokens: Tokens,
   ...features: Features[]
 ): ParserOptions<MergeTokens<Tokens>, Features> {
   return {
