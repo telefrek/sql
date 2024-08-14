@@ -191,7 +191,7 @@ type ExtractValueType<T extends string, Quote extends string> = ExtractValue<
 /**
  * Parse out the entire value string (may be quoted)
  */
-type ExtractValue<
+export type ExtractValue<
   T extends string,
   Quote extends string,
   N extends number = 0,

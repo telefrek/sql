@@ -68,7 +68,7 @@ describe("Schema building should create valid schemas", () => {
 describe("Invalid queries should be rejected", () => {
   describe("Invalid select should be rejected", () => {
     it("Should reject a select with no from", () => {
-      const bad: ParseSQL<"SELECT column"> = "Missing FROM"
+      const bad: ParseSQL<"SELECT column"> = "Missing FROM clause"
       expect(bad).not.toBeUndefined()
     })
 

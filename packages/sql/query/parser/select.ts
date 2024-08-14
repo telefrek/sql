@@ -1,28 +1,26 @@
-import type { Invalid } from "@telefrek/type-utils/common.js"
+import type { Flatten, Invalid } from "@telefrek/type-utils/common.js"
+import type { Trim } from "@telefrek/type-utils/strings"
+import type { WhereClause } from "../../ast/filtering.js"
 import type { NamedQuery } from "../../ast/named.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
-import { FROM_KEYS, type FromKeywords } from "./keywords.js"
-import {
-  takeUntil,
-  type ExtractUntil,
-  type NextToken,
-  type SplitSQL,
-  type StartsWith,
-} from "./normalize.js"
+import type { PartialParserResult } from "./common.js"
+import { FROM_KEYS } from "./keywords.js"
+import { takeUntil, type SplitSQL } from "./normalize.js"
 import type { ParserOptions } from "./options.js"
 import { tryParseNamedQuery } from "./query.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
+import { parseWhere, type ExtractWhere } from "./where.js"
 
 /**
  * Parse the next select statement from the string
  */
 export type ParseSelect<
-  T extends string,
+  SelectSQL extends string,
   Options extends ParserOptions
-> = NextToken<T> extends ["SELECT", infer Right extends string]
-  ? CheckSelect<ExtractColumns<Right, Options>>
+> = SelectSQL extends `SELECT ${infer Remainder}`
+  ? VerifySelect<ExtractSelect<Remainder, Options>>
   : Invalid<"Corrupt SELECT syntax">
 
 /**
@@ -35,10 +33,20 @@ export function parseSelectClause(
   tokens: string[],
   options: ParserOptions
 ): SelectClause {
-  return {
-    type: "SelectClause",
+  // Extract the core select
+  let select = {
     columns: parseSelectedColumns(takeUntil(tokens, ["FROM"])),
     ...parseFrom(takeUntil(tokens, FROM_KEYS), options),
+  }
+
+  // Parse the optional where clause
+  if (tokens.length > 0 && tokens[0] === "WHERE") {
+    select = { ...select, ...parseWhere(tokens, options) }
+  }
+
+  return {
+    type: "SelectClause",
+    ...select,
   }
 }
 
@@ -84,8 +92,12 @@ function parseFrom(
 /**
  * Check to get the type information
  */
-type CheckSelect<T> = T extends Partial<SelectClause<infer Columns, infer From>>
-  ? SelectClause<Columns, From>
+type VerifySelect<T> = T extends Partial<
+  SelectClause<infer Columns, infer From>
+>
+  ? T extends WhereClause<infer Where>
+    ? Flatten<SelectClause<Columns, From> & WhereClause<Where>>
+    : SelectClause<Columns, From>
   : T
 
 /**
@@ -129,40 +141,39 @@ type CheckColumnSyntax<Columns> = Columns extends [
  */
 type CheckColumns<T extends string> = CheckColumnSyntax<SplitSQL<T>>
 
-/**
- * Parse out the columns and then process any from information
- */
-type ExtractColumns<
-  T extends string,
+/** Extract the SelectClause from the back to the front */
+type ExtractSelect<
+  SelectSQL extends string,
   Options extends ParserOptions
-> = ExtractUntil<T, "FROM"> extends [
-  infer Columns extends string,
-  infer From extends string
-]
-  ? CheckColumns<Columns> extends true
-    ? StartsWith<From, "FROM"> extends true
-      ? {
-          columns: ParseSelectedColumns<Columns, Options>
-        } & ExtractFrom<From, Options>
-      : Invalid<"Failed to parse columns">
-    : CheckColumns<Columns>
-  : Invalid<"Missing FROM">
+> = ExtractWhere<
+  PartialParserResult<SelectSQL>,
+  Options
+> extends PartialParserResult<infer SQL, infer Returning>
+  ? ExtractFrom<PartialParserResult<SQL, Returning>, Options>
+  : ExtractWhere<PartialParserResult<SelectSQL>, Options>
 
-/**
- * Extract the from information
- */
+/** Extract the from clause */
 type ExtractFrom<
-  T extends string,
+  Current extends PartialParserResult,
   Options extends ParserOptions
-> = NextToken<T> extends ["FROM", infer Clause extends string]
-  ? ExtractUntil<Clause, FromKeywords> extends [
-      infer From extends string,
-      infer _
-    ]
-    ? {
-        from: ParseTableReference<From, Options>
-      }
-    : {
-        from: ParseTableReference<Clause, Options>
-      }
+> = Current extends PartialParserResult<infer SQL, infer Result>
+  ? SQL extends `${infer Columns}FROM ${infer FromClause}`
+    ? ExtractColumns<
+        PartialParserResult<
+          Trim<Columns>,
+          Flatten<Result & { from: ParseTableReference<FromClause, Options> }>
+        >,
+        Options
+      >
+    : Invalid<`Missing FROM clause`>
+  : never
+
+/** Extract the selected columns */
+type ExtractColumns<
+  Current extends PartialParserResult,
+  Options extends ParserOptions
+> = Current extends PartialParserResult<infer Columns, infer Returning>
+  ? CheckColumns<Columns> extends true
+    ? Flatten<Returning & { columns: ParseSelectedColumns<Columns, Options> }>
+    : CheckColumns<Columns>
   : never

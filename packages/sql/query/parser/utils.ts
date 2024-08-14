@@ -26,6 +26,9 @@ export type RemoveQuotes<
     : S
   : S
 
+/**
+ * Check if the string is quoted
+ */
 export type IsQuoted<
   S extends string,
   Options extends ParserOptions
