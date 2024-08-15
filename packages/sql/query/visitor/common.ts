@@ -1,5 +1,11 @@
 import type { ColumnReference } from "../../ast/columns.js"
 import type {
+  ColumnFilter,
+  LogicalExpression,
+  LogicalTree,
+  WhereClause,
+} from "../../ast/filtering.js"
+import type {
   InsertClause,
   QueryClause,
   ReturningClause,
@@ -67,6 +73,12 @@ export class DefaultQueryVisitor
     } else {
       throw new Error(`Unuspported named queries on SELECT...FROM`)
     }
+
+    // Check WHERE
+    if ("where" in select) {
+      this.append("WHERE")
+      this.visitWhereClause(select as Readonly<WhereClause>)
+    }
   }
 
   visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void {
@@ -123,6 +135,42 @@ export class DefaultQueryVisitor
 
     if ("returning" in insert) {
       this.visitReturning(insert as Readonly<ReturningClause>)
+    }
+  }
+
+  visitWhereClause<T extends WhereClause>(where: Readonly<T>): void {
+    this.visitLogicalExpression(where.where as Readonly<LogicalExpression>)
+  }
+
+  visitLogicalExpression<T extends LogicalExpression>(
+    expression: Readonly<T>
+  ): void {
+    switch (expression.type) {
+      case "LogicalTree":
+        this.visitLogicalTree(expression as Readonly<LogicalTree>)
+        break
+      case "ColumnFilter":
+        this.visitColumnFilter(expression as Readonly<ColumnFilter>)
+        break
+    }
+  }
+
+  visitLogicalTree<T extends LogicalTree>(tree: T): void {
+    // TODO: Handle subquery grouping...
+    this.visitLogicalExpression(tree.left as Readonly<LogicalExpression>)
+
+    this.append(tree.op)
+
+    this.visitLogicalExpression(tree.right as Readonly<LogicalExpression>)
+  }
+
+  visitColumnFilter<T extends ColumnFilter>(filter: T): void {
+    this.visitColumnReference(filter.left)
+    this.append(filter.op)
+    if (filter.right.type === "ColumnReference") {
+      this.visitColumnReference(filter.right)
+    } else {
+      this.visitValueType(filter.right)
     }
   }
 
@@ -187,6 +235,12 @@ export class DefaultQueryVisitor
         break
       case "NullValue":
         this.append("null")
+        break
+      case "BigIntValue":
+        this.append(value.value.toString())
+        break
+      case "NumberValue":
+        this.append(value.value.toString())
         break
       default:
         this.append(String(value.value))

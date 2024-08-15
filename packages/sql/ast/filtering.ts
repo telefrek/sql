@@ -1,4 +1,4 @@
-import type { Invalid } from "@telefrek/type-utils/common.js"
+import type { IgnoreAny, Invalid } from "@telefrek/type-utils/common.js"
 import type { ColumnReference } from "./columns.js"
 import type { SubQuery } from "./queries.js"
 import type { ValueTypes } from "./values.js"
@@ -10,16 +10,18 @@ import type { ValueTypes } from "./values.js"
  * we need to avoid.  This simply tells TypeScript to leave it alone and we'll
  * have to deal with the potential for bad data via our ValidateLogicalTree type
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyLogicalTree = LogicalTree<any, string, any>
+type AnyLogicalTree = LogicalTree<IgnoreAny, string, IgnoreAny>
 
 /**
  * Utility type to verify a LogicalTree doesn't have invalid data
  */
-export type ValidateLogicalTree<Tree> =
-  Tree extends LogicalTree<infer Left, infer Op, infer Right>
-    ? LogicalTree<Left, Op, Right>
-    : Invalid<"Tree is not a LogicalTree">
+export type ValidateLogicalTree<Tree> = Tree extends LogicalTree<
+  infer Left,
+  infer Op,
+  infer Right
+>
+  ? LogicalTree<Left, Op, Right>
+  : Invalid<"Tree is not a LogicalTree">
 
 /**
  * Types for building filtering trees
@@ -51,7 +53,7 @@ export type LogicalOperation = "AND" | "OR" | "NOT"
 export type SubqueryFilter<
   Column extends ColumnReference = ColumnReference,
   Operation extends string = SubQueryFilterOperation,
-  Subquery extends SubQuery = SubQuery,
+  Subquery extends SubQuery = SubQuery
 > = {
   type: "SubqueryFilter"
   column: Column
@@ -65,7 +67,7 @@ export type SubqueryFilter<
 export type LogicalTree<
   Left extends LogicalExpression = LogicalExpression,
   Operation extends string = LogicalOperation,
-  Right extends LogicalExpression = LogicalExpression,
+  Right extends LogicalExpression = LogicalExpression
 > = {
   type: "LogicalTree"
   left: Left
@@ -88,7 +90,7 @@ export type LogicalExpression =
 export type ColumnFilter<
   Left extends ColumnReference = ColumnReference,
   Operation extends string = FilteringOperation,
-  Right extends ValueTypes | ColumnReference = ValueTypes | ColumnReference,
+  Right extends ValueTypes | ColumnReference = ValueTypes | ColumnReference
 > = {
   type: "ColumnFilter"
   left: Left

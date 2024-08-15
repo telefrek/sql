@@ -20,7 +20,7 @@ import {
   type SplitWords,
 } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
-import type { CheckValueType, ExtractValue } from "./values.js"
+import { parseValue, type CheckValueType, type ExtractValue } from "./values.js"
 
 /**
  * Parse the {@link WhereClause} from the token stack
@@ -54,7 +54,7 @@ export function parseWhere(
  */
 function parseLogicalExpression(
   tokens: string[],
-  _options: ParserOptions // TODO: Pass this through for filtering ops
+  options: ParserOptions // TODO: Pass this through for filtering ops
 ): LogicalExpression {
   const segments = tokens.join(" ").split(/(?=[>=<!])|(?<=[>=<!])/g)
   const left = takeUntil(segments, [">", "<", "=", "!"]).join(" ").trim()
@@ -65,10 +65,7 @@ function parseLogicalExpression(
     type: "ColumnFilter",
     left: parseColumnReference(left.split(" ")),
     op: op as FilteringOperation,
-    right: {
-      type: "StringValue",
-      value: right,
-    },
+    right: parseValue(right, options.tokens.quote),
   }
 }
 

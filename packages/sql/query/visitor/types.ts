@@ -1,5 +1,11 @@
 import type { ColumnReference } from "../../ast/columns.js"
 import type {
+  ColumnFilter,
+  LogicalExpression,
+  LogicalTree,
+  WhereClause,
+} from "../../ast/filtering.js"
+import type {
   InsertClause,
   QueryClause,
   ReturningClause,
@@ -40,6 +46,36 @@ export interface QueryAstVisitor {
    * @param insert The {@link InsertClause} to visit
    */
   visitInsertClause<T extends InsertClause>(insert: Readonly<T>): void
+
+  /**
+   * Visit the where clause
+   *
+   * @param where The {@link WhereClause} to visit
+   */
+  visitWhereClause<T extends WhereClause>(where: Readonly<T>): void
+
+  /**
+   * Visit the logical expression
+   *
+   * @param expression the {@link LogicalExpression} to visit
+   */
+  visitLogicalExpression<T extends LogicalExpression>(
+    expression: Readonly<T>
+  ): void
+
+  /**
+   * Visit the logical tree
+   *
+   * @param tree The {@link LogicalTree} to visit
+   */
+  visitLogicalTree<T extends LogicalTree>(tree: T): void
+
+  /**
+   * Visit the column filter
+   *
+   * @param filter The {@link ColumnFilter} to visit
+   */
+  visitColumnFilter<T extends ColumnFilter>(filter: T): void
 
   /**
    * Visit the table reference

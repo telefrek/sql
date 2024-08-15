@@ -19,7 +19,7 @@ import type { TSSQLType } from "./types.js"
 /**
  * Extract the typescript type for a column
  */
-type ColumnTSType<T extends ColumnTypeDefinition<IgnoreAny>> =
+export type ColumnTSType<T extends ColumnTypeDefinition<IgnoreAny>> =
   T["array"] extends [true] ? TSSQLType<T["type"]>[] : TSSQLType<T["type"]>
 
 /**

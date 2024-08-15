@@ -122,6 +122,15 @@ describe("Query visitors should produce equivalent SQL", () => {
     expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
   })
 
+  it("Should be able to handle filtering with a where clause", () => {
+    const queryString = "SELECT id FROM orders WHERE user_id >= 1"
+    const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
+    expect(query.query.where.left.alias).toBe("user_id")
+    const visitor = new DefaultQueryVisitor()
+    visitor.visitQuery(query)
+    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+  })
+
   it("Should be able to return an insert with no return", () => {
     const queryString =
       "INSERT INTO users(first_name, last_name) VALUES('firstName', 'lastName')"

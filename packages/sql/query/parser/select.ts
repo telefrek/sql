@@ -6,7 +6,6 @@ import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
 import type { PartialParserResult } from "./common.js"
-import { FROM_KEYS } from "./keywords.js"
 import { takeUntil, type SplitSQL } from "./normalize.js"
 import type { ParserOptions } from "./options.js"
 import { tryParseNamedQuery } from "./query.js"
@@ -36,7 +35,7 @@ export function parseSelectClause(
   // Extract the core select
   let select = {
     columns: parseSelectedColumns(takeUntil(tokens, ["FROM"])),
-    ...parseFrom(takeUntil(tokens, FROM_KEYS), options),
+    ...parseFrom(tokens, options),
   }
 
   // Parse the optional where clause

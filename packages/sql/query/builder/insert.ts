@@ -18,8 +18,8 @@ import type {
 import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
 import { parseValue, type ExtractTSValueTypes } from "../parser/values.js"
-import { buildColumnReference, type VerifyColumnReferences } from "./columns.js"
 import { createReturningBuilder, type ReturningBuilder } from "./returning.js"
+import { buildColumnReference, type VerifyColumnReferences } from "./select.js"
 import { buildTableReference } from "./table.js"
 
 /**
