@@ -5,12 +5,16 @@ import type {
   ColumnFilter,
   FilteringOperation,
   LogicalExpression,
-  LogicalOperation,
   LogicalTree,
+  LogicalTreeOperation,
   WhereClause,
 } from "../../ast/filtering.js"
 import type { ValueTypes } from "../../ast/values.js"
-import { parseColumnReference, type ParseColumnDetails } from "./columns.js"
+import {
+  parseColumnReference,
+  type ParseColumnDetails,
+  type ParseColumnReference,
+} from "./columns.js"
 import type { PartialParserResult } from "./common.js"
 import {
   takeUntil,
@@ -19,8 +23,14 @@ import {
   type NextToken,
   type SplitWords,
 } from "./normalize.js"
-import type { GetQuote, ParserOptions } from "./options.js"
+import type {
+  GetFilteringOperations,
+  GetQuote,
+  ParserOptions,
+} from "./options.js"
 import { parseValue, type CheckValueType, type ExtractValue } from "./values.js"
+
+// This entire thing needs a re-write...
 
 /**
  * Parse the {@link WhereClause} from the token stack
@@ -57,8 +67,8 @@ function parseLogicalExpression(
   options: ParserOptions // TODO: Pass this through for filtering ops
 ): LogicalExpression {
   const segments = tokens.join(" ").split(/(?=[>=<!])|(?<=[>=<!])/g)
-  const left = takeUntil(segments, [">", "<", "=", "!"]).join(" ").trim()
-  const op = takeWhile(segments, ["<", ">", "=", "!"]).join("")
+  const left = takeUntil(segments, options.tokens.filters).join(" ").trim()
+  const op = takeWhile(segments, options.tokens.filters).join("")
   const right = segments.join(" ").trim()
 
   return {
@@ -139,7 +149,7 @@ type ParseExpressionTree<
 type ExtractLogical<
   SQL extends string,
   Options extends ParserOptions
-> = ExtractUntil<SQL, LogicalOperation> extends [
+> = ExtractUntil<SQL, LogicalTreeOperation> extends [
   infer Left extends string,
   infer Remainder extends string
 ]
@@ -147,7 +157,7 @@ type ExtractLogical<
       infer Operation extends string,
       infer Right extends string
     ]
-    ? [Operation] extends [LogicalOperation]
+    ? [Operation] extends [LogicalTreeOperation]
       ? CheckLogicalTree<
           ParseExpressionTree<Left, Options>,
           Operation,
@@ -169,7 +179,7 @@ type ExtractLogical<
  */
 type CheckLogicalTree<Left, Operation, Right> = Left extends LogicalExpression
   ? Right extends LogicalExpression
-    ? Operation extends LogicalOperation
+    ? Operation extends LogicalTreeOperation
       ? LogicalTree<Left, Operation, Right>
       : Invalid<"Invalid logical tree detected">
     : Right extends Invalid<infer Reason>
@@ -190,17 +200,27 @@ type ParseColumnFilter<
   infer Exp extends string
 ]
   ? NextToken<Exp> extends [infer Op extends string, infer Value extends string]
-    ? Op extends FilteringOperation
-      ? ExtractValue<Value, GetQuote<Options>> extends [infer V]
+    ? Op extends GetFilteringOperations<Options>
+      ? ExtractValue<Value, GetQuote<Options>> extends [infer V extends string]
         ? CheckFilter<
             ColumnReference<ParseColumnDetails<Column & string>>,
             Op,
-            CheckValueType<V, GetQuote<Options>>
+            ParseValueOrReference<V, Options>
           >
-        : Invalid<`Failed to column filter: ${SQL & string}`>
-      : Invalid<`Failed to column filter: ${SQL & string}`>
-    : Invalid<`Failed to column filter: ${SQL & string}`>
-  : Invalid<`Failed to column filter: ${SQL & string}`>
+        : Invalid<`Failed to parse column filter: ${SQL & string}`>
+      : Invalid<`Failed to parse column filter: ${SQL & string}`>
+    : Invalid<`Failed to parse column filter: ${SQL & string}`>
+  : Invalid<`Failed to parse column filter: ${SQL & string}`>
+
+/**
+ * Type to try to parse a value and if not fallback and assume it is column reference
+ */
+type ParseValueOrReference<
+  SQL extends string,
+  Options extends ParserOptions
+> = CheckValueType<SQL, GetQuote<Options>> extends infer V extends ValueTypes
+  ? V
+  : ParseColumnReference<SQL>
 
 /**
  * Check that the column filter is appropriate and well formed

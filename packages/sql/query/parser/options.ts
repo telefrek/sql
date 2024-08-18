@@ -1,4 +1,8 @@
 import type { Flatten } from "@telefrek/type-utils/common"
+import {
+  DEFAULT_FILTER_OPS,
+  type FilteringOperation,
+} from "../../ast/filtering.js"
 
 /**
  * The options for what can be overridden in the parsing logic
@@ -14,8 +18,12 @@ export type ParserOptions<
 /**
  * Tokens that have syntatic meaning
  */
-export type SyntaxTokens<Quote extends string = string> = {
+export type SyntaxTokens<
+  Quote extends string = string,
+  FilterOps extends string = FilteringOperation
+> = {
   quote: Quote
+  filters: FilterOps[]
 }
 
 /**
@@ -33,13 +41,20 @@ type DEFAULT_TOKENS = SyntaxTokens<"'">
  */
 const DefaultTokens: DEFAULT_TOKENS = {
   quote: "'",
+  filters: DEFAULT_FILTER_OPS,
 }
 
 /**
  * The default options used if none are provided
  */
-export const DefaultOptions = createParsingOptions({ quote: "'" }, "RETURNING")
+export const DefaultOptions = createParsingOptions(
+  { quote: "'", filters: DEFAULT_FILTER_OPS },
+  "RETURNING"
+)
 
+/**
+ * the default parser type
+ */
 export type DEFAULT_PARSER_OPTIONS = typeof DefaultOptions
 
 /**
@@ -59,8 +74,18 @@ export type CheckFeature<
  */
 export type GetQuote<Options extends ParserOptions> =
   Options extends ParserOptions<infer Tokens, infer _>
-    ? Tokens extends SyntaxTokens<infer Quote>
+    ? Tokens extends SyntaxTokens<infer Quote, infer _>
       ? Quote
+      : never
+    : never
+
+/**
+ * Retrieve the current filter operations
+ */
+export type GetFilteringOperations<Options extends ParserOptions> =
+  Options extends ParserOptions<infer Tokens, infer _>
+    ? Tokens extends SyntaxTokens<infer _, infer FilterOps>
+      ? FilterOps
       : never
     : never
 

@@ -42,8 +42,8 @@ export type Split<
   Original extends string,
   Token extends string
 > = Original extends `${infer Left}${Token}${infer Right}`
-  ? [Left, ...Split<Right, Token>]
-  : [Original]
+  ? [Trim<Left>, ...Split<Right, Token>]
+  : [Trim<Original>]
 
 /**
  * Find the length of the string

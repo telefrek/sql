@@ -28,6 +28,13 @@ import type { ParseColumnReference } from "../parser/columns.js"
 import { type CheckValueType, parseValue } from "../parser/values.js"
 import { buildColumnReference } from "./select.js"
 
+/**
+ * Create a where builder
+ *
+ * @param context The current context
+ * @param query The current query
+ * @returns A {@link WhereBuilder}
+ */
 export function where<Context extends QueryContext, Query extends QueryClause>(
   context: Context,
   query: Query
@@ -35,18 +42,26 @@ export function where<Context extends QueryContext, Query extends QueryClause>(
   return new DefaultWhereBuilder(context, query)
 }
 
+/**
+ * Build a where clause
+ */
 export interface WhereBuilder<
   Context extends QueryContext,
   Query extends QueryClause
 > extends QueryAST<Query> {
   /**
+   * Create a where clause
    *
+   * @param builder The clause builder
    */
   where<Exp extends LogicalExpression>(
     builder: (w: WhereClauseBuilder<Context>) => Exp
   ): AddWhereToAST<Query, Exp>
 }
 
+/**
+ * Default implementation of the {@link WhereBuilder}
+ */
 class DefaultWhereBuilder<
   Context extends QueryContext,
   Query extends QueryClause

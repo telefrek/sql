@@ -7,7 +7,7 @@ import type { IsPartialGroup, Replace, Split, SplitGroups } from "./strings.js"
  * a match
  */
 export type ValidateRegEx<
-  Regex extends string,
+  Regex extends RegexToken,
   Candidate extends string
 > = IsMatch<Regex, Candidate> extends true
   ? Candidate
@@ -17,11 +17,9 @@ export type ValidateRegEx<
  * Verify if the given candidate matches the regex
  */
 export type IsMatch<
-  Regex extends string,
+  Regex extends RegexToken,
   Candidate extends string
-> = RegEx<Regex> extends infer Tree extends RegexToken
-  ? RunStateMachine<Candidate, Tree>
-  : false
+> = RunStateMachine<Candidate, Regex>
 
 /**
  * Parse the regex tree from the current point down

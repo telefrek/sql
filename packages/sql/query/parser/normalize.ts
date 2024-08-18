@@ -2,24 +2,59 @@ import type { Invalid } from "@telefrek/type-utils/common.js"
 import type { Decrement, Increment } from "@telefrek/type-utils/math.js"
 import type { Join, Trim } from "@telefrek/type-utils/strings.js"
 import { NORMALIZE_TARGETS } from "./keywords.js"
+import type { GetFilteringOperations, ParserOptions } from "./options.js"
 
 /**
  * Ensure a query has a known structure with keywords uppercase and consistent spacing
  */
-export type NormalizeQuery<Query extends string> = SplitJoin<
-  Query,
-  "\t"
-> extends infer Tabs extends string
+export type NormalizeQuery<
+  Query extends string,
+  Options extends ParserOptions
+> = SplitJoin<Query, "\t"> extends infer Tabs extends string
   ? SplitJoin<Tabs, "\n"> extends infer NewLines extends string
     ? SplitJoin<NewLines, ","> extends infer Commas extends string
       ? SplitJoin<Commas, "("> extends infer OpenParen extends string
         ? SplitJoin<OpenParen, ")"> extends infer Normalized extends string
-          ? Trim<Normalized>
+          ? NormalizeFilters<Trim<Normalized>, Options>
           : never
         : never
       : never
     : never
   : never
+
+type NormalizeFilters<
+  SQL extends string,
+  Options extends ParserOptions
+> = SplitWords<SQL> extends infer Tokens extends string[]
+  ? CleanFilters<Tokens, Options> extends infer Cleaned extends string[]
+    ? Join<Cleaned, " ">
+    : never
+  : never
+
+type CleanFilters<Words, Options extends ParserOptions> = Words extends [
+  infer Next extends string,
+  ...infer Rest
+]
+  ? Rest extends never[]
+    ? [CheckFilters<Next, Options>]
+    : [CheckFilters<Next, Options>, ...CleanFilters<Rest, Options>]
+  : never
+
+type CheckFilters<
+  SQL extends string,
+  Options extends ParserOptions,
+  S extends string = ""
+> = SQL extends ""
+  ? S
+  : SQL extends `${infer Left}${infer Rest}`
+  ? Left extends GetFilteringOperations<Options>
+    ? Rest extends `${infer Right}${infer Remaining}`
+      ? `${Left}${Right}` extends GetFilteringOperations<Options>
+        ? Trim<`${Trim<S>} ${Left}${Right} ${Trim<Remaining>}`>
+        : Trim<`${Trim<S>} ${Left} ${Trim<Remaining>}`>
+      : Trim<`${Trim<S>} ${Left}`>
+    : CheckFilters<Rest, Options, `${S}${Left}`>
+  : Trim<`${S}${SQL}`>
 
 /**
  * Normalize the values by ensuring capitalization
@@ -42,11 +77,6 @@ export type NextToken<T extends string> =
   Trim<T> extends `${infer Token} ${infer Remainder}`
     ? [Token, Remainder]
     : [Trim<T>, ""]
-
-/**
- * Utility type for extracting clauses and remainders
- */
-export type Extractor<U> = [clause: U | never, remainder: string]
 
 /**
  * Check if T starts with S (case insensitive)
@@ -116,15 +146,21 @@ export type SplitSQL<
  * 4. We combine it all back together as a single collapsed string
  *
  * @param query The query string to normalize
+ * @param options The parsing options to use
  * @returns A {@link NormalizeQuery} string
  */
-export function normalizeQuery<T extends string>(query: T): NormalizeQuery<T> {
+export function normalizeQuery<T extends string, Options extends ParserOptions>(
+  query: T,
+  _options: Options
+): NormalizeQuery<T, Options> {
   return query
     .split(/\s|(?=[,()])|(?<=[,()])/g)
     .filter((s) => s.length > 0)
     .map((s) => normalizeWord(s.trim()))
-    .join(" ") as NormalizeQuery<T>
+    .join(" ") as NormalizeQuery<T, Options>
 }
+
+// TODO: Add the filtering for extracting filters from individual words
 
 /**
  * Ensure that keywords are uppercase so we can process them correctly

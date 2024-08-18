@@ -103,7 +103,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 
   it("Should be able to return a select with columns", () => {
@@ -111,7 +113,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 
   it("Should be able to return a select with alias", () => {
@@ -119,7 +123,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 
   it("Should be able to handle filtering with a where clause", () => {
@@ -128,7 +134,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     expect(query.query.where.left.alias).toBe("user_id")
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 
   it("Should be able to return an insert with no return", () => {
@@ -137,7 +145,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 
   it("Should be able to return an insert with a return", () => {
@@ -146,7 +156,9 @@ describe("Query visitors should produce equivalent SQL", () => {
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
-    expect(normalizeQuery(visitor.sql)).toBe(normalizeQuery(queryString))
+    expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(
+      normalizeQuery(queryString, DefaultOptions)
+    )
   })
 })
 

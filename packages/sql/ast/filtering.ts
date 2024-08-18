@@ -1,27 +1,7 @@
-import type { IgnoreAny, Invalid } from "@telefrek/type-utils/common.js"
+import type { IgnoreAny } from "@telefrek/type-utils/common.js"
 import type { ColumnReference } from "./columns.js"
 import type { SubQuery } from "./queries.js"
 import type { ValueTypes } from "./values.js"
-
-/**
- * This is a helper type to instruct TypeScript to stop exploring the recursive
- * chains that come from expression trees that are nested by nature.  Since a
- * LogicalExpression an contain a LogicalTree, it creates a circular type which
- * we need to avoid.  This simply tells TypeScript to leave it alone and we'll
- * have to deal with the potential for bad data via our ValidateLogicalTree type
- */
-type AnyLogicalTree = LogicalTree<IgnoreAny, string, IgnoreAny>
-
-/**
- * Utility type to verify a LogicalTree doesn't have invalid data
- */
-export type ValidateLogicalTree<Tree> = Tree extends LogicalTree<
-  infer Left,
-  infer Op,
-  infer Right
->
-  ? LogicalTree<Left, Op, Right>
-  : Invalid<"Tree is not a LogicalTree">
 
 /**
  * Types for building filtering trees
@@ -38,6 +18,21 @@ export type FilteringOperation =
   | "ILIKE"
 
 /**
+ * The default filtering operations
+ */
+export const DEFAULT_FILTER_OPS: FilteringOperation[] = [
+  "=",
+  "<",
+  ">",
+  "<=",
+  ">=",
+  "!=",
+  "<>",
+  "LIKE",
+  "ILIKE",
+]
+
+/**
  * Types of subquery filtering mechanisms
  */
 export type SubQueryFilterOperation = "IN" | "ANY" | "ALL" | "EXISTS" | "SOME"
@@ -45,7 +40,17 @@ export type SubQueryFilterOperation = "IN" | "ANY" | "ALL" | "EXISTS" | "SOME"
 /**
  * Types for building logical trees
  */
-export type LogicalOperation = "AND" | "OR" | "NOT"
+export type LogicalTreeOperation = "AND" | "OR"
+
+/**
+ * Type for handling logical negations
+ */
+export type LogicalNegation<
+  Expression extends LogicalExpression = LogicalExpression
+> = {
+  type: "LogicalNegation"
+  expression: Expression
+}
 
 /**
  * The IN filter definition
@@ -66,7 +71,7 @@ export type SubqueryFilter<
  */
 export type LogicalTree<
   Left extends LogicalExpression = LogicalExpression,
-  Operation extends string = LogicalOperation,
+  Operation extends string = LogicalTreeOperation,
   Right extends LogicalExpression = LogicalExpression
 > = {
   type: "LogicalTree"
@@ -76,13 +81,14 @@ export type LogicalTree<
 }
 
 /**
- * The valid types for building a logical expression tree
+ * The valid types for building a logical expression trees
  */
 export type LogicalExpression =
   | ValueTypes
-  | AnyLogicalTree
+  | LogicalTree<IgnoreAny, string, IgnoreAny>
   | ColumnFilter
   | SubqueryFilter
+  | LogicalNegation<IgnoreAny>
 
 /**
  * A filter between two objects
