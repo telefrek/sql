@@ -151,16 +151,36 @@ export type SplitSQL<
  */
 export function normalizeQuery<T extends string, Options extends ParserOptions>(
   query: T,
-  _options: Options
+  options: Options
 ): NormalizeQuery<T, Options> {
   return query
     .split(/\s|(?=[,()])|(?<=[,()])/g)
     .filter((s) => s.length > 0)
     .map((s) => normalizeWord(s.trim()))
+    .map((s) => splitFilters(s, options.tokens.filters))
     .join(" ") as NormalizeQuery<T, Options>
 }
 
-// TODO: Add the filtering for extracting filters from individual words
+/**
+ * Ensure that filters are appropriately separated out with correct spacing
+ *
+ * @param word The word to split out filters
+ * @param filters The list of candidate filters
+ * @returns The patched word with the filter correctly sorted out
+ */
+function splitFilters(word: string, filters: string[]): string {
+  const filter = filters
+    .filter((f) => word.indexOf(f) >= 0)
+    .sort((a, b) => (a.length > b.length ? -1 : 1))
+    .shift()
+
+  if (filter !== undefined) {
+    const data = word.split(filter)
+    return (data[0].trim() + ` ${filter} ` + data[1].trim()).trim()
+  }
+
+  return word
+}
 
 /**
  * Ensure that keywords are uppercase so we can process them correctly
