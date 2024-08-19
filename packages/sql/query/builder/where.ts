@@ -10,7 +10,7 @@ import type {
 } from "../../ast/columns.js"
 import type {
   ColumnFilter,
-  FilteringOperation,
+  ComparisonOperation,
   LogicalExpression,
   LogicalTree,
   WhereClause,
@@ -131,7 +131,7 @@ export interface WhereClauseBuilder<Context extends QueryContext> {
 
   filter<
     Column extends QueryContextColumns<Context>,
-    Op extends FilteringOperation,
+    Op extends ComparisonOperation,
     Value
   >(
     column: Column,
@@ -191,7 +191,7 @@ class DefaultWhereClauseBuilder<Context extends QueryContext>
 
   filter<
     Column extends QueryContextColumns<Context>,
-    Op extends FilteringOperation,
+    Op extends ComparisonOperation,
     Value
   >(
     column: Column,
@@ -218,7 +218,7 @@ class DefaultWhereClauseBuilder<Context extends QueryContext>
 function buildFilter<
   Context extends QueryContext,
   Column extends string,
-  Operation extends FilteringOperation,
+  Operation extends ComparisonOperation,
   Value
 >(
   context: Context,
@@ -235,9 +235,9 @@ function buildFilter<
   return {
     type: "ColumnFilter",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    left: buildColumnReference(column) as any,
+    column: buildColumnReference(column) as any,
     op,
-    right: (isParameter(value)
+    filter: (isParameter(value)
       ? {
           type: "ParameterValue",
           name: String(value).substring(1),

@@ -1,7 +1,13 @@
 import type { Flatten } from "@telefrek/type-utils/common"
 import {
-  DEFAULT_FILTER_OPS,
-  type FilteringOperation,
+  DEFAULT_ARITHMETIC_ASSIGNMENT_OPS,
+  DEFAULT_ARITHMETIC_OPS,
+  type ArithmeticAssignmentOperation,
+  type ArithmeticOperation,
+} from "../../ast/arithmetic.js"
+import {
+  DEFAULT_COMPARISON_OPS,
+  type ComparisonOperation,
 } from "../../ast/filtering.js"
 
 /**
@@ -20,10 +26,14 @@ export type ParserOptions<
  */
 export type SyntaxTokens<
   Quote extends string = string,
-  FilterOps extends string = FilteringOperation
+  Comparisons extends string = ComparisonOperation,
+  Assignments extends string = ArithmeticAssignmentOperation,
+  Arithmetic extends string = ArithmeticOperation
 > = {
   quote: Quote
-  filters: FilterOps[]
+  comparisons: Comparisons[]
+  assignments: Assignments[]
+  arithmetic: Arithmetic[]
 }
 
 /**
@@ -41,14 +51,21 @@ type DEFAULT_TOKENS = SyntaxTokens<"'">
  */
 const DefaultTokens: DEFAULT_TOKENS = {
   quote: "'",
-  filters: DEFAULT_FILTER_OPS,
+  comparisons: DEFAULT_COMPARISON_OPS,
+  arithmetic: DEFAULT_ARITHMETIC_OPS,
+  assignments: DEFAULT_ARITHMETIC_ASSIGNMENT_OPS,
 }
 
 /**
  * The default options used if none are provided
  */
 export const DefaultOptions = createParsingOptions(
-  { quote: "'", filters: DEFAULT_FILTER_OPS },
+  {
+    quote: "'",
+    filters: DEFAULT_COMPARISON_OPS,
+    assignments: DEFAULT_ARITHMETIC_ASSIGNMENT_OPS,
+    arithmetic: DEFAULT_ARITHMETIC_OPS,
+  },
   "RETURNING"
 )
 
@@ -74,21 +91,63 @@ export type CheckFeature<
  */
 export type GetQuote<Options extends ParserOptions> =
   Options extends ParserOptions<infer Tokens, infer _>
-    ? Tokens extends SyntaxTokens<infer Quote, infer _>
+    ? Tokens extends SyntaxTokens<infer Quote, infer _, infer _, infer _>
       ? Quote
       : never
     : never
 
 /**
- * Retrieve the current filter operations
+ * Extract all special tokens for normalization
  */
-export type GetFilteringOperations<Options extends ParserOptions> =
+export type GetNormalizationTokens<Options extends ParserOptions> =
+  | GetComparisonOperations<Options>
+  | GetAssignmentOperations<Options>
+  | GetArithmeticOperations<Options>
+
+/**
+ * Retrieve the current comparison operations
+ */
+export type GetComparisonOperations<Options extends ParserOptions> =
   Options extends ParserOptions<infer Tokens, infer _>
-    ? Tokens extends SyntaxTokens<infer _, infer FilterOps>
-      ? FilterOps
+    ? Tokens extends SyntaxTokens<
+        infer _,
+        infer ComparisonOps,
+        infer _,
+        infer _
+      >
+      ? ComparisonOps
       : never
     : never
 
+/**
+ * Retrieve the current arithmetic operations
+ */
+export type GetArithmeticOperations<Options extends ParserOptions> =
+  Options extends ParserOptions<infer Tokens, infer _>
+    ? Tokens extends SyntaxTokens<
+        infer _,
+        infer _,
+        infer _,
+        infer ArithmeticOps
+      >
+      ? ArithmeticOps
+      : never
+    : never
+
+/**
+ * Retrieve the current arithmetic assignment operations
+ */
+export type GetAssignmentOperations<Options extends ParserOptions> =
+  Options extends ParserOptions<infer Tokens, infer _>
+    ? Tokens extends SyntaxTokens<
+        infer _,
+        infer _,
+        infer AssignmentOps,
+        infer _
+      >
+      ? AssignmentOps
+      : never
+    : never
 /**
  * Merge the partial tokens with the default tokens
  */

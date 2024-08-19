@@ -165,12 +165,12 @@ export class DefaultQueryVisitor
   }
 
   visitColumnFilter<T extends ColumnFilter>(filter: T): void {
-    this.visitColumnReference(filter.left)
+    this.visitColumnReference(filter.column)
     this.append(filter.op)
-    if (filter.right.type === "ColumnReference") {
-      this.visitColumnReference(filter.right)
+    if (filter.filter.type === "ColumnReference") {
+      this.visitColumnReference(filter.filter)
     } else {
-      this.visitValueType(filter.right)
+      this.visitValueType(filter.filter)
     }
   }
 

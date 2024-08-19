@@ -3,7 +3,7 @@ import type { Join, Trim } from "@telefrek/type-utils/strings"
 import type { ColumnReference } from "../../ast/columns.js"
 import type {
   ColumnFilter,
-  FilteringOperation,
+  ComparisonOperation,
   LogicalExpression,
   LogicalTree,
   LogicalTreeOperation,
@@ -24,7 +24,7 @@ import {
   type SplitWords,
 } from "./normalize.js"
 import type {
-  GetFilteringOperations,
+  GetComparisonOperations,
   GetQuote,
   ParserOptions,
 } from "./options.js"
@@ -67,15 +67,15 @@ function parseLogicalExpression(
   options: ParserOptions // TODO: Pass this through for filtering ops
 ): LogicalExpression {
   const segments = tokens.join(" ").split(/(?=[>=<!])|(?<=[>=<!])/g)
-  const left = takeUntil(segments, options.tokens.filters).join(" ").trim()
-  const op = takeWhile(segments, options.tokens.filters).join("")
+  const left = takeUntil(segments, options.tokens.comparisons).join(" ").trim()
+  const op = takeWhile(segments, options.tokens.comparisons).join("")
   const right = segments.join(" ").trim()
 
   return {
     type: "ColumnFilter",
-    left: parseColumnReference(left.split(" ")),
-    op: op as FilteringOperation,
-    right: parseValue(right, options.tokens.quote),
+    column: parseColumnReference(left.split(" ")),
+    op: op as ComparisonOperation,
+    filter: parseValue(right, options.tokens.quote),
   }
 }
 
@@ -200,7 +200,7 @@ type ParseColumnFilter<
   infer Exp extends string
 ]
   ? NextToken<Exp> extends [infer Op extends string, infer Value extends string]
-    ? Op extends GetFilteringOperations<Options>
+    ? Op extends GetComparisonOperations<Options>
       ? ExtractValue<Value, GetQuote<Options>> extends [infer V extends string]
         ? CheckFilter<
             ColumnReference<ParseColumnDetails<Column & string>>,
@@ -229,7 +229,7 @@ type CheckFilter<Left, Operation, Right> = Left extends ColumnReference<
   infer Reference,
   infer Alias
 >
-  ? [Operation] extends [FilteringOperation]
+  ? [Operation] extends [ComparisonOperation]
     ? Right extends ValueTypes
       ? ColumnFilter<ColumnReference<Reference, Alias>, Operation, Right>
       : Right extends Invalid<infer Reason>
@@ -239,3 +239,11 @@ type CheckFilter<Left, Operation, Right> = Left extends ColumnReference<
   : Left extends Invalid<infer Reason>
   ? Invalid<Reason>
   : Invalid<`Invalid column filter`>
+
+/**
+ * Process: WHERE {clause}
+ *
+ * Clause can be:
+ * 1. Column filter: a {filter} b
+ * 2. Subquery filter: a [NOT] IN (subquery or values)
+ */

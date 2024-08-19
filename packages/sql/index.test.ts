@@ -131,7 +131,7 @@ describe("Query visitors should produce equivalent SQL", () => {
   it("Should be able to handle filtering with a where clause", () => {
     const queryString = "SELECT id FROM orders WHERE user_id >=1"
     const query = getDatabase(TEST_DATABASE).parseSQL(queryString)
-    expect(query.query.where.left.alias).toBe("user_id")
+    expect(query.query.where.column.alias).toBe("user_id")
     const visitor = new DefaultQueryVisitor()
     visitor.visitQuery(query)
     expect(normalizeQuery(visitor.sql, DefaultOptions)).toBe(

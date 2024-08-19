@@ -2,7 +2,7 @@ import type { Invalid } from "@telefrek/type-utils/common.js"
 import type { Decrement, Increment } from "@telefrek/type-utils/math.js"
 import type { Join, Trim } from "@telefrek/type-utils/strings.js"
 import { NORMALIZE_TARGETS } from "./keywords.js"
-import type { GetFilteringOperations, ParserOptions } from "./options.js"
+import type { GetNormalizationTokens, ParserOptions } from "./options.js"
 
 /**
  * Ensure a query has a known structure with keywords uppercase and consistent spacing
@@ -47,12 +47,12 @@ type CheckFilters<
 > = SQL extends ""
   ? S
   : SQL extends `${infer Left}${infer Rest}`
-  ? Left extends GetFilteringOperations<Options>
+  ? Left extends GetNormalizationTokens<Options>
     ? Rest extends `${infer Right}${infer Remaining}`
-      ? `${Left}${Right}` extends GetFilteringOperations<Options>
-        ? Trim<`${Trim<S>} ${Left}${Right} ${Trim<Remaining>}`>
-        : Trim<`${Trim<S>} ${Left} ${Trim<Remaining>}`>
-      : Trim<`${Trim<S>} ${Left}`>
+      ? `${Left}${Right}` extends GetNormalizationTokens<Options>
+        ? Trim<`${Trim<S>} ${Left}${Right} ${CheckFilters<Remaining, Options>}`>
+        : Trim<`${Trim<S>} ${Left} ${CheckFilters<Rest, Options>}`>
+      : Trim<`${Trim<S>} ${Left} ${CheckFilters<Rest, Options>}`>
     : CheckFilters<Rest, Options, `${S}${Left}`>
   : Trim<`${S}${SQL}`>
 
@@ -153,22 +153,28 @@ export function normalizeQuery<T extends string, Options extends ParserOptions>(
   query: T,
   options: Options
 ): NormalizeQuery<T, Options> {
+  const keys = new Set<string>()
+
+  options.tokens.arithmetic.forEach((t) => keys.add(t))
+  options.tokens.assignments.forEach((t) => keys.add(t))
+  options.tokens.comparisons.forEach((t) => keys.add(t))
+
   return query
     .split(/\s|(?=[,()])|(?<=[,()])/g)
     .filter((s) => s.length > 0)
     .map((s) => normalizeWord(s.trim()))
-    .map((s) => splitFilters(s, options.tokens.filters))
+    .map((s) => splitKeywords(s, Array.from(keys.values())))
     .join(" ") as NormalizeQuery<T, Options>
 }
 
 /**
- * Ensure that filters are appropriately separated out with correct spacing
+ * Ensure that keywords are appropriately separated out with correct spacing
  *
  * @param word The word to split out filters
  * @param filters The list of candidate filters
  * @returns The patched word with the filter correctly sorted out
  */
-function splitFilters(word: string, filters: string[]): string {
+function splitKeywords(word: string, filters: string[]): string {
   const filter = filters
     .filter((f) => word.indexOf(f) >= 0)
     .sort((a, b) => (a.length > b.length ? -1 : 1))
@@ -176,7 +182,11 @@ function splitFilters(word: string, filters: string[]): string {
 
   if (filter !== undefined) {
     const data = word.split(filter)
-    return (data[0].trim() + ` ${filter} ` + data[1].trim()).trim()
+    return (
+      data[0].trim() +
+      ` ${filter} ` +
+      splitKeywords(data[1].trim(), filters)
+    ).trim()
   }
 
   return word

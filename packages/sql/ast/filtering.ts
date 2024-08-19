@@ -4,23 +4,14 @@ import type { SubQuery } from "./queries.js"
 import type { ValueTypes } from "./values.js"
 
 /**
- * Types for building filtering trees
+ * Types for for value comparisons
  */
-export type FilteringOperation =
-  | "="
-  | "<"
-  | ">"
-  | "<="
-  | ">="
-  | "!="
-  | "<>"
-  | "LIKE"
-  | "ILIKE"
+export type ComparisonOperation = "=" | "<" | ">" | "<=" | ">=" | "!=" | "<>"
 
 /**
- * The default filtering operations
+ * The default comparison operations
  */
-export const DEFAULT_FILTER_OPS: FilteringOperation[] = [
+export const DEFAULT_COMPARISON_OPS: ComparisonOperation[] = [
   "=",
   "<",
   ">",
@@ -28,14 +19,17 @@ export const DEFAULT_FILTER_OPS: FilteringOperation[] = [
   ">=",
   "!=",
   "<>",
-  "LIKE",
-  "ILIKE",
 ]
 
 /**
- * Types of subquery filtering mechanisms
+ * Types of subquery filtering mechanisms (IN is a special case)
  */
-export type SubQueryFilterOperation = "IN" | "ANY" | "ALL" | "EXISTS" | "SOME"
+export type SubQueryFilterOperation = "ANY" | "ALL" | "EXISTS" | "SOME"
+
+/**
+ * Types of logical operations
+ */
+export type LogicalOperation = "BETWEEN" | "LIKE" | "ILIKE"
 
 /**
  * Types for building logical trees
@@ -50,20 +44,6 @@ export type LogicalNegation<
 > = {
   type: "LogicalNegation"
   expression: Expression
-}
-
-/**
- * The IN filter definition
- */
-export type SubqueryFilter<
-  Column extends ColumnReference = ColumnReference,
-  Operation extends string = SubQueryFilterOperation,
-  Subquery extends SubQuery = SubQuery
-> = {
-  type: "SubqueryFilter"
-  column: Column
-  query: Subquery
-  op: Operation
 }
 
 /**
@@ -94,14 +74,14 @@ export type LogicalExpression =
  * A filter between two objects
  */
 export type ColumnFilter<
-  Left extends ColumnReference = ColumnReference,
-  Operation extends string = FilteringOperation,
-  Right extends ValueTypes | ColumnReference = ValueTypes | ColumnReference
+  Column extends ColumnReference = ColumnReference,
+  Operation extends string = ComparisonOperation,
+  Filter extends ValueTypes | ColumnReference = ValueTypes | ColumnReference
 > = {
   type: "ColumnFilter"
-  left: Left
+  column: Column
   op: Operation
-  right: Right
+  filter: Filter
 }
 
 /**
@@ -109,4 +89,44 @@ export type ColumnFilter<
  */
 export type WhereClause<Where extends LogicalExpression = LogicalExpression> = {
   where: Where
+}
+
+/**
+ * A filter for a column in some range
+ */
+export type BetweenFilter<
+  Column extends ColumnReference = ColumnReference,
+  Left extends ValueTypes = ValueTypes,
+  Right extends ValueTypes = ValueTypes
+> = {
+  type: "BetweenFilter"
+  column: Column
+  left: Left
+  right: Right
+}
+
+/**
+ * A filter for an "IN" clause that can be either a set of values or a subquery
+ */
+export type InFilter<
+  Column extends ColumnReference = ColumnReference,
+  Values extends SubQuery | ValueTypes[] = SubQuery | ValueTypes[]
+> = {
+  type: "InFilter"
+  column: Column
+  values: Values
+}
+
+/**
+ * A filter for a SubQuery operation
+ */
+export type SubqueryFilter<
+  Column extends ColumnReference = ColumnReference,
+  Operation extends string = SubQueryFilterOperation,
+  Subquery extends SubQuery = SubQuery
+> = {
+  type: "SubqueryFilter"
+  column: Column
+  query: Subquery
+  op: Operation
 }
