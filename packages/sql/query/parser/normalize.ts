@@ -301,18 +301,28 @@ type CheckOverrides<
   S extends string = ""
 > = SQL extends ""
   ? S
+  : GetLongestOverride<SQL, Options> extends infer Override extends string
+  ? Override extends ""
+    ? SQL extends `${infer Left}${infer Rest}`
+      ? CheckOverrides<Rest, Options, `${S}${Left}`>
+      : Trim<`${S}${SQL}`>
+    : SQL extends `${Override}${infer Rest}`
+    ? Trim<`${S} ${Override} ${CheckOverrides<Rest, Options>}`>
+    : SQL
+  : SQL
+
+type GetLongestOverride<
+  SQL extends string,
+  Options extends ParserOptions,
+  Prefix extends string = "",
+  L extends string = ""
+> = SQL extends ""
+  ? L
   : SQL extends `${infer Left}${infer Rest}`
-  ? Left extends GetOverridableTokens<Options>
-    ? Rest extends `${infer Right}${infer Remaining}`
-      ? `${Left}${Right}` extends GetOverridableTokens<Options>
-        ? Trim<`${Trim<S>} ${Left}${Right} ${CheckOverrides<
-            Remaining,
-            Options
-          >}`>
-        : Trim<`${Trim<S>} ${Left} ${CheckOverrides<Rest, Options>}`>
-      : Trim<`${Trim<S>} ${Left} ${CheckOverrides<Rest, Options>}`>
-    : CheckOverrides<Rest, Options, `${S}${Left}`>
-  : Trim<`${S}${SQL}`>
+  ? `${Prefix}${Left}` extends GetOverridableTokens<Options>
+    ? GetLongestOverride<Rest, Options, `${Prefix}${Left}`, `${Prefix}${Left}`>
+    : GetLongestOverride<Rest, Options, `${Prefix}${Left}`, L>
+  : L
 
 /**
  * Test if ( matches ) counts

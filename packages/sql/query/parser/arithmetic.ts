@@ -1,29 +1,33 @@
 import type { Invalid } from "@telefrek/type-utils/common"
-import type {
-  ArithmeticExpression,
-  ArithmeticExpressionType,
-  ColumnArithmeticAssignment,
-  GroupedArithmeticExpression,
+import {
+  type ArithmeticExpression,
+  type ArithmeticExpressionType,
+  type ColumnArithmeticAssignment,
+  type GroupedArithmeticExpression,
 } from "../../ast/arithmetic.js"
 import type { ColumnReference } from "../../ast/columns.js"
 import type { ValueTypes } from "../../ast/values.js"
 import type { CheckEqualParenthesis, NextToken } from "./normalize.js"
-import type {
-  GetArithmeticOperations,
-  GetAssignmentOperations,
-  ParserOptions,
+import {
+  type GetArithmeticOperations,
+  type GetAssignmentOperations,
+  type ParserOptions,
 } from "./options.js"
 import type { ExtractGroup, ParseValueOrReference } from "./utils.js"
 
 /**
- * Parse an {@link ArithmeticExpression}
+ * Parse an {@link ArithmeticExpression} or {@link ColumnArithmeticAssignment}
+ * from the given SQL string
  */
 export type ParseArithmeticExpression<
   SQL extends string,
   Options extends ParserOptions
 > = ParseNextExpression<SQL, Options>
 
-// Keep reading next tokens
+/**
+ * Recursive call to build the current state of the expression handling groups,
+ * assignments and customized parsing
+ */
 type ParseNextExpression<
   SQL extends string,
   Options extends ParserOptions,
@@ -52,7 +56,7 @@ type ParseNextExpression<
         > extends infer Exp extends ArithmeticExpressionType
         ? ColumnArithmeticAssignment<State, Next, Exp>
         : Invalid<"Right side of assignment is invalid">
-      : Invalid<"Cannot assign to anything other than a column">
+      : [State, Next, Remainder] // Invalid<`Cannot assign to anything other than a column`>
     : Next extends ")"
     ? Invalid<`Corrupt syntax, extra ')'`>
     : Next extends "("

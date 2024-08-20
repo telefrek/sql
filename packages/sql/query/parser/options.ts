@@ -14,7 +14,12 @@ import {
  * The options for what can be overridden in the parsing logic
  */
 export type ParserOptions<
-  Tokens extends SyntaxTokens = SyntaxTokens,
+  Tokens extends SyntaxTokens<string, string, string, string> = SyntaxTokens<
+    string,
+    string,
+    string,
+    string
+  >,
   Features extends ParsingFeatures = ParsingFeatures
 > = {
   tokens: Tokens
@@ -151,10 +156,15 @@ export type GetAssignmentOperations<Options extends ParserOptions> =
 /**
  * Merge the partial tokens with the default tokens
  */
-type MergeTokens<Tokens extends Partial<SyntaxTokens>> = Flatten<
-  Tokens & Omit<DEFAULT_TOKENS, keyof Tokens>
-> extends SyntaxTokens<infer Quote>
-  ? SyntaxTokens<Quote>
+type MergeTokens<
+  Tokens extends Partial<SyntaxTokens<string, string, string, string>>
+> = Flatten<Tokens & Omit<DEFAULT_TOKENS, keyof Tokens>> extends SyntaxTokens<
+  infer Quote,
+  infer Comparisons,
+  infer Assignments,
+  infer Arithmetic
+>
+  ? SyntaxTokens<Quote, Comparisons, Assignments, Arithmetic>
   : never
 
 /**
@@ -165,7 +175,7 @@ type MergeTokens<Tokens extends Partial<SyntaxTokens>> = Flatten<
  * @returns A new set of {@link ParserOptions} to use
  */
 export function createParsingOptions<
-  const Tokens extends Partial<SyntaxTokens>,
+  const Tokens extends Partial<SyntaxTokens<string, string, string, string>>,
   Features extends ParsingFeatures
 >(
   tokens: Tokens,
