@@ -1,3 +1,4 @@
+import type { IgnoreAny } from "@telefrek/type-utils/common"
 import type { ColumnReference } from "./columns.js"
 import type { ValueTypes } from "./values.js"
 
@@ -37,10 +38,7 @@ export const DEFAULT_ARITHMETIC_ASSIGNMENT_OPS: ArithmeticAssignmentOperation[] 
 export type ColumnArithmeticAssignment<
   Column extends ColumnReference = ColumnReference,
   Op extends string = ArithmeticAssignmentOperation,
-  Value extends ColumnReference | ValueTypes | ArithmenticExpressionTree =
-    | ColumnReference
-    | ValueTypes
-    | ArithmenticExpressionTree
+  Value extends ArithmeticExpressionType = ArithmeticExpressionType
 > = {
   type: "ColumnArithmeticAssignment"
   column: Column
@@ -49,28 +47,37 @@ export type ColumnArithmeticAssignment<
 }
 
 /**
- * An arithmetic expression between two values, ex: a + b
+ * The default type for an arithmetic expression
  */
-export type ArithmeticExpression<
-  Left extends ColumnReference | ValueTypes = ColumnReference | ValueTypes,
-  Op extends string = ArithmeticOperation,
-  Right extends ColumnReference | ValueTypes = ColumnReference | ValueTypes
+export type ArithmeticExpressionType =
+  | ColumnReference
+  | ValueTypes
+  | ArithmeticExpression<IgnoreAny, string, IgnoreAny>
+  | GroupedArithmeticExpression<IgnoreAny>
+
+/**
+ * A grouped expression (surrounded by parenthesis)
+ */
+export type GroupedArithmeticExpression<
+  Expression extends ArithmeticExpression<
+    IgnoreAny,
+    string,
+    IgnoreAny
+  > = ArithmeticExpression<IgnoreAny, string, IgnoreAny>
 > = {
-  type: "ArithmeticExpression"
-  left: Left
-  operation: Op
-  right: Right
+  type: "GroupedArithmeticExpression"
+  expression: Expression
 }
 
 /**
- * An arithmetic expression tree
+ * An arithmetic expression between two values, ex: a + b
  */
-export type ArithmenticExpressionTree<
-  Left extends ArithmeticExpression = ArithmeticExpression,
+export type ArithmeticExpression<
+  Left extends ArithmeticExpressionType = ArithmeticExpressionType,
   Op extends string = ArithmeticOperation,
-  Right extends ArithmeticExpression = ArithmeticExpression
+  Right extends ArithmeticExpressionType = ArithmeticExpressionType
 > = {
-  type: "ArithmeticExpressionTree"
+  type: "ArithmeticExpression"
   left: Left
   operation: Op
   right: Right

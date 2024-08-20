@@ -132,7 +132,7 @@ export interface WhereClauseBuilder<Context extends QueryContext> {
   filter<
     Column extends QueryContextColumns<Context>,
     Op extends ComparisonOperation,
-    Value
+    Value extends string | number | bigint | boolean | null | undefined
   >(
     column: Column,
     op: Op,
@@ -144,9 +144,12 @@ export interface WhereClauseBuilder<Context extends QueryContext> {
   >
 }
 
-type CheckColumnRef<Value, Columns extends string> = Value extends Columns
+type CheckColumnRef<
+  Value extends string | number | bigint | boolean | null | undefined,
+  Columns extends string
+> = Value extends Columns
   ? ParseColumnReference<Value>
-  : CheckValueType<Value, "'"> extends infer V extends ValueTypes
+  : CheckValueType<`${Value}`, "'"> extends infer V extends ValueTypes
   ? V
   : never
 
@@ -192,7 +195,7 @@ class DefaultWhereClauseBuilder<Context extends QueryContext>
   filter<
     Column extends QueryContextColumns<Context>,
     Op extends ComparisonOperation,
-    Value
+    Value extends string | number | bigint | boolean | null | undefined
   >(
     column: Column,
     op: Op,
@@ -219,7 +222,7 @@ function buildFilter<
   Context extends QueryContext,
   Column extends string,
   Operation extends ComparisonOperation,
-  Value
+  Value extends string | number | bigint | boolean | null | undefined
 >(
   context: Context,
   column: Column,

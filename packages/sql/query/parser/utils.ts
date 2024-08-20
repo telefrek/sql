@@ -1,6 +1,12 @@
+import type { Invalid } from "@telefrek/type-utils/common"
+import type { Decrement, Increment } from "@telefrek/type-utils/math"
+import type { Trim } from "@telefrek/type-utils/strings"
 import type { ReturningClause } from "../../ast/queries.js"
-import { parseSelectedColumns } from "./columns.js"
+import type { ValueTypes } from "../../ast/values.js"
+import { parseSelectedColumns, type ParseColumnReference } from "./columns.js"
+import type { NextToken } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
+import type { CheckValueType } from "./values.js"
 
 /**
  * Parse an optional alias from the stack
@@ -16,6 +22,45 @@ export function tryParseAlias(tokens: string[]): string | undefined {
 
   return
 }
+
+/**
+ * Check if the string represents a single token
+ */
+export type IsSingleToken<T extends string> = T extends `${infer _} ${infer _}`
+  ? false
+  : true
+
+/**
+ * Type to try to parse a value and if not fallback and assume it is column reference
+ */
+export type ParseValueOrReference<
+  SQL extends string,
+  Options extends ParserOptions
+> = CheckValueType<SQL, GetQuote<Options>> extends infer V extends ValueTypes
+  ? V
+  : ParseColumnReference<SQL>
+
+/**
+ * Extract the next full group from the current string
+ */
+export type ExtractGroup<
+  SQL extends string,
+  N extends number = 1,
+  S extends string = ""
+> = NextToken<SQL> extends [
+  infer Next extends string,
+  infer Remainder extends string
+]
+  ? Next extends ")"
+    ? N extends 1
+      ? [`${Trim<S>}`, Remainder]
+      : ExtractGroup<Remainder, Decrement<N>, `${S} ${Next}`>
+    : Next extends "("
+    ? ExtractGroup<Remainder, Increment<N>, `${S} ${Next}`>
+    : Remainder extends ""
+    ? Invalid<"Unbalanced parenthesis">
+    : ExtractGroup<Remainder, N, `${S} ${Next}`>
+  : Invalid<"Unbalanced parenthesis">
 
 export type RemoveQuotes<
   S extends string,

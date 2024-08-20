@@ -99,7 +99,7 @@ export type GetQuote<Options extends ParserOptions> =
 /**
  * Extract all special tokens for normalization
  */
-export type GetNormalizationTokens<Options extends ParserOptions> =
+export type GetOverridableTokens<Options extends ParserOptions> =
   | GetComparisonOperations<Options>
   | GetAssignmentOperations<Options>
   | GetArithmeticOperations<Options>

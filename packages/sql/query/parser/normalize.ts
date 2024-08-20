@@ -2,7 +2,7 @@ import type { Invalid } from "@telefrek/type-utils/common.js"
 import type { Decrement, Increment } from "@telefrek/type-utils/math.js"
 import type { Join, Trim } from "@telefrek/type-utils/strings.js"
 import { NORMALIZE_TARGETS } from "./keywords.js"
-import type { GetNormalizationTokens, ParserOptions } from "./options.js"
+import type { GetOverridableTokens, ParserOptions } from "./options.js"
 
 /**
  * Ensure a query has a known structure with keywords uppercase and consistent spacing
@@ -15,46 +15,12 @@ export type NormalizeQuery<
     ? SplitJoin<NewLines, ","> extends infer Commas extends string
       ? SplitJoin<Commas, "("> extends infer OpenParen extends string
         ? SplitJoin<OpenParen, ")"> extends infer Normalized extends string
-          ? NormalizeFilters<Trim<Normalized>, Options>
+          ? NormalizeOverrides<Trim<Normalized>, Options>
           : never
         : never
       : never
     : never
   : never
-
-type NormalizeFilters<
-  SQL extends string,
-  Options extends ParserOptions
-> = SplitWords<SQL> extends infer Tokens extends string[]
-  ? CleanFilters<Tokens, Options> extends infer Cleaned extends string[]
-    ? Join<Cleaned, " ">
-    : never
-  : never
-
-type CleanFilters<Words, Options extends ParserOptions> = Words extends [
-  infer Next extends string,
-  ...infer Rest
-]
-  ? Rest extends never[]
-    ? [CheckFilters<Next, Options>]
-    : [CheckFilters<Next, Options>, ...CleanFilters<Rest, Options>]
-  : never
-
-type CheckFilters<
-  SQL extends string,
-  Options extends ParserOptions,
-  S extends string = ""
-> = SQL extends ""
-  ? S
-  : SQL extends `${infer Left}${infer Rest}`
-  ? Left extends GetNormalizationTokens<Options>
-    ? Rest extends `${infer Right}${infer Remaining}`
-      ? `${Left}${Right}` extends GetNormalizationTokens<Options>
-        ? Trim<`${Trim<S>} ${Left}${Right} ${CheckFilters<Remaining, Options>}`>
-        : Trim<`${Trim<S>} ${Left} ${CheckFilters<Rest, Options>}`>
-      : Trim<`${Trim<S>} ${Left} ${CheckFilters<Rest, Options>}`>
-    : CheckFilters<Rest, Options, `${S}${Left}`>
-  : Trim<`${S}${SQL}`>
 
 /**
  * Normalize the values by ensuring capitalization
@@ -127,12 +93,12 @@ export type SplitSQL<
   Token extends string = ",",
   S extends string = ""
 > = Trim<T> extends `${infer Left} ${Token} ${infer Right}`
-  ? EqualParenthesis<`${S} ${Left}`> extends true
+  ? CheckEqualParenthesis<`${S} ${Left}`> extends true
     ? SplitSQL<Right, Token> extends infer Tokens extends string[]
       ? [Trim<`${S} ${Left}`>, ...Tokens]
       : Invalid<"Unequal parenthesis">
     : SplitSQL<Right, Token, Trim<`${S} ${Left} ${Token}`>>
-  : EqualParenthesis<`${S} ${T}`> extends true
+  : CheckEqualParenthesis<`${S} ${T}`> extends true
   ? [Trim<`${S} ${T}`>]
   : Invalid<"Unequal parenthesis">
 
@@ -303,9 +269,57 @@ export function extractParenthesis(tokens: string[]): string[] {
 }
 
 /**
+ * Normalize keywords that can be user provided
+ */
+type NormalizeOverrides<
+  SQL extends string,
+  Options extends ParserOptions
+> = SplitWords<SQL> extends infer Tokens extends string[]
+  ? CleanOverrides<Tokens, Options> extends infer Cleaned extends string[]
+    ? Join<Cleaned, " ">
+    : never
+  : never
+
+/**
+ * Clean the overrideable strings
+ */
+type CleanOverrides<Words, Options extends ParserOptions> = Words extends [
+  infer Next extends string,
+  ...infer Rest
+]
+  ? Rest extends never[]
+    ? [CheckOverrides<Next, Options>]
+    : [CheckOverrides<Next, Options>, ...CleanOverrides<Rest, Options>]
+  : never
+
+/**
+ * Check for user provided overrides
+ */
+type CheckOverrides<
+  SQL extends string,
+  Options extends ParserOptions,
+  S extends string = ""
+> = SQL extends ""
+  ? S
+  : SQL extends `${infer Left}${infer Rest}`
+  ? Left extends GetOverridableTokens<Options>
+    ? Rest extends `${infer Right}${infer Remaining}`
+      ? `${Left}${Right}` extends GetOverridableTokens<Options>
+        ? Trim<`${Trim<S>} ${Left}${Right} ${CheckOverrides<
+            Remaining,
+            Options
+          >}`>
+        : Trim<`${Trim<S>} ${Left} ${CheckOverrides<Rest, Options>}`>
+      : Trim<`${Trim<S>} ${Left} ${CheckOverrides<Rest, Options>}`>
+    : CheckOverrides<Rest, Options, `${S}${Left}`>
+  : Trim<`${S}${SQL}`>
+
+/**
  * Test if ( matches ) counts
  */
-type EqualParenthesis<T> = CountOpen<T> extends CountClosed<T> ? true : false
+export type CheckEqualParenthesis<T> = CountOpen<T> extends CountClosed<T>
+  ? true
+  : false
 
 /**
  * Count the ( characters

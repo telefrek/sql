@@ -10,11 +10,7 @@ import type {
   WhereClause,
 } from "../../ast/filtering.js"
 import type { ValueTypes } from "../../ast/values.js"
-import {
-  parseColumnReference,
-  type ParseColumnDetails,
-  type ParseColumnReference,
-} from "./columns.js"
+import { parseColumnReference, type ParseColumnDetails } from "./columns.js"
 import type { PartialParserResult } from "./common.js"
 import {
   takeUntil,
@@ -28,7 +24,8 @@ import type {
   GetQuote,
   ParserOptions,
 } from "./options.js"
-import { parseValue, type CheckValueType, type ExtractValue } from "./values.js"
+import type { ParseValueOrReference } from "./utils.js"
+import { parseValue, type ExtractValue } from "./values.js"
 
 // This entire thing needs a re-write...
 
@@ -211,16 +208,6 @@ type ParseColumnFilter<
       : Invalid<`Failed to parse column filter: ${SQL & string}`>
     : Invalid<`Failed to parse column filter: ${SQL & string}`>
   : Invalid<`Failed to parse column filter: ${SQL & string}`>
-
-/**
- * Type to try to parse a value and if not fallback and assume it is column reference
- */
-type ParseValueOrReference<
-  SQL extends string,
-  Options extends ParserOptions
-> = CheckValueType<SQL, GetQuote<Options>> extends infer V extends ValueTypes
-  ? V
-  : ParseColumnReference<SQL>
 
 /**
  * Check that the column filter is appropriate and well formed

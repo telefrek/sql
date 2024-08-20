@@ -1,3 +1,4 @@
+import type { Invalid } from "@telefrek/type-utils/common"
 import type {
   ColumnReference,
   TableColumnReference,
@@ -6,6 +7,7 @@ import type {
 import type { SelectColumns } from "../../ast/select.js"
 import type { SplitSQL } from "./normalize.js"
 import type { ParserOptions } from "./options.js"
+import type { IsSingleToken } from "./utils.js"
 import { tryParseAlias } from "./utils.js"
 
 /**
@@ -13,7 +15,7 @@ import { tryParseAlias } from "./utils.js"
  */
 export type ParseSelectedColumns<
   Columns extends string,
-  Options extends ParserOptions,
+  Options extends ParserOptions
 > = Columns extends "*" ? Columns : ParseColumns<SplitSQL<Columns>, Options>
 
 /**
@@ -21,7 +23,7 @@ export type ParseSelectedColumns<
  */
 type ParseColumns<T, Options extends ParserOptions> = T extends [
   infer Column extends string,
-  ...infer Rest,
+  ...infer Rest
 ]
   ? Rest extends never[]
     ? [ParseColumnReference<Column>]
@@ -47,13 +49,23 @@ export function parseSelectedColumns(tokens: string[]): SelectColumns | "*" {
   return columns.map((c) => parseColumnReference(c.split(" "))) as SelectColumns
 }
 
+type IsValidReference<T extends string> = IsSingleToken<T> extends true
+  ? T extends `$${infer _}`
+    ? Invalid<"Columns cannot start with a $ character">
+    : true
+  : false
+
 /**
  * Utility type to parse a value as a ColumnReference
  */
 export type ParseColumnReference<T extends string> =
   T extends `${infer ColumnDetails} AS ${infer Alias}`
-    ? ColumnReference<ParseColumnDetails<ColumnDetails>, Alias>
-    : ColumnReference<ParseColumnDetails<T>>
+    ? IsSingleToken<Alias> extends true
+      ? ColumnReference<ParseColumnDetails<ColumnDetails>, Alias>
+      : Invalid<"Alias cannot contain spaces">
+    : IsValidReference<T> extends true
+    ? ColumnReference<ParseColumnDetails<T>>
+    : Invalid<"Column reference is invalid">
 
 /**
  * Utility type to parse column details
@@ -92,7 +104,7 @@ export function parseColumnReference(tokens: string[]): ColumnReference {
  * @returns the correct table or unbound reference
  */
 function parseReference(
-  column: string,
+  column: string
 ): TableColumnReference | UnboundColumnReference {
   // Check for a table reference
   const idx = column.indexOf(".")

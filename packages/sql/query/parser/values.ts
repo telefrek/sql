@@ -15,6 +15,7 @@ import type {
 } from "../../ast/values.js"
 import type { NextToken, SplitSQL } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
+import type { IsSingleToken } from "./utils.js"
 
 /**
  * Parse out the value
@@ -226,14 +227,21 @@ type Digits = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
  */
 // TODO: Possible extension is to check that all characters for numbers are
 // digits and expand to bigint if over 8 characters by default
-export type CheckValueType<T, Quote extends string> = T extends `:${infer Name}`
-  ? ParameterValueType<Name>
+export type CheckValueType<
+  T extends string,
+  Quote extends string
+> = T extends `:${infer Name}`
+  ? IsSingleToken<Name> extends true
+    ? ParameterValueType<Name>
+    : Invalid<"Invalid parameter names cannot contain spaces">
   : T extends `$${infer _}`
   ? Invalid<`index position not supported`>
   : T extends `${Quote}${infer Contents}${Quote}`
   ? Contents extends `{${string}}`
     ? JsonValueType
     : StringValueType
+  : IsSingleToken<T> extends false
+  ? Invalid<"Value cannot contain spaces">
   : T extends `0x${infer _}`
   ? BufferValueType
   : Lowercase<T & string> extends "null"
