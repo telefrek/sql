@@ -15,6 +15,46 @@ import {
 import type { ExtractGroup, ParseValueOrReference } from "./utils.js"
 
 /**
+ * Extract the next valid expression chunk and the remaining string
+ */
+export type ParseArithmeticExpression<
+  SQL extends string,
+  Options extends ParserOptions,
+  Current extends AnyExpression = never
+> = [Current] extends [never]
+  ? ParseNextArithmeticExpression<SQL, Options> extends [
+      infer Expression extends AnyExpression,
+      infer Remainder extends string
+    ]
+    ? Remainder extends ""
+      ? [Expression, ""]
+      : ParseArithmeticExpression<Remainder, Options, Expression>
+    : ParseNextArithmeticExpression<SQL, Options>
+  : ReadNextToken<SQL, Options> extends [
+      infer Token,
+      infer Remainder extends string
+    ]
+  ? Token extends GetArithmeticOperations<Options>
+    ? ParseSingleArithmeticExpression<
+        Remainder,
+        Options,
+        ArithmeticExpression<Current, Token, never>
+      > extends [
+        infer Expression extends AnyExpression,
+        infer Rest extends string
+      ]
+      ? Rest extends ""
+        ? [Expression, ""]
+        : ParseArithmeticExpression<Rest, Options, Expression>
+      : ParseSingleArithmeticExpression<
+          Remainder,
+          Options,
+          ArithmeticExpression<Current, Token, never>
+        >
+    : [Current, SQL] // Return
+  : [Current, SQL] // Return expression and remainder
+
+/**
  * Get the types of tokens supported
  */
 type GetTokenTypes<Options extends ParserOptions> =
@@ -246,5 +286,5 @@ type ParseEntireArithmeticTree<
           Options,
           ArithmeticExpression<Current, Token, never>
         >
-    : [SQL, Token, Remainder, Current]
+    : Invalid<"Failed to consume entire segment as arithmetic operation">
   : ReadNextToken<SQL, Options>
