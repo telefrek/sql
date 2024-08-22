@@ -254,37 +254,12 @@ type AnyExpression =
  */
 type ParseEntireArithmeticTree<
   SQL extends string,
-  Options extends ParserOptions,
-  Current extends AnyExpression = never
-> = [Current] extends [never]
-  ? ParseNextArithmeticExpression<SQL, Options> extends [
-      infer Expression extends AnyExpression,
-      infer Remainder extends string
-    ]
-    ? Remainder extends ""
-      ? Expression
-      : ParseEntireArithmeticTree<Remainder, Options, Expression>
-    : ParseNextArithmeticExpression<SQL, Options>
-  : ReadNextToken<SQL, Options> extends [
-      infer Token,
-      infer Remainder extends string
-    ]
-  ? Token extends GetArithmeticOperations<Options>
-    ? ParseSingleArithmeticExpression<
-        Remainder,
-        Options,
-        ArithmeticExpression<Current, Token, never>
-      > extends [
-        infer Expression extends AnyExpression,
-        infer Rest extends string
-      ]
-      ? Rest extends ""
-        ? Expression
-        : ParseEntireArithmeticTree<Rest, Options, Expression>
-      : ParseSingleArithmeticExpression<
-          Remainder,
-          Options,
-          ArithmeticExpression<Current, Token, never>
-        >
-    : Invalid<"Failed to consume entire segment as arithmetic operation">
-  : ReadNextToken<SQL, Options>
+  Options extends ParserOptions
+> = ParseArithmeticExpression<SQL, Options> extends [
+  infer Expression,
+  infer Remainder extends string
+]
+  ? Remainder extends ""
+    ? Expression
+    : Invalid<"Failed to consume the entire SQL">
+  : ParseArithmeticExpression<SQL, Options>
