@@ -17,7 +17,7 @@ import type {
 } from "../context.js"
 import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
-import { pv, type ExtractTSValueTypes } from "../parser/values.js"
+import { parseNextValue, type ExtractTSValueTypes } from "../parser/values.js"
 import { createReturningBuilder, type ReturningBuilder } from "./returning.js"
 import { buildColumnReference, type VerifyColumnReferences } from "./select.js"
 import { buildTableReference } from "./table.js"
@@ -177,7 +177,7 @@ class DefaultColumnValueBuilder<
       table: this._table,
       columns: this._columns,
       values: (values as unknown[]).map((v) =>
-        pv(
+        parseNextValue(
           [
             String(
               typeof v === "string"

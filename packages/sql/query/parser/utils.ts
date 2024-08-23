@@ -11,7 +11,7 @@ import {
 } from "./columns.js"
 import type { NextToken } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
-import { pv, type CheckValueType } from "./values.js"
+import { parseNextValue, type CheckValueType } from "./values.js"
 
 /**
  * Parse an optional alias from the stack
@@ -57,7 +57,7 @@ export function parseValueOrReference(
   tokens: string[],
   options: ParserOptions
 ): ValueTypes | ColumnReference {
-  return pv(tokens, options) ?? parseColumnReference(tokens)
+  return parseNextValue(tokens, options) ?? parseColumnReference(tokens)
 }
 
 /**

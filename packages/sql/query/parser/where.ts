@@ -25,7 +25,7 @@ import type {
   ParserOptions,
 } from "./options.js"
 import type { ParseValueOrReference } from "./utils.js"
-import { parseValue, type ExtractValue } from "./values.js"
+import { parseNextValue, type ExtractValue } from "./values.js"
 
 // This entire thing needs a re-write...
 
@@ -66,13 +66,12 @@ function parseLogicalExpression(
   const segments = tokens.join(" ").split(/(?=[>=<!])|(?<=[>=<!])/g)
   const left = takeUntil(segments, options.tokens.comparisons).join(" ").trim()
   const op = takeWhile(segments, options.tokens.comparisons).join("")
-  const right = segments.join(" ").trim()
 
   return {
     type: "ColumnFilter",
     column: parseColumnReference(left.split(" ")),
     op: op as ComparisonOperation,
-    filter: parseValue(right, options.tokens.quote),
+    filter: parseNextValue(segments, options)!,
   }
 }
 

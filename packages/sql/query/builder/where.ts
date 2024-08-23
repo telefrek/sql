@@ -26,7 +26,7 @@ import type {
 } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
 import type { GetQuote, ParserOptions } from "../parser/options.js"
-import { type CheckValueType, pv } from "../parser/values.js"
+import { type CheckValueType, parseNextValue } from "../parser/values.js"
 import { buildColumnReference } from "./select.js"
 
 /**
@@ -272,7 +272,7 @@ function buildFilter<
         }
       : isColumn(context, value)
       ? buildColumnReference(value as string)
-      : pv(String(value).split(" "), options)) as CheckColumnRef<
+      : parseNextValue(String(value).split(" "), options)) as CheckColumnRef<
       Value,
       QueryContextColumns<Context>,
       Options

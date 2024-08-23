@@ -17,7 +17,14 @@ import type { NextToken, SplitSQL } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 import type { IsSingleToken } from "./utils.js"
 
-export function pv(
+/**
+ * Try to read the next value off the token stack
+ *
+ * @param tokens The token stack to use
+ * @param options The options for parsing
+ * @returns The next value or nothing if one is not found
+ */
+export function parseNextValue(
   tokens: string[],
   options: ParserOptions
 ): ValueTypes | undefined {
@@ -119,71 +126,6 @@ export function pv(
   }
 
   return
-}
-
-/**
- * Parse out the value
- *
- * @param value The value to parse
- * @param quote The quoted character
- * @returns The next value or column reference identified
- */
-export function parseValue(value: string, quote: string = "'"): ValueTypes {
-  if (value.startsWith(":")) {
-    return {
-      type: "ParameterValue",
-      value: value.substring(1),
-    }
-  } else if (value.startsWith("$")) {
-    throw new Error("Index positions for variables is not supported")
-  } else if (value === "true" || value === "false") {
-    return {
-      type: "BooleanValue",
-      value: Boolean(value),
-    }
-  } else if (isNumber(value)) {
-    return {
-      type: "NumberValue",
-      value: Number(value),
-    }
-  } else if (isBigInt(value)) {
-    return {
-      type: "BigIntValue",
-      value: BigInt(value),
-    }
-  } else if (value === "null") {
-    return {
-      type: "NullValue",
-      value: null,
-    }
-  } else if (value.startsWith("{")) {
-    return {
-      type: "JsonValue",
-      value: JSON.parse(value),
-    }
-  } else if (value.startsWith("[")) {
-    return {
-      type: "ArrayValue",
-      value: JSON.parse(value),
-    }
-  } else if (value.startsWith("0x")) {
-    return {
-      type: "BufferValue",
-      value: Uint8Array.from(
-        Uint8Array.from(
-          value
-            .slice(2)
-            .match(/.{1,2}/g)!
-            .map((byte) => parseInt(byte, 16))
-        )
-      ),
-    }
-  } else {
-    return {
-      type: "StringValue",
-      value: value.replaceAll(quote, ""),
-    }
-  }
 }
 
 /**
