@@ -1,6 +1,7 @@
 import type { IgnoreAny, Invalid } from "@telefrek/type-utils/common"
 import {
   type ArithmeticExpression,
+  type ArithmeticExpressionType,
   type ColumnArithmeticAssignment,
   type GroupedArithmeticExpression,
 } from "../../ast/arithmetic.js"
@@ -12,21 +13,79 @@ import {
   type GetAssignmentOperations,
   type ParserOptions,
 } from "./options.js"
-import type { ExtractGroup, ParseValueOrReference } from "./utils.js"
+import {
+  parseValueOrReference,
+  type ExtractGroup,
+  type ParseValueOrReference,
+} from "./utils.js"
 
-// export function parseArithmeticExpression(
-//   tokens: string[],
-//   options: ParserOptions
-// ): AnyExpression | undefined {
-//   return
-// }
+/**
+ * Utility to get the full expression type
+ */
+type GetFullExpressionType<
+  SQL extends string,
+  Options extends ParserOptions
+> = ParseArithmeticExpression<SQL, Options> extends [infer Expression, ""]
+  ? Expression
+  : never
 
-// function parseNextArithmeticExpression(
-//   tokens: string[],
-//   options: ParserOptions
-// ): AnyExpression | undefined {
-//   return
-// }
+/**
+ * Parse the SQL string as an expression
+ * @param sql The SQL to parse as an expression
+ * @param options The options to use
+ */
+export function parseArithmeticExpression<
+  SQL extends string,
+  Options extends ParserOptions
+>(sql: SQL, options: Options): GetFullExpressionType<SQL, Options>
+
+/**
+ * Parse the next arithmetic expression from the stack
+ *
+ * @param tokens The current token stack
+ * @param options The parser options to use
+ * @param current The current expression if one exists
+ */
+export function parseArithmeticExpression<
+  Expression extends AnyExpression,
+  Options extends ParserOptions
+>(
+  tokens: string[],
+  options: Options,
+  current?: Expression
+): AnyExpression | undefined
+
+// Implementation
+export function parseArithmeticExpression<Options extends ParserOptions>(
+  sql: unknown,
+  options: Options,
+  current?: AnyExpression
+): unknown {
+  const tokens = typeof sql === "string" ? sql.split(" ") : (sql as string[])
+
+  // Create a copy of the tokens in case of partial reads
+  const copy = [...tokens]
+
+  if (current !== undefined) {
+    return // fail nested for now
+  }
+
+  const next = parseNextArithmeticExpression(copy, options)
+  if (next !== undefined) {
+    const fullExpression = parseArithmeticExpression(
+      copy,
+      options,
+      next as AnyExpression
+    )
+
+    const diff = tokens.length - copy.length
+    tokens.splice(0, diff)
+
+    return fullExpression ?? next
+  }
+
+  return
+}
 
 /**
  * Extract the next valid expression chunk and the remaining string
@@ -107,10 +166,16 @@ type ReadNextToken<
     : Invalid<"Cannot map value">
   : Invalid<"No more tokens to extract">
 
+/**
+ * Read the next value from the stack
+ * @param tokens The current token stack
+ * @param options The parsing options to use
+ * @returns A column reference, value or group
+ */
 export function readNextToken(
-  tokens: string,
+  tokens: string[],
   options: ParserOptions
-): ValueTypes | ColumnReference | string[] {
+): ValueTypes | ColumnReference | string[] | string | undefined {
   if (tokens.length === 0) {
     throw new Error("No more tokens to extract")
   }
@@ -121,12 +186,12 @@ export function readNextToken(
     case tokens[0] === "(":
       break
     case options.tokens.arithmetic.indexOf(tokens[0]) >= 0:
-      break
+      return tokens.shift()!
     case options.tokens.assignments.indexOf(tokens[0]) >= 0:
-      break
+      return tokens.shift()!
   }
 
-  throw new Error("Cannot map value")
+  return parseValueOrReference(tokens, options)
 }
 
 /**
@@ -159,6 +224,27 @@ type ParseNextArithmeticExpression<
     : Invalid<"Invalid token">
   : ReadNextToken<SQL, Options>
 
+function parseNextArithmeticExpression(
+  tokens: string[],
+  options: ParserOptions
+): Partial<AnyExpression> | undefined {
+  const token = readNextToken(tokens, options)
+  if (token === undefined) {
+    return undefined
+  }
+
+  // Group
+  if (Array.isArray(token)) {
+    return
+  } else if (typeof token === "string") {
+    return
+  } else if (token.type === "ColumnReference") {
+    return parseColumnExpression(tokens, options, token)
+  } else {
+    return parseValueExpression(tokens, options, token)
+  }
+}
+
 /**
  * Parse expressions starting with a column
  */
@@ -185,6 +271,81 @@ type ParseColumnExpression<
     : Invalid<"Column must be followed by an assignment or arithmetic operation">
   : ReadNextToken<SQL, Options>
 
+function parseColumnExpression(
+  tokens: string[],
+  options: ParserOptions,
+  column: ColumnReference
+): AnyExpression | undefined {
+  const token = readNextToken(tokens, options)
+  if (typeof token === "string") {
+    if (options.tokens.assignments.indexOf(token) >= 0) {
+      return parseColumnAssignmentExpression(tokens, options, {
+        type: "ColumnArithmeticAssignment",
+        column,
+        operation: token,
+      })
+    } else {
+      return parseSingleArithmeticExpression(tokens, options, {
+        type: "ArithmeticExpression",
+        left: column,
+        operation: token,
+      })
+    }
+  }
+
+  return
+}
+
+function parseColumnAssignmentExpression<
+  Assignment extends Partial<
+    ColumnArithmeticAssignment<ColumnReference, string, never>
+  >
+>(
+  tokens: string[],
+  options: ParserOptions,
+  assignment: Assignment
+): ColumnArithmeticAssignment<ColumnReference, string, IgnoreAny> | undefined {
+  const token = readNextToken(tokens, options)
+  if (token === undefined) {
+    return
+  }
+
+  if (typeof token === "string") {
+    return
+  } else if (Array.isArray(token)) {
+    return
+  }
+
+  return {
+    ...assignment,
+    value: token,
+  }
+}
+
+function parseSingleArithmeticExpression<
+  Expression extends Partial<ArithmeticExpression<IgnoreAny, string, never>>
+>(
+  tokens: string[],
+  options: ParserOptions,
+  expression: Expression
+): ArithmeticExpression<IgnoreAny, string, IgnoreAny> | undefined {
+  const token = readNextToken(tokens, options)
+  if (token === undefined) {
+    return
+  }
+
+  if (typeof token === "string") {
+    return
+  } else if (Array.isArray(token)) {
+    return
+  }
+
+  return {
+    ...expression,
+    right: token,
+  }
+}
+
 /**
  * Parse expressions starting with a value
  */
@@ -201,13 +362,33 @@ type ParseValueExpression<
     : Invalid<"Value must be followed by an arithmetic operation">
   : ReadNextToken<SQL, Options>
 
+function parseValueExpression(
+  tokens: string[],
+  options: ParserOptions,
+  value: ValueTypes
+): Partial<ArithmeticExpression<ValueTypes, string, never>> | undefined {
+  const token = readNextToken(tokens, options)
+  if (
+    typeof token === "string" &&
+    options.tokens.arithmetic.indexOf(token) >= 0
+  ) {
+    return {
+      type: "ArithmeticExpression",
+      left: value,
+      operation: token,
+    }
+  }
+
+  return
+}
+
 /**
  * Parse only the next segment
  */
 type ParseSingleArithmeticExpression<
   SQL extends string,
   Options extends ParserOptions,
-  Expression extends ArithmeticExpression<IgnoreAny, string, never>
+  Expression extends AnyExpression
 > = ReadNextToken<SQL, Options> extends [
   infer Token,
   infer Remainder extends string
@@ -266,7 +447,7 @@ type ParseColumnAssignmentExpression<
     ? ParseEntireArithmeticTree<
         Token,
         Options
-      > extends infer Expression extends AnyExpression
+      > extends infer Expression extends ArithmeticExpressionType
       ? Assignment extends ColumnArithmeticAssignment<
           infer Column,
           infer Op,
@@ -284,6 +465,7 @@ type ParseColumnAssignmentExpression<
 type AnyExpression =
   | ArithmeticExpression<IgnoreAny, string, IgnoreAny>
   | GroupedArithmeticExpression<IgnoreAny>
+  | ColumnArithmeticAssignment<ColumnReference, string, IgnoreAny>
 
 /**
  * Consume the entire arithmetic tree

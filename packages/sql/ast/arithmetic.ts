@@ -54,6 +54,7 @@ export type ArithmeticExpressionType =
   | ValueTypes
   | ArithmeticExpression<IgnoreAny, string, IgnoreAny>
   | GroupedArithmeticExpression<IgnoreAny>
+  | ColumnArithmeticAssignment<ColumnReference, string, IgnoreAny>
 
 /**
  * A grouped expression (surrounded by parenthesis)
