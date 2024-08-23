@@ -17,7 +17,7 @@ import type {
 } from "../context.js"
 import type { ParserOptions } from "../parser/options.js"
 import type { ParseTableReference } from "../parser/table.js"
-import { parseValue, type ExtractTSValueTypes } from "../parser/values.js"
+import { pv, type ExtractTSValueTypes } from "../parser/values.js"
 import { createReturningBuilder, type ReturningBuilder } from "./returning.js"
 import { buildColumnReference, type VerifyColumnReferences } from "./select.js"
 import { buildTableReference } from "./table.js"
@@ -131,7 +131,8 @@ class DefaultInsertIntoBuilder<
   > {
     return new DefaultColumnValueBuilder(
       buildTableReference(table, this._options),
-      []
+      [],
+      this._options
     )
   }
 }
@@ -147,10 +148,12 @@ class DefaultColumnValueBuilder<
 {
   private _table: Table
   private _columns: Columns
+  private _options: ParserOptions
 
-  constructor(table: Table, columns: Columns) {
+  constructor(table: Table, columns: Columns, options: ParserOptions) {
     this._table = table
     this._columns = columns
+    this._options = options
   }
 
   columns<Column extends AllowAliasing<StringKeys<Schema>>[]>(
@@ -163,7 +166,7 @@ class DefaultColumnValueBuilder<
       buildColumnReference(c)
     ) as unknown as VerifyColumnReferences<Column>
 
-    return new DefaultColumnValueBuilder(this._table, verified)
+    return new DefaultColumnValueBuilder(this._table, verified, this._options)
   }
 
   values<Values extends CheckValueTypes<Schema, Columns>>(
@@ -173,7 +176,18 @@ class DefaultColumnValueBuilder<
       type: "InsertClause",
       table: this._table,
       columns: this._columns,
-      values: (values as unknown[]).map((v) => parseValue(String(v))) as Values,
+      values: (values as unknown[]).map((v) =>
+        pv(
+          [
+            String(
+              typeof v === "string"
+                ? `${this._options.tokens.quote}${v}${this._options.tokens.quote}`
+                : v
+            ),
+          ],
+          this._options
+        )
+      ) as Values,
     })
   }
 }

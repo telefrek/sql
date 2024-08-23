@@ -1,12 +1,17 @@
 import type { Invalid } from "@telefrek/type-utils/common"
 import type { Decrement, Increment } from "@telefrek/type-utils/math"
 import type { Trim } from "@telefrek/type-utils/strings"
+import type { ColumnReference } from "../../ast/columns.js"
 import type { ReturningClause } from "../../ast/queries.js"
 import type { ValueTypes } from "../../ast/values.js"
-import { parseSelectedColumns, type ParseColumnReference } from "./columns.js"
+import {
+  parseColumnReference,
+  parseSelectedColumns,
+  type ParseColumnReference,
+} from "./columns.js"
 import type { NextToken } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
-import type { CheckValueType } from "./values.js"
+import { pv, type CheckValueType } from "./values.js"
 
 /**
  * Parse an optional alias from the stack
@@ -39,6 +44,21 @@ export type ParseValueOrReference<
 > = CheckValueType<SQL, GetQuote<Options>> extends infer V extends ValueTypes
   ? V
   : ParseColumnReference<SQL>
+
+/**
+ * Parse the next token as a value or reference
+ *
+ * @param tokens The current token stack
+ * @param options The parsing options
+ *
+ * @returns A value, reference or undefined if one cannot be read
+ */
+export function parseValueOrReference(
+  tokens: string[],
+  options: ParserOptions
+): ValueTypes | ColumnReference {
+  return pv(tokens, options) ?? parseColumnReference(tokens)
+}
 
 /**
  * Extract the next full group from the current string

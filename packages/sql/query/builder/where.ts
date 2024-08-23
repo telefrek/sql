@@ -25,7 +25,8 @@ import type {
   QueryContextColumns,
 } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
-import { type CheckValueType, parseValue } from "../parser/values.js"
+import type { GetQuote, ParserOptions } from "../parser/options.js"
+import { type CheckValueType, pv } from "../parser/values.js"
 import { buildColumnReference } from "./select.js"
 
 /**
@@ -35,11 +36,16 @@ import { buildColumnReference } from "./select.js"
  * @param query The current query
  * @returns A {@link WhereBuilder}
  */
-export function where<Context extends QueryContext, Query extends QueryClause>(
+export function where<
+  Context extends QueryContext,
+  Query extends QueryClause,
+  Options extends ParserOptions
+>(
   context: Context,
-  query: Query
-): WhereBuilder<Context, Query> {
-  return new DefaultWhereBuilder(context, query)
+  query: Query,
+  options: Options
+): WhereBuilder<Context, Query, Options> {
+  return new DefaultWhereBuilder(context, query, options)
 }
 
 /**
@@ -47,7 +53,8 @@ export function where<Context extends QueryContext, Query extends QueryClause>(
  */
 export interface WhereBuilder<
   Context extends QueryContext,
-  Query extends QueryClause
+  Query extends QueryClause,
+  Options extends ParserOptions
 > extends QueryAST<Query> {
   /**
    * Create a where clause
@@ -55,7 +62,7 @@ export interface WhereBuilder<
    * @param builder The clause builder
    */
   where<Exp extends LogicalExpression>(
-    builder: (w: WhereClauseBuilder<Context>) => Exp
+    builder: (w: WhereClauseBuilder<Context, Options>) => Exp
   ): AddWhereToAST<Query, Exp>
 }
 
@@ -64,26 +71,29 @@ export interface WhereBuilder<
  */
 class DefaultWhereBuilder<
   Context extends QueryContext,
-  Query extends QueryClause
-> implements WhereBuilder<Context, Query>
+  Query extends QueryClause,
+  Options extends ParserOptions
+> implements WhereBuilder<Context, Query, Options>
 {
   private _context: Context
   private _query: Query
+  private _options: Options
 
-  constructor(context: Context, query: Query) {
+  constructor(context: Context, query: Query, options: Options) {
     this._context = context
     this._query = query
+    this._options = options
   }
 
   where<Exp extends LogicalExpression>(
-    builder: (w: WhereClauseBuilder<Context>) => Exp
+    builder: (w: WhereClauseBuilder<Context, Options>) => Exp
   ): AddWhereToAST<Query, Exp> {
     return {
       ast: {
         type: "SQLQuery",
         query: {
           ...this._query,
-          where: builder(whereClause(this._context)),
+          where: builder(whereClause(this._context, this._options)),
         },
       },
     } as AddWhereToAST<Query, Exp>
@@ -118,7 +128,10 @@ type RefType<C extends string> = C extends `${infer Table}.${infer Column}`
   ? ColumnReference<TableColumnReference<Table, Column>>
   : ColumnReference<UnboundColumnReference<C>>
 
-export interface WhereClauseBuilder<Context extends QueryContext> {
+export interface WhereClauseBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions
+> {
   and<Left extends LogicalExpression, Right extends LogicalExpression>(
     left: Left,
     right: Right
@@ -140,32 +153,41 @@ export interface WhereClauseBuilder<Context extends QueryContext> {
   ): ColumnFilter<
     RefType<Column>,
     Op,
-    CheckColumnRef<Value, QueryContextColumns<Context>>
+    CheckColumnRef<Value, QueryContextColumns<Context>, Options>
   >
 }
 
 type CheckColumnRef<
   Value extends string | number | bigint | boolean | null | undefined,
-  Columns extends string
+  Columns extends string,
+  Options extends ParserOptions
 > = Value extends Columns
   ? ParseColumnReference<Value>
-  : CheckValueType<`${Value}`, "'"> extends infer V extends ValueTypes
+  : CheckValueType<
+      `${Value}`,
+      GetQuote<Options>
+    > extends infer V extends ValueTypes
   ? V
   : never
 
-export function whereClause<Context extends QueryContext>(
-  context: Context
-): WhereClauseBuilder<Context> {
-  return new DefaultWhereClauseBuilder(context)
+export function whereClause<
+  Context extends QueryContext,
+  Options extends ParserOptions
+>(context: Context, options: Options): WhereClauseBuilder<Context, Options> {
+  return new DefaultWhereClauseBuilder(context, options)
 }
 
-class DefaultWhereClauseBuilder<Context extends QueryContext>
-  implements WhereClauseBuilder<Context>
+class DefaultWhereClauseBuilder<
+  Context extends QueryContext,
+  Options extends ParserOptions
+> implements WhereClauseBuilder<Context, Options>
 {
   private _context: Context
+  private _options: Options
 
-  constructor(context: Context) {
+  constructor(context: Context, options: Options) {
     this._context = context
+    this._options = options
   }
 
   and<Left extends LogicalExpression, Right extends LogicalExpression>(
@@ -203,17 +225,18 @@ class DefaultWhereClauseBuilder<Context extends QueryContext>
   ): ColumnFilter<
     RefType<Column>,
     Op,
-    CheckColumnRef<Value, QueryContextColumns<Context>>
+    CheckColumnRef<Value, QueryContextColumns<Context>, Options>
   > {
-    return buildFilter<Context, Column, Op, Value>(
+    return buildFilter<Context, Column, Op, Value, Options>(
       this._context,
       column,
       op,
-      value as Value
+      value as Value,
+      this._options
     ) as unknown as ColumnFilter<
       RefType<Column>,
       Op,
-      CheckColumnRef<Value, QueryContextColumns<Context>>
+      CheckColumnRef<Value, QueryContextColumns<Context>, Options>
     >
   }
 }
@@ -222,18 +245,20 @@ function buildFilter<
   Context extends QueryContext,
   Column extends string,
   Operation extends ComparisonOperation,
-  Value extends string | number | bigint | boolean | null | undefined
+  Value extends string | number | bigint | boolean | null | undefined,
+  Options extends ParserOptions
 >(
   context: Context,
   column: Column,
   op: Operation,
-  value: Value
+  value: Value,
+  options: Options
 ): ColumnFilter<
   Column extends `${infer Table}.${infer Col}`
     ? ColumnReference<TableColumnReference<Table, Col>, Col>
     : ColumnReference<UnboundColumnReference<Column>, Column>,
   Operation,
-  CheckColumnRef<Value, QueryContextColumns<Context>>
+  CheckColumnRef<Value, QueryContextColumns<Context>, Options>
 > {
   return {
     type: "ColumnFilter",
@@ -247,9 +272,10 @@ function buildFilter<
         }
       : isColumn(context, value)
       ? buildColumnReference(value as string)
-      : parseValue(String(value))) as CheckColumnRef<
+      : pv(String(value).split(" "), options)) as CheckColumnRef<
       Value,
-      QueryContextColumns<Context>
+      QueryContextColumns<Context>,
+      Options
     >,
   }
 }

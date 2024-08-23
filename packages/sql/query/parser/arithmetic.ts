@@ -14,6 +14,20 @@ import {
 } from "./options.js"
 import type { ExtractGroup, ParseValueOrReference } from "./utils.js"
 
+// export function parseArithmeticExpression(
+//   tokens: string[],
+//   options: ParserOptions
+// ): AnyExpression | undefined {
+//   return
+// }
+
+// function parseNextArithmeticExpression(
+//   tokens: string[],
+//   options: ParserOptions
+// ): AnyExpression | undefined {
+//   return
+// }
+
 /**
  * Extract the next valid expression chunk and the remaining string
  */
@@ -92,6 +106,28 @@ type ReadNextToken<
     ? [CRef, Remainder]
     : Invalid<"Cannot map value">
   : Invalid<"No more tokens to extract">
+
+export function readNextToken(
+  tokens: string,
+  options: ParserOptions
+): ValueTypes | ColumnReference | string[] {
+  if (tokens.length === 0) {
+    throw new Error("No more tokens to extract")
+  }
+
+  switch (true) {
+    case tokens[0] === ")":
+      throw new Error("Corrupt group")
+    case tokens[0] === "(":
+      break
+    case options.tokens.arithmetic.indexOf(tokens[0]) >= 0:
+      break
+    case options.tokens.assignments.indexOf(tokens[0]) >= 0:
+      break
+  }
+
+  throw new Error("Cannot map value")
+}
 
 /**
  * Parse the next {@link ArithmeticExpression} from the provided string

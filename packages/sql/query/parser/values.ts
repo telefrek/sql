@@ -17,6 +17,110 @@ import type { NextToken, SplitSQL } from "./normalize.js"
 import type { GetQuote, ParserOptions } from "./options.js"
 import type { IsSingleToken } from "./utils.js"
 
+export function pv(
+  tokens: string[],
+  options: ParserOptions
+): ValueTypes | undefined {
+  if (tokens.length === 0) {
+    throw new Error("Empty token stack whlie trying to read a value")
+  }
+
+  // Try fixed size tokens first
+  switch (true) {
+    case tokens[0].startsWith(":"):
+      return {
+        type: "ParameterValue",
+        value: tokens.shift()!,
+      }
+    case tokens[0] === "true" || tokens[0] === "false":
+      return {
+        type: "BooleanValue",
+        value: Boolean(tokens.shift()!),
+      }
+    case isNumber(tokens[0]):
+      return {
+        type: "NumberValue",
+        value: Number(tokens.shift()!),
+      }
+    case isBigInt(tokens[0]):
+      return {
+        type: "BigIntValue",
+        value: BigInt(tokens.shift()!),
+      }
+    case tokens[0] === "null":
+      tokens.shift()
+      return {
+        type: "NullValue",
+        value: null,
+      }
+    case tokens[0].startsWith("0x"):
+      return {
+        type: "BufferValue",
+        value: Uint8Array.from(
+          Uint8Array.from(
+            tokens
+              .shift()!
+              .slice(2)
+              .match(/.{1,2}/g)!
+              .map((byte) => parseInt(byte, 16))
+          )
+        ),
+      }
+  }
+
+  // TODO: This is probably brittle for cases where we have things like nested
+  // arrays but covering all edge cases right now feels like too much work
+
+  // Check for variable size tokens
+  if (tokens[0].startsWith(options.tokens.quote)) {
+    // Read tokens until the end of the quote
+    for (let n = 0; n < tokens.length; ++n) {
+      // Check for ending but not escaped quote
+      if (
+        tokens[n].endsWith(options.tokens.quote) &&
+        !tokens[n].endsWith(`\\${options.tokens.quote}`)
+      ) {
+        // Read all the tokens that were used and remove the quotes
+        const value = tokens
+          .splice(0, n + 1)
+          .join(" ")
+          .slice(1, -1)
+
+        // Check for arrays or json values
+        if (value.startsWith("{") && value.endsWith("}")) {
+          return {
+            type: "JsonValue",
+            value: JSON.parse(value),
+          }
+        } else if (value.startsWith("[") && value.endsWith("]")) {
+          return {
+            type: "ArrayValue",
+            value: JSON.parse(value),
+          }
+        }
+
+        return {
+          type: "StringValue",
+          value,
+        }
+      }
+    }
+  } else if (tokens[0].startsWith("[")) {
+    // Keep reading until we find the end of the array
+    for (let n = 0; n < tokens.length; ++n) {
+      if (tokens[n].endsWith("]")) {
+        // Rip out the array portion and deserialize it into values
+        return {
+          type: "ArrayValue",
+          value: JSON.parse(tokens.splice(0, n + 1).join(" ")),
+        }
+      }
+    }
+  }
+
+  return
+}
+
 /**
  * Parse out the value
  *

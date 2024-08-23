@@ -16,6 +16,7 @@ import {
 } from "../common.js"
 import type { GetSelectableColumns, QueryContext } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
+import type { ParserOptions } from "../parser/options.js"
 import { where, type WhereBuilder } from "./where.js"
 
 /**
@@ -23,7 +24,8 @@ import { where, type WhereBuilder } from "./where.js"
  */
 export interface SelectedColumnsBuilder<
   Context extends QueryContext = QueryContext,
-  Table extends TableReference = TableReference
+  Table extends TableReference = TableReference,
+  Options extends ParserOptions = ParserOptions
 > extends QueryAST<SelectClause<"*", Table>> {
   /**
    * Choose the columns that we want to include in the select
@@ -32,7 +34,11 @@ export interface SelectedColumnsBuilder<
    */
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): WhereBuilder<Context, SelectClause<VerifySelectColumns<Columns>, Table>>
+  ): WhereBuilder<
+    Context,
+    SelectClause<VerifySelectColumns<Columns>, Table>,
+    Options
+  >
 }
 
 /**
@@ -43,9 +49,14 @@ export interface SelectedColumnsBuilder<
  */
 export function createSelectedColumnsBuilder<
   Context extends QueryContext,
-  Table extends TableReference
->(context: Context, from: Table): SelectedColumnsBuilder<Context, Table> {
-  return new DefaultSelectedColumnsBuilder(context, from)
+  Table extends TableReference,
+  Options extends ParserOptions
+>(
+  context: Context,
+  from: Table,
+  options: Options
+): SelectedColumnsBuilder<Context, Table, Options> {
+  return new DefaultSelectedColumnsBuilder(context, from, options)
 }
 
 /**
@@ -54,15 +65,18 @@ export function createSelectedColumnsBuilder<
 class DefaultSelectedColumnsBuilder<
   Database extends SQLDatabaseSchema = SQLDatabaseSchema,
   Context extends QueryContext<Database> = QueryContext<Database>,
-  Table extends TableReference = TableReference
-> implements SelectedColumnsBuilder<Context, Table>
+  Table extends TableReference = TableReference,
+  Options extends ParserOptions = ParserOptions
+> implements SelectedColumnsBuilder<Context, Table, Options>
 {
   private _context: Context
   private _from: Table
+  private _options: Options
 
-  constructor(context: Context, from: Table) {
+  constructor(context: Context, from: Table, options: Options) {
     this._context = context
     this._from = from
+    this._options = options
   }
 
   get ast(): SQLQuery<SelectClause<"*", Table>> {
@@ -78,14 +92,22 @@ class DefaultSelectedColumnsBuilder<
 
   columns<Columns extends AllowAliasing<GetSelectableColumns<Context>>[]>(
     ...columns: AtLeastOne<Columns>
-  ): WhereBuilder<Context, SelectClause<VerifySelectColumns<Columns>, Table>> {
-    return where(this._context, {
-      type: "SelectClause",
-      from: this._from,
-      columns: [
-        ...columns.map((r) => buildColumnReference(r as unknown as string)),
-      ] as VerifySelectColumns<Columns>,
-    })
+  ): WhereBuilder<
+    Context,
+    SelectClause<VerifySelectColumns<Columns>, Table>,
+    Options
+  > {
+    return where(
+      this._context,
+      {
+        type: "SelectClause",
+        from: this._from,
+        columns: [
+          ...columns.map((r) => buildColumnReference(r as unknown as string)),
+        ] as VerifySelectColumns<Columns>,
+      },
+      this._options
+    )
   }
 }
 

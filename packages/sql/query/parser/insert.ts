@@ -17,7 +17,7 @@ import type { ExtractReturning } from "./returning.js"
 import type { ParseSelect } from "./select.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
 import { tryParseReturning } from "./utils.js"
-import { parseValue, type ParseValues } from "./values.js"
+import { pv, type ParseValues } from "./values.js"
 
 /**
  * Parse an insert clause
@@ -191,7 +191,7 @@ function parseValuesOrSelect(
     return extractParenthesis(tokens)
       .join(" ")
       .split(" , ")
-      .map((v) => parseValue(v.trim())) as ValueTypes[]
+      .map((v) => pv(v.trim().split(" "), options)) as ValueTypes[]
   }
 
   const subquery = parseQueryClause(tokens, options)

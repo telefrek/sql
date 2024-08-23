@@ -94,6 +94,6 @@ class DefaultFromQueryBuilder<
       >
     }
 
-    return createSelectedColumnsBuilder(context, reference)
+    return createSelectedColumnsBuilder(context, reference, this._options)
   }
 }
