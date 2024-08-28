@@ -61,6 +61,32 @@ export function parseValueOrReference(
 }
 
 /**
+ * Extract the next token group
+ *
+ * @param tokens The current token stack
+ * @returns The tokens in the group
+ */
+export function extractGroup(tokens: string[]): string[] | undefined {
+  let n = 1
+  const ret: string[] = []
+
+  for (let i = 0; i < tokens.length && n > 0; ++i) {
+    if (tokens[i] === "(") {
+      ++n
+    } else if (tokens[i] === ")") {
+      if (--n === 0) {
+        tokens.splice(0, i + 1)
+        return ret
+      }
+    }
+
+    ret.push(tokens[i])
+  }
+
+  return
+}
+
+/**
  * Extract the next full group from the current string
  */
 export type ExtractGroup<

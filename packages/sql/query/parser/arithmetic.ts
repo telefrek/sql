@@ -14,6 +14,7 @@ import {
   type ParserOptions,
 } from "./options.js"
 import {
+  extractGroup,
   parseValueOrReference,
   type ExtractGroup,
   type ParseValueOrReference,
@@ -67,7 +68,21 @@ export function parseArithmeticExpression<Options extends ParserOptions>(
   const copy = [...tokens]
 
   if (current !== undefined) {
-    return // fail nested for now
+    const token = readNextToken(copy, options)
+    if (typeof token === "string") {
+      // Only allow additional arithmetic
+      if (options.tokens.arithmetic.indexOf(token) >= 0) {
+        return parseSingleArithmeticExpression(copy, options, {
+          type: "ArithmeticExpression",
+          left: current,
+          operation: token,
+        })
+      }
+    } else if (token === undefined) {
+      return copy.length === 0 ? current : undefined
+    }
+
+    return
   }
 
   const next = parseNextArithmeticExpression(copy, options)
@@ -82,6 +97,35 @@ export function parseArithmeticExpression<Options extends ParserOptions>(
     tokens.splice(0, diff)
 
     return fullExpression ?? next
+  }
+
+  return
+}
+
+/**
+ * Parse the entire token stack as an expression or return undefined
+ *
+ * @param tokens The current token stack
+ * @param options The parsing options
+ * @returns Either a fully consumed expression or undefined
+ */
+function parseGroupExpression(
+  tokens: string[],
+  options: ParserOptions
+): GroupedArithmeticExpression | undefined {
+  const copy = [...tokens]
+
+  const expression = parseArithmeticExpression(copy, options)
+  if (
+    expression !== undefined &&
+    copy.length === 0 &&
+    expression.type === "ArithmeticExpression"
+  ) {
+    tokens.splice(0, tokens.length)
+    return {
+      type: "GroupedArithmeticExpression",
+      expression,
+    }
   }
 
   return
@@ -177,14 +221,15 @@ export function readNextToken(
   options: ParserOptions
 ): ValueTypes | ColumnReference | string[] | string | undefined {
   if (tokens.length === 0) {
-    throw new Error("No more tokens to extract")
+    return
   }
 
   switch (true) {
     case tokens[0] === ")":
       throw new Error("Corrupt group")
     case tokens[0] === "(":
-      break
+      tokens.shift()
+      return extractGroup(tokens)
     case options.tokens.arithmetic.indexOf(tokens[0]) >= 0:
       return tokens.shift()!
     case options.tokens.assignments.indexOf(tokens[0]) >= 0:
@@ -230,12 +275,12 @@ function parseNextArithmeticExpression(
 ): Partial<AnyExpression> | undefined {
   const token = readNextToken(tokens, options)
   if (token === undefined) {
-    return undefined
+    return
   }
 
   // Group
   if (Array.isArray(token)) {
-    return
+    return parseGroupExpression(token, options)
   } else if (typeof token === "string") {
     return
   } else if (token.type === "ColumnReference") {
@@ -313,7 +358,12 @@ function parseColumnAssignmentExpression<
   if (typeof token === "string") {
     return
   } else if (Array.isArray(token)) {
-    return
+    const value = parseGroupExpression(token, options)
+    if (value === undefined) return
+    return {
+      ...assignment,
+      value,
+    }
   }
 
   return {
@@ -337,7 +387,9 @@ function parseSingleArithmeticExpression<
   if (typeof token === "string") {
     return
   } else if (Array.isArray(token)) {
-    return
+    const right = parseGroupExpression(token, options)
+    if (right === undefined) return
+    return { ...expression, right }
   }
 
   return {
