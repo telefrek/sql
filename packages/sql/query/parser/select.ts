@@ -33,13 +33,11 @@ export function parseSelectClause(
   options: ParserOptions
 ): SelectClause {
   // Extract the core select
-  let select = {
+  const select = {
     columns: parseSelectedColumns(takeUntil(tokens, ["FROM"])),
     ...parseFrom(tokens, options),
+    ...parseWhere(tokens, options),
   }
-
-  // Parse the optional where clause
-  select = { ...select, ...parseWhere(tokens, options) }
 
   return {
     type: "SelectClause",
