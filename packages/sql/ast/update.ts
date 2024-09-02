@@ -1,5 +1,5 @@
 import type { OneOrMore } from "@telefrek/type-utils/common.js"
-import type { ColumnArithmeticAssignment } from "./arithmetic.js"
+import type { ColumnArithmeticAssignment } from "./expressions.js"
 import type { TableReference } from "./tables.js"
 
 /**

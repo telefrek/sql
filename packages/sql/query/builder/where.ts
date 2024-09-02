@@ -10,13 +10,12 @@ import type {
 } from "../../ast/columns.js"
 import type {
   ColumnFilter,
-  ComparisonOperation,
   LogicalExpression,
   LogicalTree,
-  WhereClause,
-} from "../../ast/filtering.js"
+} from "../../ast/expressions.js"
 import type { QueryClause, SQLQuery } from "../../ast/queries.js"
 import type { ValueTypes } from "../../ast/values.js"
+import type { WhereClause } from "../../ast/where.js"
 import type { QueryAST } from "../common.js"
 import type {
   ColumnType,
@@ -25,7 +24,11 @@ import type {
   QueryContextColumns,
 } from "../context.js"
 import type { ParseColumnReference } from "../parser/columns.js"
-import type { GetQuote, ParserOptions } from "../parser/options.js"
+import type {
+  GetComparisonOperations,
+  GetQuote,
+  ParserOptions,
+} from "../parser/options.js"
 import { type CheckValueType, parseNextValue } from "../parser/values.js"
 import { buildColumnReference } from "./select.js"
 
@@ -144,11 +147,11 @@ export interface WhereClauseBuilder<
 
   filter<
     Column extends QueryContextColumns<Context>,
-    Op extends ComparisonOperation,
+    Op extends GetComparisonOperations<Options>,
     Value extends string | number | bigint | boolean | null | undefined
   >(
     column: Column,
-    op: Op,
+    operation: Op,
     value: Parameter<Value, Context, Column>
   ): ColumnFilter<
     RefType<Column>,
@@ -197,7 +200,7 @@ class DefaultWhereClauseBuilder<
     return {
       type: "LogicalTree",
       left,
-      op: "AND",
+      operation: "AND",
       right,
     }
   }
@@ -209,18 +212,18 @@ class DefaultWhereClauseBuilder<
     return {
       type: "LogicalTree",
       left,
-      op: "OR",
+      operation: "OR",
       right,
     }
   }
 
   filter<
     Column extends QueryContextColumns<Context>,
-    Op extends ComparisonOperation,
+    Op extends GetComparisonOperations<Options>,
     Value extends string | number | bigint | boolean | null | undefined
   >(
     column: Column,
-    op: Op,
+    operation: Op,
     value: Parameter<Value, Context, Column>
   ): ColumnFilter<
     RefType<Column>,
@@ -230,7 +233,7 @@ class DefaultWhereClauseBuilder<
     return buildFilter<Context, Column, Op, Value, Options>(
       this._context,
       column,
-      op,
+      operation,
       value as Value,
       this._options
     ) as unknown as ColumnFilter<
@@ -244,13 +247,13 @@ class DefaultWhereClauseBuilder<
 function buildFilter<
   Context extends QueryContext,
   Column extends string,
-  Operation extends ComparisonOperation,
+  Operation extends GetComparisonOperations<Options>,
   Value extends string | number | bigint | boolean | null | undefined,
   Options extends ParserOptions
 >(
   context: Context,
   column: Column,
-  op: Operation,
+  operation: Operation,
   value: Value,
   options: Options
 ): ColumnFilter<
@@ -264,7 +267,7 @@ function buildFilter<
     type: "ColumnFilter",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     column: buildColumnReference(column) as any,
-    op,
+    operation,
     filter: (isParameter(value)
       ? {
           type: "ParameterValue",

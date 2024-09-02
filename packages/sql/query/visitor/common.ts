@@ -1,10 +1,12 @@
 import type { ColumnReference } from "../../ast/columns.js"
-import type {
-  ColumnFilter,
-  LogicalExpression,
-  LogicalTree,
-  WhereClause,
-} from "../../ast/filtering.js"
+import {
+  isLogicalOperation,
+  type ColumnFilter,
+  type LogicalExpression,
+  type LogicalOperation,
+  type LogicalTree,
+} from "../../ast/expressions.js"
+
 import type {
   InsertClause,
   QueryClause,
@@ -14,6 +16,7 @@ import type {
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
+import type { WhereClause } from "../../ast/where.js"
 import { DefaultQueryProvider, type QueryAstVisitor } from "./types.js"
 
 /**
@@ -77,7 +80,7 @@ export class DefaultQueryVisitor
     // Check WHERE
     if ("where" in select) {
       this.append("WHERE")
-      this.visitWhereClause(select as Readonly<WhereClause>)
+      this.visitWhereClause(select as unknown as Readonly<WhereClause>)
     }
   }
 
@@ -145,13 +148,19 @@ export class DefaultQueryVisitor
   visitLogicalExpression<T extends LogicalExpression>(
     expression: Readonly<T>
   ): void {
-    switch (expression.type) {
-      case "LogicalTree":
-        this.visitLogicalTree(expression as Readonly<LogicalTree>)
-        break
-      case "ColumnFilter":
-        this.visitColumnFilter(expression as Readonly<ColumnFilter>)
-        break
+    if (isLogicalOperation(expression)) {
+      switch (expression.type) {
+        case "LogicalTree":
+          this.visitLogicalTree(
+            expression as LogicalOperation as Readonly<LogicalTree>
+          )
+          break
+        case "ColumnFilter":
+          this.visitColumnFilter(
+            expression as LogicalOperation as Readonly<ColumnFilter>
+          )
+          break
+      }
     }
   }
 
@@ -159,18 +168,20 @@ export class DefaultQueryVisitor
     // TODO: Handle subquery grouping...
     this.visitLogicalExpression(tree.left as Readonly<LogicalExpression>)
 
-    this.append(tree.op)
+    this.append(tree.operation)
 
     this.visitLogicalExpression(tree.right as Readonly<LogicalExpression>)
   }
 
   visitColumnFilter<T extends ColumnFilter>(filter: T): void {
     this.visitColumnReference(filter.column)
-    this.append(filter.op)
-    if (filter.filter.type === "ColumnReference") {
-      this.visitColumnReference(filter.filter)
+    this.append(filter.operation)
+    if (isLogicalOperation(filter.filter)) {
+      this.visitLogicalExpression(filter.filter)
+    } else if (filter.filter.type === "ColumnReference") {
+      this.visitColumnReference(filter.filter as ColumnReference)
     } else {
-      this.visitValueType(filter.filter)
+      this.visitValueType(filter.filter as ValueTypes)
     }
   }
 

@@ -24,7 +24,7 @@ describe("Arithmetic parsing should correctly extract types and values", () => {
   it("Should be able to parse a group value", () => {
     const ret = parseArithmeticExpression("( a + b )", DefaultOptions)
     expect(ret).not.toBeUndefined()
-    expect(ret.type).toBe("GroupedArithmeticExpression")
+    expect(ret.type).toBe("LogicalGroup")
     expect(ret.expression).toStrictEqual({
       type: "ArithmeticExpression",
       left: {

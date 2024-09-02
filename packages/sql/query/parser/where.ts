@@ -1,15 +1,15 @@
 import type { Flatten, Invalid } from "@telefrek/type-utils/common"
-import type { Join, Trim } from "@telefrek/type-utils/strings"
+import type { Trim } from "@telefrek/type-utils/strings"
 import type { ColumnReference } from "../../ast/columns.js"
+
 import type {
   ColumnFilter,
   ComparisonOperation,
   LogicalExpression,
   LogicalTree,
-  LogicalTreeOperation,
-  WhereClause,
-} from "../../ast/filtering.js"
+} from "../../ast/expressions.js"
 import type { ValueTypes } from "../../ast/values.js"
+import type { WhereClause } from "../../ast/where.js"
 import { parseColumnReference, type ParseColumnDetails } from "./columns.js"
 import type { PartialParserResult } from "./common.js"
 import {
@@ -17,7 +17,6 @@ import {
   takeWhile,
   type ExtractUntil,
   type NextToken,
-  type SplitWords,
 } from "./normalize.js"
 import type {
   GetComparisonOperations,
@@ -29,6 +28,22 @@ import { parseNextValue, type ExtractValue } from "./values.js"
 
 // This entire thing needs a re-write...
 
+type CheckWhere<
+  SQL extends string,
+  Options extends ParserOptions
+> = ExtractLogical<SQL, Options> extends LogicalExpression
+  ? SQL
+  : Invalid<"Cannot parse expression">
+
+type CheckExpression<Exp> = Exp extends LogicalExpression
+  ? WhereClause<Exp>
+  : never
+
+export function parseWhere<T extends string, Options extends ParserOptions>(
+  sql: CheckWhere<T, Options>,
+  options: Options
+): CheckExpression<ExtractLogical<T, Options>>
+
 /**
  * Parse the {@link WhereClause} from the token stack
  *
@@ -39,13 +54,19 @@ import { parseNextValue, type ExtractValue } from "./values.js"
 export function parseWhere(
   tokens: string[],
   options: ParserOptions
+): WhereClause | object
+
+export function parseWhere(
+  sql: unknown,
+  options: ParserOptions
 ): WhereClause | object {
+  // Get the token stack
+  const tokens = Array.isArray(sql)
+    ? (sql as string[])
+    : (sql as string).split(" ")
+
   if (tokens.length === 0) {
     return {}
-  }
-
-  if ("WHERE" !== tokens.shift()) {
-    throw new Error(`Invalid where tokens`)
   }
 
   return {
@@ -70,9 +91,9 @@ function parseLogicalExpression(
   return {
     type: "ColumnFilter",
     column: parseColumnReference(left.split(" ")),
-    op: op as ComparisonOperation,
+    operation: op as ComparisonOperation,
     filter: parseNextValue(segments, options)!,
-  }
+  } as ColumnFilter
 }
 
 /**
@@ -84,38 +105,13 @@ export type ExtractWhere<
 > = Current extends PartialParserResult<infer SQL, infer Result>
   ? SQL extends `${infer QuerySegment} WHERE ${infer Where}`
     ? ParseExpressionTree<
-        Join<SplitWhere<Where>>,
+        Where,
         Options
       > extends infer Exp extends LogicalExpression
       ? PartialParserResult<QuerySegment, Flatten<Result & WhereClause<Exp>>>
       : PartialParserResult<SQL, Result>
     : Current
   : never
-
-/**
- * Split the where statement by potential filtering operations
- */
-type SplitWhere<T> = T extends `${infer Left}<>${infer Right}`
-  ? [...SplitWhere<Left>, "<>", ...SplitWhere<Right>]
-  : T extends `${infer Left}>${infer Next}${infer Right}`
-  ? SplitEqual<Left, Next, Right, ">">
-  : T extends `${infer Left}<${infer Next}${infer Right}`
-  ? SplitEqual<Left, Next, Right, "<">
-  : T extends `${infer Left}=${infer Right}`
-  ? [...SplitWhere<Left>, "=", ...SplitWhere<Right>]
-  : SplitWords<T>
-
-/**
- * Split out a possible trailing '=' character
- */
-type SplitEqual<
-  Left extends string,
-  Next extends string,
-  Right extends string,
-  C extends string
-> = Next extends "="
-  ? [...SplitWhere<Left>, `${C}=`, ...SplitWhere<Right>]
-  : [...SplitWhere<Left>, C, ...SplitWhere<`${Next}${Right}`>]
 
 /**
  * Parse an expression tree
@@ -145,7 +141,7 @@ type ParseExpressionTree<
 type ExtractLogical<
   SQL extends string,
   Options extends ParserOptions
-> = ExtractUntil<SQL, LogicalTreeOperation> extends [
+> = ExtractUntil<SQL, "AND" | "OR"> extends [
   infer Left extends string,
   infer Remainder extends string
 ]
@@ -153,7 +149,7 @@ type ExtractLogical<
       infer Operation extends string,
       infer Right extends string
     ]
-    ? [Operation] extends [LogicalTreeOperation]
+    ? [Operation] extends [LogicalTree]
       ? CheckLogicalTree<
           ParseExpressionTree<Left, Options>,
           Operation,
@@ -175,7 +171,7 @@ type ExtractLogical<
  */
 type CheckLogicalTree<Left, Operation, Right> = Left extends LogicalExpression
   ? Right extends LogicalExpression
-    ? Operation extends LogicalTreeOperation
+    ? Operation extends "AND" | "OR"
       ? LogicalTree<Left, Operation, Right>
       : Invalid<"Invalid logical tree detected">
     : Right extends Invalid<infer Reason>

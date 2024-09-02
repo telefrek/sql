@@ -1,14 +1,12 @@
 import type { Flatten } from "@telefrek/type-utils/common"
 import {
-  DEFAULT_ARITHMETIC_ASSIGNMENT_OPS,
-  DEFAULT_ARITHMETIC_OPS,
   type ArithmeticAssignmentOperation,
   type ArithmeticOperation,
-} from "../../ast/arithmetic.js"
-import {
-  DEFAULT_COMPARISON_OPS,
   type ComparisonOperation,
-} from "../../ast/filtering.js"
+  DEFAULT_ARITHMETIC_ASSIGNMENT_OPS,
+  DEFAULT_ARITHMETIC_OPS,
+  DEFAULT_COMPARISON_OPS,
+} from "../../ast/expressions.js"
 
 /**
  * The options for what can be overridden in the parsing logic

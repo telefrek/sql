@@ -3,8 +3,8 @@ import type {
   ColumnFilter,
   LogicalExpression,
   LogicalTree,
-  WhereClause,
-} from "../../ast/filtering.js"
+} from "../../ast/expressions.js"
+
 import type {
   InsertClause,
   QueryClause,
@@ -14,6 +14,7 @@ import type {
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
 import type { ValueTypes } from "../../ast/values.js"
+import type { WhereClause } from "../../ast/where.js"
 
 /**
  * A visitor for exploring the SQL AST

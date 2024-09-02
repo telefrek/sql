@@ -1,11 +1,12 @@
 import type { IgnoreAny, Invalid } from "@telefrek/type-utils/common"
-import {
-  type ArithmeticExpression,
-  type ArithmeticExpressionType,
-  type ColumnArithmeticAssignment,
-  type GroupedArithmeticExpression,
-} from "../../ast/arithmetic.js"
+
 import type { ColumnReference } from "../../ast/columns.js"
+import type {
+  ArithmeticExpression,
+  ColumnArithmeticAssignment,
+  LogicalExpression,
+  LogicalGroup,
+} from "../../ast/expressions.js"
 import type { ValueTypes } from "../../ast/values.js"
 import type { NextToken } from "./normalize.js"
 import {
@@ -112,7 +113,7 @@ export function parseArithmeticExpression<Options extends ParserOptions>(
 function parseGroupExpression(
   tokens: string[],
   options: ParserOptions
-): GroupedArithmeticExpression | undefined {
+): LogicalGroup | undefined {
   const copy = [...tokens]
 
   const expression = parseArithmeticExpression(copy, options)
@@ -123,7 +124,8 @@ function parseGroupExpression(
   ) {
     tokens.splice(0, tokens.length)
     return {
-      type: "GroupedArithmeticExpression",
+      type: "LogicalGroup",
+      operation: "LogicalGroup",
       expression,
     }
   }
@@ -264,7 +266,7 @@ type ParseNextArithmeticExpression<
         string,
         IgnoreAny
       >
-      ? [GroupedArithmeticExpression<Tree>, Remainder]
+      ? [LogicalGroup<Tree>, Remainder]
       : ParseEntireArithmeticTree<Token, Options>
     : Invalid<"Invalid token">
   : ReadNextToken<SQL, Options>
@@ -461,10 +463,7 @@ type ParseSingleArithmeticExpression<
         IgnoreAny
       >
       ? Expression extends ArithmeticExpression<infer Left, infer Op, infer _>
-        ? [
-            ArithmeticExpression<Left, Op, GroupedArithmeticExpression<Right>>,
-            Remainder
-          ]
+        ? [ArithmeticExpression<Left, Op, LogicalGroup<Right>>, Remainder]
         : Invalid<"Corrupted expression">
       : ParseEntireArithmeticTree<Token, Options>
     : Invalid<"Next token is not valid">
@@ -499,7 +498,7 @@ type ParseColumnAssignmentExpression<
     ? ParseEntireArithmeticTree<
         Token,
         Options
-      > extends infer Expression extends ArithmeticExpressionType
+      > extends infer Expression extends ArithmeticExpression
       ? Assignment extends ColumnArithmeticAssignment<
           infer Column,
           infer Op,
@@ -514,10 +513,7 @@ type ParseColumnAssignmentExpression<
 /**
  * Type to prevent assumption about operations from causing mismatch
  */
-type AnyExpression =
-  | ArithmeticExpression<IgnoreAny, string, IgnoreAny>
-  | GroupedArithmeticExpression<IgnoreAny>
-  | ColumnArithmeticAssignment<ColumnReference, string, IgnoreAny>
+type AnyExpression = LogicalExpression
 
 /**
  * Consume the entire arithmetic tree

@@ -1,9 +1,9 @@
 import type { Flatten, Invalid } from "@telefrek/type-utils/common.js"
 import type { Trim } from "@telefrek/type-utils/strings"
-import type { WhereClause } from "../../ast/filtering.js"
 import type { NamedQuery } from "../../ast/named.js"
 import type { SelectClause } from "../../ast/select.js"
 import type { TableReference } from "../../ast/tables.js"
+import type { WhereClause } from "../../ast/where.js"
 import { parseSelectedColumns, type ParseSelectedColumns } from "./columns.js"
 import type { PartialParserResult } from "./common.js"
 import { takeUntil, type SplitSQL } from "./normalize.js"
@@ -40,6 +40,7 @@ export function parseSelectClause(
 
   // Parse the optional where clause
   if (tokens.length > 0 && tokens[0] === "WHERE") {
+    tokens.shift()
     select = { ...select, ...parseWhere(tokens, options) }
   }
 

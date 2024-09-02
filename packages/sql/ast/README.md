@@ -22,7 +22,7 @@ export type ColumnFilter<
 > = {
   type: "ColumnFilter"
   left: Left
-  op: Operation
+  operation: Operation
   right: Right
 }
 ```
