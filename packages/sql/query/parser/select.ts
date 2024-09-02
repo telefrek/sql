@@ -39,10 +39,7 @@ export function parseSelectClause(
   }
 
   // Parse the optional where clause
-  if (tokens.length > 0 && tokens[0] === "WHERE") {
-    tokens.shift()
-    select = { ...select, ...parseWhere(tokens, options) }
-  }
+  select = { ...select, ...parseWhere(tokens, options) }
 
   return {
     type: "SelectClause",

@@ -69,6 +69,12 @@ export function parseWhere(
     return {}
   }
 
+  if (tokens[0] !== "WHERE") {
+    return {}
+  }
+
+  tokens.shift()
+
   return {
     where: parseLogicalExpression(tokens, options),
   }
