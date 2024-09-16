@@ -1,4 +1,4 @@
-import { parseArithmeticExpression } from "./arithmetic.js"
+import { parseArithmeticExpression } from "./expressions.js"
 import { DefaultOptions } from "./options.js"
 
 describe("Arithmetic parsing should correctly extract types and values", () => {
