@@ -193,6 +193,10 @@ export function readNextToken(
       return tokens.shift()!
     case options.tokens.assignments.indexOf(tokens[0]) >= 0:
       return tokens.shift()!
+    case options.tokens.comparisons.indexOf(tokens[0]) >= 0:
+      return tokens.shift()!
+    case ["AND", "OR", "NOT"].indexOf(tokens[0]) >= 0:
+      return tokens.shift()!
   }
 
   return parseValueOrReference(tokens, options)
@@ -360,6 +364,10 @@ type ParseNextLogicalObject<
     : Invalid<"Cannot process token">
   : ReadNextToken<SQL, Options>
 
+/**
+ * Main entrypoint that parses as much of the SQL as an expression tree as
+ * possible while returning the remainder
+ */
 export type ParseExpressionTree<
   SQL extends string,
   Options extends ParserOptions
@@ -370,8 +378,114 @@ export type ParseExpressionTree<
   ? CollapseExpressions<Exp> extends infer Consolidated extends LogicalExpression
     ? [Consolidated, Remainder]
     : CollapseExpressions<Exp>
-  : Invalid<"Failed">
+  : Invalid<"Failed to parse an expression">
 
+export function parseAllExpressionTokens(
+  tokens: string[],
+  options: ParserOptions
+): LogicalExpression | undefined {
+  const expressions: Partial<LogicalExpression>[] = []
+
+  let next = readNextToken(tokens, options)
+  while (next !== undefined) {
+    if (typeof next === "string") {
+      if (options.tokens.arithmetic.indexOf(next) >= 0) {
+        expressions.push({ type: "ArithmeticExpression", operation: next })
+      } else if (options.tokens.assignments.indexOf(next) >= 0) {
+        expressions.push({
+          type: "ColumnArithmeticAssignment",
+          operation: next,
+        })
+      } else if (options.tokens.comparisons.indexOf(next) >= 0) {
+        expressions.push({ type: "ColumnFilter", operation: next })
+      } else if (next === "NOT") {
+        expressions.push({ type: "LogicalNegation" })
+      } else if (next === "AND" || next === "OR") {
+        expressions.push({ type: "LogicalTree", operation: next })
+      }
+    } else if (Array.isArray(next)) {
+      const exp = parseAllExpressionTokens(next, options)
+      if (exp !== undefined) {
+        expressions.push(exp)
+      } else throw new Error("oops")
+    } else {
+      expressions.push(next)
+    }
+
+    if (tokens.length === 0) break
+    next = readNextToken(tokens, options)
+  }
+
+  return aggregateExpressions(expressions)
+}
+
+function aggregateExpressions(
+  expressions: Partial<LogicalExpression>[]
+): LogicalExpression | undefined {
+  while (expressions.length > 1) {
+    const second = expressions.pop()!
+    const first = expressions.pop()!
+
+    switch (first.type ?? "undefined") {
+      case "ColumnArighmeticAssignment":
+        ;(first as ColumnArithmeticAssignment).value =
+          second as LogicalExpression
+        expressions.push(first)
+        continue
+      case "ColumnFilter":
+        ;(first as ColumnFilter).filter = second as LogicalExpression
+        expressions.push(first)
+        continue
+      case "ArithmeticExpression":
+        ;(first as ArithmeticExpression).right = second as LogicalExpression
+        expressions.push(first)
+        continue
+      case "LogicalNegation":
+        ;(first as LogicalNegation).expression = second as LogicalExpression
+        expressions.push(first)
+        continue
+      case "LogicalTree":
+        ;(first as LogicalTree).right = second as LogicalExpression
+        expressions.push(first)
+        continue
+    }
+
+    switch (second.type ?? "undefined") {
+      case "ColumnArithmeticAssignment":
+        ;(second as ColumnArithmeticAssignment).column =
+          first as ColumnReference
+        expressions.push(second)
+        continue
+      case "ColumnFilter":
+        ;(second as ColumnFilter).column = first as ColumnReference
+        expressions.push(second)
+        continue
+      case "ArithmeticExpression":
+        ;(second as ArithmeticExpression).left = first as LogicalExpression
+        expressions.push(second)
+        continue
+      case "LogicalTree": {
+        expressions.push(first)
+        const left = aggregateExpressions(expressions)
+        if (left === undefined)
+          throw new Error("Failed to parse left side of tree")
+        ;(second as LogicalTree).left = left
+        return second as LogicalExpression
+      }
+    }
+  }
+
+  if (expressions.length === 1) {
+    return expressions[0] as LogicalExpression
+  }
+
+  return
+}
+
+/**
+ * Parse out all of the valid individual expression tokens and return them with
+ * the remainding string
+ */
 type ParseAllExpressionTokens<
   SQL extends string,
   Options extends ParserOptions,
@@ -390,6 +504,9 @@ type ParseAllExpressionTokens<
     : [[Token], Remainder]
   : [Current, SQL]
 
+/**
+ * Collapse a series of logical expressions into a single expression
+ */
 type CollapseExpressions<Expressions extends LogicalExpression[]> =
   Expressions extends [
     ...infer Rest extends LogicalExpression[],
@@ -437,4 +554,4 @@ type CollapseExpressions<Expressions extends LogicalExpression[]> =
       : Expressions
     : Expressions extends [infer Exp extends LogicalExpression]
     ? Exp
-    : Expressions
+    : Invalid<"Corrupt or empty expression group">
