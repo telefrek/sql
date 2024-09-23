@@ -28,7 +28,7 @@ export type ParseSQL<
 export type ParseQuery<
   T extends string,
   Options extends ParserOptions
-> = NormalizeQuery<T> extends infer Q extends string
+> = NormalizeQuery<T, Options> extends infer Q extends string
   ? Q extends `SELECT ${string}`
     ? ParseSelect<Q, Options>
     : Q extends `INSERT INTO ${string}`
@@ -73,11 +73,14 @@ export class QueryParser<
    * @param query The query to parse
    * @returns A fully parsed SQL query
    */
-  parse<T extends string>(query: T): ParseSQL<T> {
+  parse<T extends string>(query: T): ParseSQL<T, Options> {
     return {
       type: "SQLQuery",
-      query: parseQueryClause(normalizeQuery(query).split(" "), this._options),
-    } as ParseSQL<T>
+      query: parseQueryClause(
+        normalizeQuery(query, this._options).split(" "),
+        this._options
+      ),
+    } as ParseSQL<T, Options>
   }
 }
 

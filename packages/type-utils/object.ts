@@ -6,40 +6,46 @@ import type { Invalid } from "./common.js"
  * @returns A clone of the object
  */
 export function clone<T, U = T extends Array<infer V> ? V : never>(
-  original: T,
+  original: T
 ): T {
   return original instanceof Date
     ? (new Date(original.getTime()) as T & Date)
     : Array.isArray(original)
-      ? (original.map((item) => clone(item)) as T & U[])
-      : original && typeof original === "object"
-        ? (Object.getOwnPropertyNames(original) as (keyof T)[]).reduce<T>(
-            (o, prop) => {
-              const descriptor = Object.getOwnPropertyDescriptor(
-                original,
-                prop,
-              )!
-              Object.defineProperty(o, prop, {
-                ...descriptor,
-                writable: true, // Mark this as readable temporarily
-              })
-              o[prop] = clone(original[prop])
+    ? (original.map((item) => clone(item)) as T & U[])
+    : original && typeof original === "object"
+    ? (Object.getOwnPropertyNames(original) as (keyof T)[]).reduce<T>(
+        (o, prop) => {
+          const descriptor = Object.getOwnPropertyDescriptor(original, prop)!
+          Object.defineProperty(o, prop, {
+            ...descriptor,
+            writable: true, // Mark this as readable temporarily
+          })
+          o[prop] = clone(original[prop])
 
-              // Refreeze if necessary
-              if (descriptor.writable) {
-                Object.freeze(o[prop])
-              }
-              return o
-            },
-            Object.create(Object.getPrototypeOf(original)),
-          )
-        : original
+          // Refreeze if necessary
+          if (descriptor.writable) {
+            Object.freeze(o[prop])
+          }
+          return o
+        },
+        Object.create(Object.getPrototypeOf(original))
+      )
+    : original
 }
 
 /**
  * Get all the keys of type T
  */
 export type Keys<T> = keyof T
+
+/**
+ * Verify if T is a union type
+ */
+export type IsUnion<T, U extends T = T> = (
+  T extends [never] ? never : U extends T ? false : true
+) extends false
+  ? false
+  : true
 
 /**
  * Get all of the keys that are strings
@@ -60,10 +66,10 @@ export type RequiredLiteralKeys<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-      ? never
-      : object extends Pick<T, K>
-        ? never
-        : K]: T[K]
+    ? never
+    : object extends Pick<T, K>
+    ? never
+    : K]: T[K]
 }
 
 /**
@@ -73,10 +79,10 @@ export type OptionalLiteralKeys<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-      ? never
-      : object extends Pick<T, K>
-        ? K
-        : never]: T[K]
+    ? never
+    : object extends Pick<T, K>
+    ? K
+    : never]: T[K]
 }
 
 /**

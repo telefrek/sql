@@ -7,7 +7,7 @@ import type {
 } from "../../ast/queries.js"
 import type { SQLColumnSchema } from "../../schema/columns.js"
 import type { AllowAliasing, QueryAST } from "../common.js"
-import { buildColumnReference, type VerifySelectColumns } from "./columns.js"
+import { buildColumnReference, type VerifySelectColumns } from "./select.js"
 
 /**
  * An interface for specifying optional RETURNING clauses

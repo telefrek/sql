@@ -17,7 +17,7 @@ import type { ExtractReturning } from "./returning.js"
 import type { ParseSelect } from "./select.js"
 import { parseTableReference, type ParseTableReference } from "./table.js"
 import { tryParseReturning } from "./utils.js"
-import { parseValue, type ParseValues } from "./values.js"
+import { parseNextValue, type ParseValues } from "./values.js"
 
 /**
  * Parse an insert clause
@@ -47,7 +47,7 @@ type ExtractInsert<
   InsertSQL extends string,
   Options extends ParserOptions
 > = ExtractReturning<InsertSQL, Options> extends PartialParserResult<
-  infer SQL extends string,
+  infer SQL,
   infer Returning
 >
   ? Returning extends ReturningClause
@@ -61,10 +61,7 @@ type ExtractInsert<
 type ExtractInsertValues<
   Current extends PartialParserResult,
   Options extends ParserOptions
-> = Current extends PartialParserResult<
-  infer SQL extends string,
-  infer Result extends object
->
+> = Current extends PartialParserResult<infer SQL, infer Result>
   ? SQL extends `${infer Columns} VALUES ( ${infer ValuesClause} )`
     ? ParseValues<
         ValuesClause,
@@ -76,12 +73,15 @@ type ExtractInsertValues<
         >
       : ParseValues<ValuesClause, Options>
     : SQL extends `${infer Columns} SELECT ${infer Select}`
-    ? ParseSelect<Select, Options> extends infer S extends SelectClause
+    ? ParseSelect<
+        `SELECT ${Select}`,
+        Options
+      > extends infer S extends SelectClause
       ? ExtractInsertColumns<
           PartialParserResult<Columns, Flatten<Result & { values: S }>>,
           Options
         >
-      : ParseSelect<Select, Options>
+      : ParseSelect<`SELECT ${Select}`, Options>
     : Invalid<`VALUES or SELECT are required for INSERT`>
   : never
 
@@ -91,10 +91,7 @@ type ExtractInsertValues<
 type ExtractInsertColumns<
   Current extends PartialParserResult,
   Options extends ParserOptions
-> = Current extends PartialParserResult<
-  infer SQL extends string,
-  infer Result extends object
->
+> = Current extends PartialParserResult<infer SQL, infer Result>
   ? SQL extends `${infer Table} ( ${infer ColumnsClause} )`
     ? ParseSelectedColumns<
         ColumnsClause,
@@ -119,10 +116,7 @@ type ExtractInsertColumns<
 type ExtractInsertTable<
   Current extends PartialParserResult,
   Options extends ParserOptions
-> = Current extends PartialParserResult<
-  infer SQL extends string,
-  infer Result extends object
->
+> = Current extends PartialParserResult<infer SQL, infer Result>
   ? ParseTableReference<SQL, Options> extends TableReference<
       infer Table,
       infer Alias
@@ -197,7 +191,7 @@ function parseValuesOrSelect(
     return extractParenthesis(tokens)
       .join(" ")
       .split(" , ")
-      .map((v) => parseValue(v.trim())) as ValueTypes[]
+      .map((v) => parseNextValue(v.trim().split(" "), options)) as ValueTypes[]
   }
 
   const subquery = parseQueryClause(tokens, options)

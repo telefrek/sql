@@ -41,6 +41,8 @@ export const QUERY_KEYS = ["SELECT", "UPDATE", "INSERT", "DELETE", "WITH"]
  */
 export const WHERE_KEYS = ["HAVING", "GROUP", "OFFSET", "LIMIT", "ORDER"]
 
+export const EXPRESSION_KEYS = ["BETWEEN", "IN", ""]
+
 /**
  * The set of keys that indicate the end of a join clause
  */
